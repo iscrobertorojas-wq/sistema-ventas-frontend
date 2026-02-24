@@ -14,7 +14,7 @@ export class ApiService {
 
     // In production, you can set a specific URL, otherwise it defaults to the current host
     // To use a specific production URL, change 'http://${host}:3000/api' to your Vercel URL
-    this.baseUrl = `sistema-ventas-backend-8mndjztpk-iscrobertorojas-4991s-projects.vercel.app`;
+    this.baseUrl = `https://sistema-ventas-backend-8mndjztpk-iscrobertorojas-4991s-projects.vercel.app/api`;
   }
 
   // Clients
