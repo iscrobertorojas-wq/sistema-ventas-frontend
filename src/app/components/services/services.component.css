@@ -1,0 +1,58 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.form-card {
+    margin-bottom: 20px;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-top: 16px;
+}
+
+.table-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 4px;
+}
+
+table {
+    width: 100%;
+    background-color: transparent !important;
+}
+
+.table-container th {
+    background: var(--bg-card);
+    z-index: 100;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 12px;
+    }
+
+    .form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-row button {
+        margin-top: 8px;
+    }
+
+    .table-container {
+        max-height: none;
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 500px;
+    }
+}

@@ -1,0 +1,128 @@
+<div class="settings-container">
+    <h2>Configuración</h2>
+
+    <div class="settings-grid">
+        <mat-card>
+            <mat-card-header>
+                <mat-card-title>Apariencia</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <h3>Modo Oscuro</h3>
+                        <p>Cambia entre tema claro y oscuro</p>
+                    </div>
+                    <mat-slide-toggle [(ngModel)]="isDarkMode" (change)="toggleTheme()" color="primary">
+                    </mat-slide-toggle>
+                </div>
+
+                <mat-divider style="margin: 15px 0;"></mat-divider>
+
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <h3>Color de Marca</h3>
+                        <p>Personaliza el color principal del sistema</p>
+                    </div>
+                    <div class="color-picker-container">
+                        <input type="color" [(ngModel)]="brandColor" (change)="updateBrandColor()"
+                            class="brand-color-input">
+                        <span class="color-value">{{brandColor}}</span>
+                    </div>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card>
+            <mat-card-header>
+                <mat-card-title>Configuración de Folios</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="setting-item vertical">
+                    <div class="setting-label">
+                        <h3>Consecutivo de Remisiones</h3>
+                        <p>Define el próximo número de folio para remisiones (R-XXXXXX)</p>
+                    </div>
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Número Consecutivo</mat-label>
+                        <input matInput type="number" [(ngModel)]="folioRemission" min="1">
+                    </mat-form-field>
+                    <button mat-raised-button color="primary" (click)="saveFolioRemission()">
+                        Guardar Consecutivo de Remisión
+                    </button>
+                </div>
+
+                <mat-divider style="margin: 20px 0;"></mat-divider>
+
+                <div class="setting-item vertical">
+                    <div class="setting-label">
+                        <h3>Consecutivo de Facturas</h3>
+                        <p>Define el próximo número de folio para facturas (F-XXXXXX)</p>
+                    </div>
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Número Consecutivo</mat-label>
+                        <input matInput type="number" [(ngModel)]="folioInvoice" min="1">
+                    </mat-form-field>
+                    <button mat-raised-button color="primary" (click)="saveFolioInvoice()">
+                        Guardar Consecutivo de Factura
+                    </button>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <!-- New Section: Orden de Servicio Info -->
+    <div class="settings-grid" style="margin-top: 20px;">
+        <mat-card class="full-width-card">
+            <mat-card-header>
+                <mat-card-title>Información de Orden de Servicio (PDF)</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="brand-settings">
+                    <div class="logo-upload">
+                        <h3>Logo de la Empresa</h3>
+                        <div class="logo-preview" (click)="logoInput.click()">
+                            <img *ngIf="companyLogo" [src]="companyLogo" alt="Logo">
+                            <mat-icon *ngIf="!companyLogo">add_a_photo</mat-icon>
+                            <span *ngIf="!companyLogo">Subir Logo</span>
+                        </div>
+                        <input type="file" #logoInput (change)="onLogoSelected($event)" accept="image/*" hidden>
+                        <p class="hint">Haz clic en el cuadro para subir tu logo.</p>
+                    </div>
+
+                    <div class="info-fields">
+                        <div class="row">
+                            <mat-form-field appearance="outline">
+                                <mat-label>Nombre / Razón Social</mat-label>
+                                <input matInput [(ngModel)]="companyName">
+                            </mat-form-field>
+                            <mat-form-field appearance="outline">
+                                <mat-label>Profesión / Subtítulo</mat-label>
+                                <input matInput [(ngModel)]="companyProfession">
+                            </mat-form-field>
+                        </div>
+
+                        <div class="row">
+                            <mat-form-field appearance="outline">
+                                <mat-label>Banco para Transferencia</mat-label>
+                                <input matInput [(ngModel)]="bankName">
+                            </mat-form-field>
+                            <mat-form-field appearance="outline">
+                                <mat-label>Tarjeta / Cuenta</mat-label>
+                                <input matInput [(ngModel)]="bankCard">
+                            </mat-form-field>
+                        </div>
+
+                        <mat-form-field appearance="outline" class="full-width">
+                            <mat-label>Pie de Página (Leyenda)</mat-label>
+                            <textarea matInput rows="3" [(ngModel)]="footerText"></textarea>
+                        </mat-form-field>
+
+                        <button mat-raised-button color="primary" (click)="saveCompanyInfo()">
+                            Guardar Información de Empresa
+                        </button>
+                    </div>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+</div>

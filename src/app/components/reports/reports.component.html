@@ -1,0 +1,220 @@
+<mat-card class="header-card-global">
+    <mat-card-header>
+        <mat-card-title>
+            <mat-icon>analytics</mat-icon>
+            Reportes de Ventas
+        </mat-card-title>
+    </mat-card-header>
+</mat-card>
+
+<div class="reports-container">
+
+    <!-- Compact Date Filters Section -->
+    <mat-card class="filters-card-modern date-only-card">
+        <mat-card-content>
+            <div class="date-filters-flex">
+                <mat-form-field appearance="outline" class="compact-form-field">
+                    <mat-label>Rango de Fechas</mat-label>
+                    <mat-date-range-input [rangePicker]="picker">
+                        <input matStartDate [(ngModel)]="startDate" placeholder="Inicio">
+                        <input matEndDate [(ngModel)]="endDate" (dateChange)="applyDateFilters()" placeholder="Fin">
+                    </mat-date-range-input>
+                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-date-range-picker #picker></mat-date-range-picker>
+                </mat-form-field>
+
+                <div class="quick-dates">
+                    <button mat-stroked-button (click)="filterThisWeek()">Esta Semana</button>
+                    <button mat-stroked-button (click)="filterThisMonth()">Este Mes</button>
+                    <button mat-stroked-button (click)="filterThisYear()">Este Año</button>
+                </div>
+
+                <div class="spacer"></div>
+
+                <button mat-flat-button color="warn" (click)="clearFilters()">
+                    <mat-icon>filter_alt_off</mat-icon> Limpiar Filtros
+                </button>
+            </div>
+        </mat-card-content>
+    </mat-card>
+
+    <!-- Table -->
+    <mat-card class="table-card">
+        <div class="table-card-header">
+            <div class="table-header-group">
+                <h3 class="table-title">Listado de Ventas</h3>
+
+                <div class="header-chips-group">
+                    <mat-chip-listbox [(ngModel)]="statusFilter" (ngModelChange)="applyInternalFilters()"
+                        class="header-chips">
+                        <mat-chip-option value="Pagado" class="chip-success">Pagado</mat-chip-option>
+                        <mat-chip-option value="Pendiente" class="chip-warn">Pendiente</mat-chip-option>
+                    </mat-chip-listbox>
+
+                    <mat-divider [vertical]="true"></mat-divider>
+
+                    <mat-chip-listbox [(ngModel)]="methodFilter" (ngModelChange)="applyInternalFilters()"
+                        class="header-chips">
+                        <mat-chip-option value="Efectivo">Efectivo</mat-chip-option>
+                        <mat-chip-option value="Cheque">Cheque</mat-chip-option>
+                        <mat-chip-option value="Transferencia">Transf.</mat-chip-option>
+                    </mat-chip-listbox>
+
+                    <mat-divider [vertical]="true"></mat-divider>
+
+                    <mat-chip-listbox [(ngModel)]="accountFilter" (ngModelChange)="applyInternalFilters()"
+                        class="header-chips">
+                        <mat-chip-option value="Rober BBVA">Rober BBVA</mat-chip-option>
+                        <mat-chip-option value="Jess BBVA">Jess BBVA</mat-chip-option>
+                    </mat-chip-listbox>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="total-summary">
+                    <span class="total-label">Total:</span>
+                    <span class="total-amount">{{ filteredTotal | currency }}</span>
+                </div>
+                <button mat-raised-button color="accent" (click)="exportToExcel()">
+                    <mat-icon>download</mat-icon> Exportar a Excel
+                </button>
+            </div>
+        </div>
+        <mat-card-content>
+            <div class="table-container">
+                <table mat-table [dataSource]="filteredSales" class="mat-elevation-z2" matSort
+                    (matSortChange)="sortData($event)">
+                    <ng-container matColumnDef="id">
+                        <th mat-header-cell *matHeaderCellDef> No. Venta </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.id}} </td>
+                    </ng-container>
+                    <ng-container matColumnDef="formatted_date">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Fecha </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.formatted_date}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="client_name">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Cliente </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.client_name}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="services">
+                        <th mat-header-cell *matHeaderCellDef> Servicios </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.services || '-'}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="total">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Total </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.total | currency}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="folio_remission">
+                        <th mat-header-cell *matHeaderCellDef> No. Remisión </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.folio_remission}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="folio_invoice">
+                        <th mat-header-cell *matHeaderCellDef> No. Factura </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.folio_invoice}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="status_spanish">
+                        <th mat-header-cell *matHeaderCellDef> Estado de Pago </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.status_spanish}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="payment_date">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Fecha de Pago </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.payment_date}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="payment_method">
+                        <th mat-header-cell *matHeaderCellDef> Método de Pago </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.payment_method}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="bank_account">
+                        <th mat-header-cell *matHeaderCellDef> Tarjeta Destino </th>
+                        <td mat-cell *matCellDef="let sale"> {{sale.bank_account}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef> Acciones </th>
+                        <td mat-cell *matCellDef="let sale">
+                            <button mat-icon-button (click)="navigateToEditSale(sale)" [disabled]="sale.paid_amount > 0"
+                                [title]="sale.paid_amount > 0 ? 'No se puede editar con pagos' : 'Editar Venta'">
+                                <mat-icon>edit</mat-icon>
+                            </button>
+                            <button mat-icon-button color="primary" (click)="reprintSale(sale)"
+                                title="Reimprimir Orden">
+                                <mat-icon>print</mat-icon>
+                            </button>
+                        </td>
+                    </ng-container>
+
+                    <!-- Filter Row Definitions (Headers) -->
+                    <ng-container matColumnDef="filter-id">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-date">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-client">
+                        <th mat-header-cell *matHeaderCellDef>
+                            <input matInput class="header-filter" [(ngModel)]="clientFilter"
+                                (ngModelChange)="applyInternalFilters()" placeholder="Filtrar...">
+                        </th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-services">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-total">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-remission">
+                        <th mat-header-cell *matHeaderCellDef>
+                            <div class="header-filter-inline">
+                                <input matInput class="header-filter small-input" [(ngModel)]="remissionFilter"
+                                    (ngModelChange)="applyInternalFilters()" placeholder="No...">
+                                <mat-checkbox [(ngModel)]="excludeEmptyRemission"
+                                    (ngModelChange)="applyInternalFilters()" title="Excluir vacíos"></mat-checkbox>
+                            </div>
+                        </th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-invoice">
+                        <th mat-header-cell *matHeaderCellDef>
+                            <div class="header-filter-inline">
+                                <input matInput class="header-filter small-input" [(ngModel)]="invoiceFilter"
+                                    (ngModelChange)="applyInternalFilters()" placeholder="No...">
+                                <mat-checkbox [(ngModel)]="excludeEmptyInvoice" (ngModelChange)="applyInternalFilters()"
+                                    title="Excluir vacíos"></mat-checkbox>
+                            </div>
+                        </th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-status">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-payment-date">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-method">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-account">
+                        <th mat-header-cell *matHeaderCellDef>
+                            <input matInput class="header-filter" [(ngModel)]="accountFilter"
+                                (ngModelChange)="applyInternalFilters()" placeholder="Filtrar...">
+                        </th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-actions">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true" class="filter-header-row"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                </table>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

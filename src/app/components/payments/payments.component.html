@@ -1,0 +1,157 @@
+<mat-card class="header-card-global">
+    <mat-card-header>
+        <mat-card-title>
+            <mat-icon>payments</mat-icon>
+            Control de Pagos
+        </mat-card-title>
+    </mat-card-header>
+</mat-card>
+
+<div class="container">
+
+    <div class="split-layout">
+        <div class="list-panel">
+            <mat-card>
+                <mat-card-header>
+                    <mat-card-title>Ventas</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <div class="filters">
+                        <mat-form-field appearance="outline" class="search-field">
+                            <mat-label>Buscar por Folio</mat-label>
+                            <input matInput [(ngModel)]="searchFolio" (ngModelChange)="applyFilters()"
+                                placeholder="Ej. A-123">
+                            <mat-icon matSuffix>search</mat-icon>
+                        </mat-form-field>
+
+                        <mat-button-toggle-group [(ngModel)]="statusFilter" (change)="applyFilters()"
+                            appearance="legacy">
+                            <mat-button-toggle value="all">Todas</mat-button-toggle>
+                            <mat-button-toggle value="pending">Pendientes</mat-button-toggle>
+                            <mat-button-toggle value="paid">Pagadas</mat-button-toggle>
+                        </mat-button-toggle-group>
+                    </div>
+
+                    <div class="table-container">
+                        <table mat-table [dataSource]="filteredSales" class="mat-elevation-z0">
+                            <ng-container matColumnDef="folio">
+                                <th mat-header-cell *matHeaderCellDef> Folio </th>
+                                <td mat-cell *matCellDef="let sale"> {{sale.folio}} </td>
+                            </ng-container>
+                            <ng-container matColumnDef="date">
+                                <th mat-header-cell *matHeaderCellDef> Fecha </th>
+                                <td mat-cell *matCellDef="let sale"> {{sale.date | date:'shortDate'}} </td>
+                            </ng-container>
+                            <ng-container matColumnDef="client">
+                                <th mat-header-cell *matHeaderCellDef> Cliente </th>
+                                <td mat-cell *matCellDef="let sale"> {{sale.client_name}} </td>
+                            </ng-container>
+                            <ng-container matColumnDef="total">
+                                <th mat-header-cell *matHeaderCellDef> Total </th>
+                                <td mat-cell *matCellDef="let sale"> {{sale.total | currency}} </td>
+                            </ng-container>
+                            <ng-container matColumnDef="status">
+                                <th mat-header-cell *matHeaderCellDef> Estatus </th>
+                                <td mat-cell *matCellDef="let sale">
+                                    <span class="status-badge" [class.paid]="sale.status === 'Paid'"
+                                        [class.pending]="sale.status !== 'Paid'">
+                                        {{sale.status === 'Paid' ? 'Pagada' : 'Pendiente'}}
+                                    </span>
+                                </td>
+                            </ng-container>
+                            <ng-container matColumnDef="actions">
+                                <th mat-header-cell *matHeaderCellDef> Acciones </th>
+                                <td mat-cell *matCellDef="let sale">
+                                    <button mat-icon-button color="primary" (click)="selectSale(sale)"
+                                        matTooltip="Registrar Pago">
+                                        <mat-icon>payment</mat-icon>
+                                    </button>
+                                </td>
+                            </ng-container>
+                            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                        </table>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+        </div>
+
+        <div class="details-panel" *ngIf="selectedSale">
+            <mat-card>
+                <mat-card-header>
+                    <mat-card-title>Registrar Pago - Venta #{{selectedSale.id}}</mat-card-title>
+                    <mat-card-subtitle>{{selectedSale.client_name}} - Total: {{selectedSale.total |
+                        currency}}</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+
+                    <h3>Pagos Realizados</h3>
+                    <mat-list>
+                        <mat-list-item *ngFor="let payment of payments">
+                            <span matListItemTitle>
+                                {{payment.amount | currency}} - {{payment.method}}
+                                <span *ngIf="payment.bank_account">({{payment.bank_account}})</span>
+                            </span>
+                            <span matListItemLine>{{payment.date | date:'medium'}}</span>
+
+                            <!-- Action Buttons -->
+                            <button mat-icon-button (click)="editPayment(payment)" matListItemMeta>
+                                <mat-icon>edit</mat-icon>
+                            </button>
+                            <button mat-icon-button color="warn" (click)="deletePayment(payment.id)" matListItemMeta>
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </mat-list-item>
+                        <mat-list-item *ngIf="payments.length === 0">Sin pagos registrados</mat-list-item>
+                    </mat-list>
+
+                    <div class="payment-form">
+                        <h4 *ngIf="isEditing">Editando Pago</h4>
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>Fecha de Pago</mat-label>
+                            <input matInput [matDatepicker]="picker" [(ngModel)]="newPayment.date">
+                            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                            <mat-datepicker #picker></mat-datepicker>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>Monto a Pagar</mat-label>
+                            <input matInput type="number" [(ngModel)]="newPayment.amount" [max]="maxPaymentAmount">
+                            <mat-hint>Máximo: {{maxPaymentAmount | currency}}</mat-hint>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>Método de Pago</mat-label>
+                            <mat-select [(ngModel)]="newPayment.method">
+                                <mat-option value="Cash">Efectivo</mat-option>
+                                <mat-option value="Check">Cheque</mat-option>
+                                <mat-option value="Transfer">Transferencia</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" *ngIf="newPayment.method === 'Transfer'">
+                            <mat-label>Cuenta Bancaria</mat-label>
+                            <mat-select [(ngModel)]="newPayment.bank_account">
+                                <mat-option value="Rober BBVA">Rober BBVA</mat-option>
+                                <mat-option value="Jess BBVA">Jess BBVA</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" *ngIf="newPayment.method === 'Check'">
+                            <mat-label>Cuenta Bancaria</mat-label>
+                            <input matInput [(ngModel)]="newPayment.bank_account">
+                        </mat-form-field>
+
+                        <div class="form-actions">
+                            <button mat-raised-button color="accent" (click)="registerPayment()">
+                                {{ isEditing ? 'Actualizar' : 'Registrar' }}
+                            </button>
+                            <button mat-button *ngIf="isEditing" (click)="cancelEdit()">Cancelar</button>
+                        </div>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+        </div>
+    </div>
+</div>

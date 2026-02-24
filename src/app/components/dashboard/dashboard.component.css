@@ -1,0 +1,245 @@
+.dashboard-container {
+    padding: 20px;
+}
+
+h2 {
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+.stat-card mat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px !important;
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: white;
+}
+
+.stat-icon.week {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-icon.month {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-icon.year {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.hover-gradient-pending:hover {
+    background: linear-gradient(135deg, rgba(250, 112, 154, 0.1) 0%, rgba(254, 225, 64, 0.1) 100%) !important;
+}
+
+.hover-gradient-year:hover {
+    background: var(--brand-color-light) !important;
+}
+
+.stat-icon.pending {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.stat-icon.income {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.stat-icon.year {
+    background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+}
+
+.stat-card.highlight-card {
+    border: 1px solid rgba(56, 239, 125, 0.3);
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-info h3 {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.stat-value {
+    margin: 5px 0;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--brand-color);
+}
+
+.stat-subtitle {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+}
+
+.chart-card {
+    grid-column: span 6;
+    min-height: 400px;
+}
+
+.chart-card.large-chart {
+    grid-column: span 12;
+}
+
+.chart-container.main-chart {
+    height: 350px;
+}
+
+.chart-container.doughnut-chart {
+    height: 300px;
+}
+
+.stat-card,
+.chart-card {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.stat-card {
+    border: 1px solid var(--border-color) !important;
+    background: var(--bg-card);
+}
+
+body.dark-theme .stat-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.chart-card {
+    border: 1px solid var(--border-color) !important;
+    background: var(--bg-card);
+}
+
+body.dark-theme .chart-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Optimization for browsers not supporting backdrop-filter */
+@supports not (backdrop-filter: blur(12px)) {
+
+    body.dark-theme .stat-card,
+    body.dark-theme .chart-card {
+        background: var(--bg-card) !important;
+    }
+}
+
+.numerical-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 12px;
+    background: var(--hover-color);
+}
+
+body.dark-theme .numerical-summary {
+    background: var(--hover-color);
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.summary-item .label {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+body.dark-theme .summary-item .label {
+    color: var(--text-muted);
+}
+
+.summary-item .value {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.summary-item .value.paid {
+    color: #10b981;
+    /* Green */
+}
+
+.summary-item .value.pending {
+    color: #f59e0b;
+    /* Amber/Orange */
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 12px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .stat-card mat-card-content {
+        padding: 12px !important;
+        gap: 12px;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .stat-icon mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+    }
+
+    .stat-value {
+        font-size: 20px;
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .chart-card {
+        grid-column: span 12;
+        min-height: 300px;
+    }
+
+    .chart-container.main-chart,
+    .chart-container.doughnut-chart {
+        height: 250px;
+    }
+}

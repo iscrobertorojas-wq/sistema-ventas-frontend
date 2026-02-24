@@ -1,0 +1,60 @@
+<mat-toolbar color="primary" *ngIf="isAuthenticated$ | async" class="main-toolbar">
+  <button mat-icon-button (click)="sidenav.toggle()" *ngIf="isHandset$ | async" class="mobile-menu-btn">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <span class="toolbar-title">Reds sales app</span>
+  <span class="spacer"></span>
+  <button mat-icon-button (click)="logout()" title="Cerrar Sesión">
+    <mat-icon>logout</mat-icon>
+  </button>
+</mat-toolbar>
+
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav #sidenav [mode]="(isHandset$ | async) ? 'over' : 'side'"
+    [opened]="(isAuthenticated$ | async) && !(isHandset$ | async)" *ngIf="isAuthenticated$ | async"
+    [disableClose]="!(isHandset$ | async)">
+    <mat-nav-list (click)="closeSidenavOnMobile()">
+      <a mat-list-item routerLink="/dashboard" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>dashboard</mat-icon>
+        <span matListItemTitle>Dashboard</span>
+      </a>
+      <a mat-list-item routerLink="/sales" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>point_of_sale</mat-icon>
+        <span matListItemTitle>Ventas</span>
+      </a>
+      <a mat-list-item routerLink="/clients" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>people</mat-icon>
+        <span matListItemTitle>Clientes</span>
+      </a>
+      <a mat-list-item routerLink="/services" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>category</mat-icon>
+        <span matListItemTitle>Servicios</span>
+      </a>
+      <a mat-list-item routerLink="/payments" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>payments</mat-icon>
+        <span matListItemTitle>Pagos</span>
+      </a>
+      <a mat-list-item routerLink="/reports" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>assessment</mat-icon>
+        <span matListItemTitle>Reportes</span>
+      </a>
+      <a mat-list-item routerLink="/service-policies" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>assignment</mat-icon>
+        <span matListItemTitle>Pólizas de Servicio</span>
+      </a>
+      <a mat-list-item routerLink="/settings" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>settings</mat-icon>
+        <span matListItemTitle>Configuración</span>
+      </a>
+      <a mat-list-item routerLink="/database-management" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>backup</mat-icon>
+        <span matListItemTitle>Respaldar/Restaurar</span>
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <div class="content content-wrapper" [class.no-nav]="!(isAuthenticated$ | async)">
+      <router-outlet></router-outlet>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

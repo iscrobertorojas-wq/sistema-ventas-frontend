@@ -1,0 +1,144 @@
+<mat-card class="header-card-global">
+    <mat-card-header>
+        <mat-card-title>
+            <mat-icon>dashboard</mat-icon>
+            Resumen General
+        </mat-card-title>
+    </mat-card-header>
+</mat-card>
+
+<div class="dashboard-container">
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <mat-card class="stat-card highlight-card animate-in delay-1 hover-lift hover-gradient-income">
+            <mat-card-content>
+                <div class="stat-icon income">
+                    <mat-icon>attach_money</mat-icon>
+                </div>
+                <div class="stat-info">
+                    <h3>Ingresos del Mes</h3>
+                    <p class="stat-value">{{stats.monthlyIncome?.total | currency}}</p>
+                    <p class="stat-subtitle">Cobrado efectivamente</p>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="stat-card animate-in delay-2 hover-lift hover-gradient-week">
+            <mat-card-content>
+                <div class="stat-icon week">
+                    <mat-icon>calendar_today</mat-icon>
+                </div>
+                <div class="stat-info">
+                    <h3>Esta Semana</h3>
+                    <p class="stat-value">{{stats.week.total | currency}}</p>
+                    <p class="stat-subtitle">{{stats.week.count}} ventas</p>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="stat-card animate-in delay-3 hover-lift hover-gradient-month">
+            <mat-card-content>
+                <div class="stat-icon month">
+                    <mat-icon>date_range</mat-icon>
+                </div>
+                <div class="stat-info">
+                    <h3>Este Mes (Ventas)</h3>
+                    <p class="stat-value">{{stats.month.total | currency}}</p>
+                    <p class="stat-subtitle">{{stats.month.count}} ventas</p>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="stat-card animate-in delay-4 hover-lift hover-gradient-pending">
+
+            <mat-card-content>
+                <div class="stat-icon pending">
+                    <mat-icon>pending_actions</mat-icon>
+                </div>
+                <div class="stat-info">
+                    <h3>Por Cobrar</h3>
+                    <p class="stat-value">{{stats.pending.total | currency}}</p>
+                    <p class="stat-subtitle">{{stats.pending.count}} ventas</p>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="stat-card animate-in delay-1 hover-lift hover-gradient-year"
+            style="border-left: 4px solid var(--brand-color);">
+            <mat-card-content>
+                <div class="stat-icon year">
+                    <mat-icon>analytics</mat-icon>
+                </div>
+                <div class="stat-info">
+                    <h3>Ventas del Año</h3>
+                    <p class="stat-value">{{stats.year.total | currency}}</p>
+                    <p class="stat-subtitle">{{stats.year.count}} ventas en 2024</p>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+        <mat-card class="chart-card large-chart animate-in delay-2">
+            <mat-card-header>
+                <mat-card-title>Historial de Ventas (Mensual)</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="chart-container main-chart" *ngIf="chartsReady">
+                    <canvas baseChart [data]="salesByMonthData" [options]="salesByMonthOptions"
+                        [type]="salesByMonthType">
+                    </canvas>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="chart-card">
+            <mat-card-header>
+                <mat-card-title>Top 5 Clientes</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="chart-container" *ngIf="chartsReady">
+                    <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType">
+                    </canvas>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="chart-card animate-in delay-3">
+            <mat-card-header>
+                <mat-card-title>Estado de Pagos</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="chart-container doughnut-chart" *ngIf="chartsReady">
+                    <canvas baseChart [data]="doughnutChartData" [options]="doughnutChartOptions"
+                        [type]="doughnutChartType">
+                    </canvas>
+                </div>
+                <div class="numerical-summary">
+                    <div class="summary-item">
+                        <span class="label">Total Pagado:</span>
+                        <span class="value paid">{{stats.monthlyIncome?.total | currency}}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Por Cobrar:</span>
+                        <span class="value pending">{{stats.pending?.total | currency}}</span>
+                    </div>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="chart-card">
+            <mat-card-header>
+                <mat-card-title>Servicios Más Vendidos</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="chart-container" *ngIf="chartsReady">
+                    <canvas baseChart [data]="servicesChartData" [type]="servicesChartType">
+                    </canvas>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+</div>

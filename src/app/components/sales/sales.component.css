@@ -1,0 +1,144 @@
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.sales-layout {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+}
+
+.section-card {
+    margin-bottom: 20px;
+}
+
+.header-content {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.client-select {
+    flex: 2;
+    min-width: 200px;
+}
+
+.date-display {
+    padding: 10px 15px;
+    background: var(--bg-card);
+    /* Lighter than main bg but consistent */
+    border-radius: 4px;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+.folio-display {
+    padding: 10px 15px;
+    background: var(--brand-color-light);
+    border-radius: 4px;
+    font-weight: 500;
+    color: var(--brand-color);
+}
+
+.folio-display strong {
+    margin-right: 8px;
+}
+
+.add-item-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.service-select {
+    flex: 2;
+}
+
+.price-input {
+    width: 120px;
+}
+
+.notes-input {
+    flex: 2;
+}
+
+.totals-card {
+    position: sticky;
+    top: 20px;
+}
+
+.table-card {
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+table {
+    background-color: transparent !important;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+    font-size: 1.2rem;
+}
+
+.total-row.large {
+    font-weight: bold;
+    font-size: 2rem;
+    color: var(--brand-color);
+}
+
+.full-width {
+    width: 100%;
+    padding: 8px;
+    font-size: 1.2rem;
+}
+
+.empty-message {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+@media (max-width: 900px) {
+    .sales-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .client-select,
+    .date-display,
+    .folio-display {
+        width: 100%;
+    }
+
+    .add-item-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .price-input {
+        width: 100%;
+    }
+
+    .table-card {
+        overflow-x: auto;
+    }
+
+    .totals-card {
+        position: static;
+        margin-top: 20px;
+    }
+
+    .total-row.large {
+        font-size: 1.5rem;
+    }
+}

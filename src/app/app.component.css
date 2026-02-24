@@ -1,0 +1,41 @@
+.sidenav-container {
+  height: 100vh;
+}
+
+.content {
+  padding: 20px;
+}
+
+mat-sidenav {
+  width: 250px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.no-nav {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.mobile-menu-btn {
+  margin-right: 8px;
+}
+
+.toolbar-title {
+  font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+  .toolbar-title {
+    font-size: 0.9rem;
+  }
+
+  .content {
+    padding: 12px;
+  }
+}

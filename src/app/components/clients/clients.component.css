@@ -1,0 +1,118 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.form-card {
+    margin-bottom: 20px;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-top: 16px;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+    /* Align buttons with the inputs above their subscript space */
+}
+
+.search-field {
+    width: 250px;
+}
+
+.table-container {
+    max-height: 500px;
+    overflow-y: auto;
+    border-radius: 4px;
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+table {
+    width: 100%;
+    background-color: transparent !important;
+}
+
+.mat-column-id {
+    width: 60px;
+}
+
+.mat-column-actions {
+    width: 120px;
+    text-align: center;
+}
+
+.table-container th {
+    background: var(--bg-card);
+    z-index: 100;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+}
+
+.balance-cell {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.balance-cell.has-balance {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #f44336;
+    cursor: pointer;
+}
+
+.balance-cell.has-balance:hover {
+    color: #d32f2f;
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    .form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-field {
+        width: 100%;
+        margin-top: 16px;
+    }
+
+    .button-group {
+        width: 100%;
+        justify-content: flex-start;
+        margin-top: 8px;
+    }
+
+    .button-group button {
+        flex: 1;
+    }
+
+    .table-container {
+        max-height: none;
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 600px;
+        /* Force minimum width to allow scroll */
+    }
+}
