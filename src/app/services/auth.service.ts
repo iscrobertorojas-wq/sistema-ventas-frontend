@@ -19,7 +19,7 @@ export class AuthService {
         private ngZone: NgZone
     ) {
         const host = window.location.hostname;
-        this.baseUrl = `https://sistema-ventas-backend-8mndjztpk-iscrobertorojas-4991s-projects.vercel.app/api/auth`;
+        this.baseUrl = `https://sistema-ventas-backend.vercel.app/api/auth`;
         this.setupInactivityTracker();
     }
 
