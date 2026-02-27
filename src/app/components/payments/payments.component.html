@@ -130,17 +130,13 @@
                             </mat-select>
                         </mat-form-field>
 
-                        <mat-form-field appearance="outline" *ngIf="newPayment.method === 'Transfer'">
+                        <mat-form-field appearance="outline"
+                            *ngIf="newPayment.method === 'Transfer' || newPayment.method === 'Check'">
                             <mat-label>Cuenta Bancaria</mat-label>
                             <mat-select [(ngModel)]="newPayment.bank_account">
                                 <mat-option value="Rober BBVA">Rober BBVA</mat-option>
                                 <mat-option value="Jess BBVA">Jess BBVA</mat-option>
                             </mat-select>
-                        </mat-form-field>
-
-                        <mat-form-field appearance="outline" *ngIf="newPayment.method === 'Check'">
-                            <mat-label>Cuenta Bancaria</mat-label>
-                            <input matInput [(ngModel)]="newPayment.bank_account">
                         </mat-form-field>
 
                         <div class="form-actions">
