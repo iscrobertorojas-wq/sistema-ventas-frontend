@@ -39,3 +39,33 @@ mat-sidenav {
     padding: 12px;
   }
 }
+
+/* Expansion Panel Navigation Styles */
+.nav-expansion-panel {
+  background: transparent !important;
+}
+
+.nav-expansion-panel ::ng-deep .mat-expansion-panel-body {
+  padding: 0 0 0 16px !important;
+}
+
+.nav-expansion-panel ::ng-deep .mat-expansion-panel-header {
+  padding: 0 16px !important;
+  height: 48px !important;
+}
+
+.nav-expansion-panel ::ng-deep .mat-expansion-indicator {
+  margin-top: 0;
+}
+
+.nav-title {
+  margin-left: 12px;
+  font-weight: 400;
+}
+
+.sub-nav-list mat-icon {
+  margin-right: 12px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}

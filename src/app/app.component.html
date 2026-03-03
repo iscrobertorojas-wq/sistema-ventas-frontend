@@ -34,14 +34,24 @@
         <mat-icon matListItemIcon>payments</mat-icon>
         <span matListItemTitle>Pagos</span>
       </a>
-      <a mat-list-item routerLink="/reports" routerLinkActive="active-link">
-        <mat-icon matListItemIcon>assessment</mat-icon>
-        <span matListItemTitle>Reporte de Ventas</span>
-      </a>
-      <a mat-list-item routerLink="/payments-report" routerLinkActive="active-link">
-        <mat-icon matListItemIcon>receipt_long</mat-icon>
-        <span matListItemTitle>Reporte de Pagos</span>
-      </a>
+      <mat-expansion-panel class="mat-elevation-z0 nav-expansion-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon matListItemIcon>assessment</mat-icon>
+            <span class="nav-title">Reportes</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <mat-nav-list class="sub-nav-list">
+          <a mat-list-item routerLink="/reports" routerLinkActive="active-link">
+            <mat-icon matListItemIcon>analytics</mat-icon>
+            <span matListItemTitle>Ventas</span>
+          </a>
+          <a mat-list-item routerLink="/payments-report" routerLinkActive="active-link">
+            <mat-icon matListItemIcon>receipt_long</mat-icon>
+            <span matListItemTitle>Pagos</span>
+          </a>
+        </mat-nav-list>
+      </mat-expansion-panel>
       <a mat-list-item routerLink="/service-policies" routerLinkActive="active-link">
         <mat-icon matListItemIcon>assignment</mat-icon>
         <span matListItemTitle>Pólizas de Servicio</span>

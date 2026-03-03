@@ -1,71 +1,96 @@
 <mat-card class="header-card-global">
     <mat-card-header>
         <mat-card-title>
-            <mat-icon>assessment</mat-icon>
+            <mat-icon>receipt_long</mat-icon>
             Reporte de Pagos
         </mat-card-title>
-        <span class="spacer"></span>
-        <button mat-raised-button color="accent" (click)="exportToExcel()" [disabled]="filteredPayments.length === 0">
-            <mat-icon>download</mat-icon>
-            Exportar Excel
-        </button>
     </mat-card-header>
 </mat-card>
 
-<div class="container">
-    <!-- Date Range and Quick Filters -->
-    <mat-card class="filter-card">
+<div class="reports-container">
+
+    <!-- Compact Date Filters Section -->
+    <mat-card class="filters-card-modern date-only-card">
         <mat-card-content>
-            <div class="filter-row">
-                <div class="date-range">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Desde</mat-label>
-                        <input matInput [matDatepicker]="startPicker" [(ngModel)]="startDate"
-                            (dateChange)="applyDateFilters()">
-                        <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
-                        <mat-datepicker #startPicker></mat-datepicker>
-                    </mat-form-field>
+            <div class="date-filters-flex">
+                <mat-form-field appearance="outline" class="compact-form-field">
+                    <mat-label>Rango de Fechas</mat-label>
+                    <mat-date-range-input [rangePicker]="picker">
+                        <input matStartDate [(ngModel)]="startDate" placeholder="Inicio">
+                        <input matEndDate [(ngModel)]="endDate" (dateChange)="applyDateFilters()" placeholder="Fin">
+                    </mat-date-range-input>
+                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-date-range-picker #picker></mat-date-range-picker>
+                </mat-form-field>
 
-                    <mat-form-field appearance="outline">
-                        <mat-label>Hasta</mat-label>
-                        <input matInput [matDatepicker]="endPicker" [(ngModel)]="endDate"
-                            (dateChange)="applyDateFilters()">
-                        <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
-                        <mat-datepicker #endPicker></mat-datepicker>
-                    </mat-form-field>
-                </div>
-
-                <div class="quick-filters">
+                <div class="quick-dates">
                     <button mat-stroked-button (click)="filterThisWeek()">Esta Semana</button>
                     <button mat-stroked-button (click)="filterThisMonth()">Este Mes</button>
                     <button mat-stroked-button (click)="filterThisYear()">Este Año</button>
-                    <button mat-button color="warn" (click)="clearFilters()">
-                        <mat-icon>filter_alt_off</mat-icon>
-                        Limpiar
-                    </button>
                 </div>
 
-                <span class="spacer"></span>
+                <div class="spacer"></div>
 
-                <div class="summary-box">
-                    <div class="summary-label">Total Pagado (Filtrado)</div>
-                    <div class="summary-value">{{filteredTotal | currency}}</div>
-                </div>
+                <button mat-flat-button color="warn" (click)="clearFilters()">
+                    <mat-icon>filter_alt_off</mat-icon> Limpiar Filtros
+                </button>
             </div>
         </mat-card-content>
     </mat-card>
 
-    <!-- Detailed Table Filters & Table -->
+    <!-- Table Card -->
     <mat-card class="table-card">
+        <div class="table-card-header">
+            <div class="table-header-group">
+                <h3 class="table-title">Historial de Pagos</h3>
+
+                <div class="header-chips-group">
+                    <mat-chip-listbox [(ngModel)]="typeFilter" (ngModelChange)="applyInternalFilters()"
+                        class="header-chips">
+                        <mat-chip-option value="Invoice">Factura</mat-chip-option>
+                        <mat-chip-option value="Remission">Remisión</mat-chip-option>
+                    </mat-chip-listbox>
+
+                    <mat-divider [vertical]="true"></mat-divider>
+
+                    <mat-chip-listbox [(ngModel)]="methodFilter" (ngModelChange)="applyInternalFilters()"
+                        class="header-chips">
+                        <mat-chip-option value="Cash">Efectivo</mat-chip-option>
+                        <mat-chip-option value="Check">Cheque</mat-chip-option>
+                        <mat-chip-option value="Transfer">Transf.</mat-chip-option>
+                    </mat-chip-listbox>
+
+                    <mat-divider [vertical]="true"></mat-divider>
+
+                    <mat-chip-listbox [(ngModel)]="accountFilter" (ngModelChange)="applyInternalFilters()"
+                        class="header-chips">
+                        <mat-chip-option value="Rober BBVA">Rober BBVA</mat-chip-option>
+                        <mat-chip-option value="Jess BBVA">Jess BBVA</mat-chip-option>
+                    </mat-chip-listbox>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="total-summary">
+                    <span class="total-label">Total Pagado:</span>
+                    <span class="total-amount">{{ filteredTotal | currency }}</span>
+                </div>
+                <button mat-raised-button color="accent" (click)="exportToExcel()"
+                    [disabled]="filteredPayments.length === 0">
+                    <mat-icon>download</mat-icon> Exportar a Excel
+                </button>
+            </div>
+        </div>
+
         <mat-card-content>
             <div class="table-container">
                 <table mat-table [dataSource]="filteredPayments" matSort (matSortChange)="sortData($event)"
-                    class="mat-elevation-z0">
+                    class="mat-elevation-z2">
 
                     <!-- Date Column -->
                     <ng-container matColumnDef="date">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header> Fecha Pago </th>
-                        <td mat-cell *matCellDef="let p"> {{p.date | date:'dd-MM-yyyy'}} </td>
+                        <td mat-cell *matCellDef="let p"> {{p.formatted_date}} </td>
                     </ng-container>
 
                     <!-- Amount Column -->
@@ -84,6 +109,12 @@
                     <ng-container matColumnDef="sale_folio">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header> Folio Venta </th>
                         <td mat-cell *matCellDef="let p"> {{p.sale_folio}} </td>
+                    </ng-container>
+
+                    <!-- Sale Date Column -->
+                    <ng-container matColumnDef="sale_date">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Fecha Venta </th>
+                        <td mat-cell *matCellDef="let p"> {{p.formatted_sale_date}} </td>
                     </ng-container>
 
                     <!-- Sale Type Column -->
@@ -108,7 +139,7 @@
                         <td mat-cell *matCellDef="let p"> {{p.bank_account || '-'}} </td>
                     </ng-container>
 
-                    <!-- Header Row Filters -->
+                    <!-- Filter Headers -->
                     <ng-container matColumnDef="filter-date">
                         <th mat-header-cell *matHeaderCellDef></th>
                     </ng-container>
@@ -117,57 +148,31 @@
                     </ng-container>
                     <ng-container matColumnDef="filter-client">
                         <th mat-header-cell *matHeaderCellDef>
-                            <mat-form-field appearance="outline" class="header-filter">
-                                <mat-label>Buscar Cliente</mat-label>
-                                <input matInput [(ngModel)]="clientFilter" (ngModelChange)="applyInternalFilters()">
-                                <mat-icon matSuffix>search</mat-icon>
-                            </mat-form-field>
+                            <input matInput class="header-filter" [(ngModel)]="clientFilter"
+                                (ngModelChange)="applyInternalFilters()" placeholder="Filtrar...">
                         </th>
                     </ng-container>
                     <ng-container matColumnDef="filter-folio">
                         <th mat-header-cell *matHeaderCellDef>
-                            <mat-form-field appearance="outline" class="header-filter">
-                                <mat-label>Filtrar Folio</mat-label>
-                                <input matInput [(ngModel)]="folioFilter" (ngModelChange)="applyInternalFilters()">
-                            </mat-form-field>
+                            <input matInput class="header-filter" [(ngModel)]="folioFilter"
+                                (ngModelChange)="applyInternalFilters()" placeholder="Filtrar...">
                         </th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-sale-date">
+                        <th mat-header-cell *matHeaderCellDef></th>
                     </ng-container>
                     <ng-container matColumnDef="filter-type">
-                        <th mat-header-cell *matHeaderCellDef>
-                            <mat-form-field appearance="outline" class="header-filter">
-                                <mat-select [(ngModel)]="typeFilter" (selectionChange)="applyInternalFilters()"
-                                    placeholder="Todos">
-                                    <mat-option value="">Todos</mat-option>
-                                    <mat-option value="Remission">Remisión</mat-option>
-                                    <mat-option value="Invoice">Factura</mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                        </th>
+                        <th mat-header-cell *matHeaderCellDef></th>
                     </ng-container>
                     <ng-container matColumnDef="filter-method">
-                        <th mat-header-cell *matHeaderCellDef>
-                            <mat-form-field appearance="outline" class="header-filter">
-                                <mat-select [(ngModel)]="methodFilter" (selectionChange)="applyInternalFilters()"
-                                    placeholder="Método">
-                                    <mat-option value="">Todos</mat-option>
-                                    <mat-option value="Cash">Efectivo</mat-option>
-                                    <mat-option value="Check">Cheque</mat-option>
-                                    <mat-option value="Transfer">Transferencia</mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                        </th>
+                        <th mat-header-cell *matHeaderCellDef></th>
                     </ng-container>
                     <ng-container matColumnDef="filter-account">
-                        <th mat-header-cell *matHeaderCellDef>
-                            <mat-form-field appearance="outline" class="header-filter">
-                                <mat-label>Cuenta</mat-label>
-                                <input matInput [(ngModel)]="accountFilter" (ngModelChange)="applyInternalFilters()">
-                            </mat-form-field>
-                        </th>
+                        <th mat-header-cell *matHeaderCellDef></th>
                     </ng-container>
 
                     <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-                    <tr mat-header-row *matHeaderRowDef="filterColumns" class="filter-header-row"></tr>
+                    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true" class="filter-header-row"></tr>
                     <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 
                 </table>

@@ -15,6 +15,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { ApiService } from '../../services/api.service';
 import * as XLSX from 'xlsx';
 
@@ -37,7 +38,8 @@ import * as XLSX from 'xlsx';
         MatSnackBarModule,
         MatSelectModule,
         MatDividerModule,
-        MatSortModule
+        MatSortModule,
+        MatCheckboxModule
     ],
     templateUrl: './payments-report.component.html',
     styleUrl: './payments-report.component.css'
@@ -52,6 +54,7 @@ export class PaymentsReportComponent implements OnInit {
         'amount',
         'client_name',
         'sale_folio',
+        'sale_date',
         'sale_type',
         'method',
         'bank_account'
@@ -62,6 +65,7 @@ export class PaymentsReportComponent implements OnInit {
         'filter-amount',
         'filter-client',
         'filter-folio',
+        'filter-sale-date',
         'filter-type',
         'filter-method',
         'filter-account'
@@ -75,6 +79,8 @@ export class PaymentsReportComponent implements OnInit {
     typeFilter: string = ''; // 'Remission' or 'Invoice'
     methodFilter: string = '';
     accountFilter: string = '';
+
+    excludeEmptyType: boolean = false;
 
     currentSort: Sort = { active: 'date', direction: 'desc' };
 
@@ -93,7 +99,9 @@ export class PaymentsReportComponent implements OnInit {
                 this.payments = data.map(p => ({
                     ...p,
                     method_spanish: this.translateMethod(p.method),
-                    type_spanish: p.sale_type === 'Invoice' ? 'Factura' : 'Remisión'
+                    type_spanish: p.sale_type === 'Invoice' ? 'Factura' : 'Remisión',
+                    formatted_date: this.formatDate(p.date),
+                    formatted_sale_date: p.sale_date ? this.formatDate(p.sale_date) : '-'
                 }));
                 this.applyInternalFilters();
             },
@@ -106,11 +114,21 @@ export class PaymentsReportComponent implements OnInit {
 
     applyInternalFilters() {
         this.filteredPayments = this.payments.filter(p => {
+            // Client
             if (this.clientFilter && !p.client_name?.toLowerCase().includes(this.clientFilter.toLowerCase())) return false;
+
+            // Folio
             if (this.folioFilter && !p.sale_folio?.toLowerCase().includes(this.folioFilter.toLowerCase())) return false;
+
+            // Type
             if (this.typeFilter && p.sale_type !== this.typeFilter) return false;
+
+            // Method
             if (this.methodFilter && p.method !== this.methodFilter) return false;
-            if (this.accountFilter && !p.bank_account?.toLowerCase().includes(this.accountFilter.toLowerCase())) return false;
+
+            // Account
+            if (this.accountFilter && p.bank_account !== this.accountFilter) return false;
+
             return true;
         });
 
@@ -135,6 +153,7 @@ export class PaymentsReportComponent implements OnInit {
                 case 'amount': return this.compare(parseFloat(a.amount), parseFloat(b.amount), isAsc);
                 case 'client_name': return this.compare(a.client_name, b.client_name, isAsc);
                 case 'sale_folio': return this.compare(a.sale_folio, b.sale_folio, isAsc);
+                case 'sale_date': return this.compare(new Date(a.sale_date).getTime(), new Date(b.sale_date).getTime(), isAsc);
                 default: return 0;
             }
         });
@@ -160,21 +179,27 @@ export class PaymentsReportComponent implements OnInit {
         const today = new Date();
         const firstDay = new Date(today.setDate(today.getDate() - today.getDay()));
         const lastDay = new Date(today.setDate(today.getDate() - today.getDay() + 6));
-        this.loadPayments(this.formatDateForAPI(firstDay), this.formatDateForAPI(lastDay));
+        this.startDate = firstDay;
+        this.endDate = lastDay;
+        this.applyDateFilters();
     }
 
     filterThisMonth() {
         const today = new Date();
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
         const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        this.loadPayments(this.formatDateForAPI(firstDay), this.formatDateForAPI(lastDay));
+        this.startDate = firstDay;
+        this.endDate = lastDay;
+        this.applyDateFilters();
     }
 
     filterThisYear() {
         const today = new Date();
         const firstDay = new Date(today.getFullYear(), 0, 1);
         const lastDay = new Date(today.getFullYear(), 11, 31);
-        this.loadPayments(this.formatDateForAPI(firstDay), this.formatDateForAPI(lastDay));
+        this.startDate = firstDay;
+        this.endDate = lastDay;
+        this.applyDateFilters();
     }
 
     formatDateForAPI(date: Date): string {
@@ -182,6 +207,14 @@ export class PaymentsReportComponent implements OnInit {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    formatDate(dateString: string): string {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
     }
 
     translateMethod(method: string): string {
@@ -206,10 +239,11 @@ export class PaymentsReportComponent implements OnInit {
 
     exportToExcel() {
         const exportData = this.filteredPayments.map(p => ({
-            'Fecha': new Date(p.date).toLocaleDateString(),
+            'Fecha Pago': p.formatted_date,
             'Monto': p.amount,
             'Cliente': p.client_name,
             'Folio Venta': p.sale_folio,
+            'Fecha Venta': p.formatted_sale_date,
             'Tipo': p.type_spanish,
             'Método': p.method_spanish,
             'Cuenta/Detalle': p.bank_account || '-'
@@ -219,10 +253,11 @@ export class PaymentsReportComponent implements OnInit {
 
         // Add Total Row
         const totalRow = {
-            'Fecha': '',
+            'Fecha Pago': 'TOTAL',
             'Monto': this.filteredTotal,
-            'Cliente': 'TOTAL',
+            'Cliente': '',
             'Folio Venta': '',
+            'Fecha Venta': '',
             'Tipo': '',
             'Método': '',
             'Cuenta/Detalle': ''

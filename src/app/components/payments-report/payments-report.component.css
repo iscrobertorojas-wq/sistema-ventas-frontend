@@ -1,55 +1,37 @@
-.container {
+.reports-container {
     padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.spacer {
-    flex: 1 1 auto;
-}
-
-.filter-card {
+.date-only-card {
     border-radius: 12px;
 }
 
-.filter-row {
+.date-filters-flex {
     display: flex;
     align-items: center;
     gap: 24px;
     flex-wrap: wrap;
 }
 
-.date-range {
-    display: flex;
-    gap: 12px;
+.compact-form-field {
+    width: 280px;
 }
 
-.quick-filters {
+.compact-form-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
+.quick-dates {
     display: flex;
     gap: 12px;
     align-items: center;
 }
 
-.summary-box {
-    background: linear-gradient(135deg, #2196F3, #1976D2);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 12px;
-    text-align: right;
-    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
-}
-
-.summary-label {
-    font-size: 0.8rem;
-    opacity: 0.9;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.summary-value {
-    font-size: 1.5rem;
-    font-weight: 700;
+.spacer {
+    flex: 1 1 auto;
 }
 
 .table-card {
@@ -57,36 +39,90 @@
     overflow: hidden;
 }
 
+.table-card-header {
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.table-header-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.table-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.header-chips-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.header-chips {
+    --mdc-chip-label-text-size: 11px;
+}
+
+.header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.total-summary {
+    text-align: right;
+}
+
+.total-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-right: 8px;
+}
+
+.total-amount {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1976d2;
+}
+
 .table-container {
-    max-height: 60vh;
+    max-height: 65vh;
     overflow: auto;
     position: relative;
     border-radius: 8px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 table {
     width: 100%;
 }
 
-.header-filter {
-    width: 100%;
-    font-size: 12px;
-    margin-top: 4px;
-}
-
-.header-filter ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-    display: none;
-}
-
 .filter-header-row {
     background-color: #f8f9fa;
 }
 
+.header-filter {
+    font-size: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    width: 90%;
+}
+
 .type-badge {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     background-color: #e3f2fd;
@@ -99,30 +135,26 @@ table {
 }
 
 .no-data {
-    padding: 32px;
+    padding: 48px;
     text-align: center;
     color: rgba(0, 0, 0, 0.5);
-    font-style: italic;
-    background: white;
+    background-color: white;
 }
 
-/* Header UI Tweaks */
+/* Material Header Styling Improvements */
 ::ng-deep .mat-mdc-header-cell {
     font-weight: 600 !important;
+    font-size: 12px !important;
     color: #333 !important;
 }
 
-::ng-deep .mat-mdc-form-field-outline {
-    background: white;
-}
-
-@media (max-width: 960px) {
-    .filter-row {
+@media (max-width: 1200px) {
+    .table-card-header {
         flex-direction: column;
-        align-items: stretch;
     }
 
-    .summary-box {
-        text-align: center;
+    .header-actions {
+        align-items: flex-start;
+        width: 100%;
     }
 }
