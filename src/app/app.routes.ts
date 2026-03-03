@@ -7,6 +7,8 @@ import { ServicesComponent } from './components/services/services.component';
 import { PaymentsComponent } from './components/payments/payments.component';
 import { ReportsComponent } from './components/reports/reports.component';
 import { PaymentsReportComponent } from './components/payments-report/payments-report.component';
+import { SalesByClientReportComponent } from './components/sales-by-client-report/sales-by-client-report.component';
+import { PaymentsByClientReportComponent } from './components/payments-by-client-report/payments-by-client-report.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { ServicePoliciesComponent } from './components/service-policies/service-policies.component';
 import { DatabaseManagementComponent } from './components/database-management/database-management.component';
@@ -22,6 +24,8 @@ export const routes: Routes = [
     { path: 'payments', component: PaymentsComponent, canActivate: [AuthGuard] },
     { path: 'reports', component: ReportsComponent, canActivate: [AuthGuard] },
     { path: 'payments-report', component: PaymentsReportComponent, canActivate: [AuthGuard] },
+    { path: 'sales-by-client-report', component: SalesByClientReportComponent, canActivate: [AuthGuard] },
+    { path: 'payments-by-client-report', component: PaymentsByClientReportComponent, canActivate: [AuthGuard] },
     { path: 'settings', component: SettingsComponent, canActivate: [AuthGuard] },
     { path: 'service-policies', component: ServicePoliciesComponent, canActivate: [AuthGuard] },
     { path: 'database-management', component: DatabaseManagementComponent, canActivate: [AuthGuard] }

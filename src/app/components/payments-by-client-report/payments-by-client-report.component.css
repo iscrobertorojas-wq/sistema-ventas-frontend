@@ -1,0 +1,131 @@
+.reports-container {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.date-only-card {
+    border-radius: 12px;
+}
+
+.date-filters-flex {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.compact-form-field {
+    width: 280px;
+}
+
+.compact-form-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
+.quick-dates {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.spacer {
+    flex: 1 1 auto;
+}
+
+.table-card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.table-card-header {
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.table-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.total-summary {
+    text-align: right;
+}
+
+.total-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-right: 8px;
+}
+
+.total-amount {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1976d2;
+}
+
+.table-container {
+    max-height: 65vh;
+    overflow: auto;
+    position: relative;
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+}
+
+.filter-header-row {
+    background-color: #f8f9fa;
+}
+
+.header-filter {
+    font-size: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    width: 90%;
+}
+
+.no-data {
+    padding: 48px;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.5);
+    background-color: white;
+}
+
+::ng-deep .mat-mdc-header-cell {
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    color: #333 !important;
+    background-color: var(--bg-card) !important;
+    z-index: 100 !important;
+}
+
+.filter-header-row ::ng-deep .mat-mdc-header-cell {
+    background-color: #f8f9fa !important;
+}
+
+body.dark-theme .filter-header-row ::ng-deep .mat-mdc-header-cell {
+    background-color: var(--bg-input) !important;
+}
+
+@media (max-width: 960px) {
+    .header-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

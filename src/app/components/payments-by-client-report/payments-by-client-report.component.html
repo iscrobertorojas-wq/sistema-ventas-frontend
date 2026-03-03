@@ -1,0 +1,102 @@
+<mat-card class="header-card-global">
+    <mat-card-header>
+        <mat-card-title>
+            <mat-icon>payments</mat-icon>
+            Pagos Agrupados por Cliente
+        </mat-card-title>
+    </mat-card-header>
+</mat-card>
+
+<div class="reports-container">
+
+    <mat-card class="filters-card-modern date-only-card">
+        <mat-card-content>
+            <div class="date-filters-flex">
+                <mat-form-field appearance="outline" class="compact-form-field">
+                    <mat-label>Rango de Fechas</mat-label>
+                    <mat-date-range-input [rangePicker]="picker">
+                        <input matStartDate [(ngModel)]="startDate" placeholder="Inicio">
+                        <input matEndDate [(ngModel)]="endDate" (dateChange)="applyDateFilters()" placeholder="Fin">
+                    </mat-date-range-input>
+                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-date-range-picker #picker></mat-date-range-picker>
+                </mat-form-field>
+
+                <div class="quick-dates">
+                    <button mat-stroked-button (click)="filterThisWeek()">Esta Semana</button>
+                    <button mat-stroked-button (click)="filterThisMonth()">Este Mes</button>
+                    <button mat-stroked-button (click)="filterThisYear()">Este Año</button>
+                </div>
+
+                <div class="spacer"></div>
+
+                <button mat-flat-button color="warn" (click)="clearFilters()">
+                    <mat-icon>filter_alt_off</mat-icon> Limpiar Filtros
+                </button>
+            </div>
+        </mat-card-content>
+    </mat-card>
+
+    <mat-card class="table-card">
+        <div class="table-card-header">
+            <div class="table-header-group">
+                <h3 class="table-title">Resumen de Pagos por Cliente</h3>
+            </div>
+
+            <div class="header-actions">
+                <div class="total-summary">
+                    <span class="total-label">Total Pagado:</span>
+                    <span class="total-amount">{{ filteredTotal | currency }}</span>
+                </div>
+                <button mat-raised-button color="accent" (click)="exportToExcel()"
+                    [disabled]="filteredData.length === 0">
+                    <mat-icon>download</mat-icon> Exportar a Excel
+                </button>
+            </div>
+        </div>
+
+        <mat-card-content>
+            <div class="table-container">
+                <table mat-table [dataSource]="filteredData" matSort (matSortChange)="sortData($event)"
+                    class="mat-elevation-z2">
+
+                    <ng-container matColumnDef="client_name">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Cliente </th>
+                        <td mat-cell *matCellDef="let item"> {{item.client_name}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="payments_count">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Cantidad de Pagos </th>
+                        <td mat-cell *matCellDef="let item"> {{item.payments_count}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="total_paid">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Monto Total Pagado </th>
+                        <td mat-cell *matCellDef="let item"> <strong>{{item.total_paid | currency}}</strong> </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="filter-client">
+                        <th mat-header-cell *matHeaderCellDef>
+                            <input matInput class="header-filter" [(ngModel)]="clientFilter"
+                                (ngModelChange)="applyInternalFilters()" placeholder="Filtrar Cliente...">
+                        </th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-count">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                    </ng-container>
+                    <ng-container matColumnDef="filter-total">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true" class="filter-header-row"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+                </table>
+                <div class="no-data" *ngIf="filteredData.length === 0">
+                    No se encontraron datos para los filtros seleccionados
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

@@ -76,9 +76,22 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/payments`, payment);
   }
 
-  // Reports
   getDetailedReport(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/reports/detailed`);
+  }
+
+  getSalesByClientReport(startDate?: string, endDate?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+    return this.http.get<any[]>(`${this.baseUrl}/reports/sales-by-client`, { params });
+  }
+
+  getPaymentsByClientReport(startDate?: string, endDate?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+    return this.http.get<any[]>(`${this.baseUrl}/reports/payments-by-client`, { params });
   }
 
   // Stats
