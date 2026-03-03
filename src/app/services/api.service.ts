@@ -65,8 +65,11 @@ export class ApiService {
   }
 
   // Payments
-  getPayments(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/payments`);
+  getPayments(startDate?: string, endDate?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+    return this.http.get<any[]>(`${this.baseUrl}/payments`, { params });
   }
 
   registerPayment(payment: any): Observable<any> {
