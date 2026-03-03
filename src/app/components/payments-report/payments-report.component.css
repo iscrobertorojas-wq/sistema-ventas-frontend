@@ -146,6 +146,17 @@ table {
     font-weight: 600 !important;
     font-size: 12px !important;
     color: #333 !important;
+    background-color: var(--bg-card) !important;
+    z-index: 100 !important;
+}
+
+/* Ensure filter row also has solid background when sticky */
+.filter-header-row ::ng-deep .mat-mdc-header-cell {
+    background-color: #f8f9fa !important;
+}
+
+body.dark-theme .filter-header-row ::ng-deep .mat-mdc-header-cell {
+    background-color: var(--bg-input) !important;
 }
 
 @media (max-width: 1200px) {
