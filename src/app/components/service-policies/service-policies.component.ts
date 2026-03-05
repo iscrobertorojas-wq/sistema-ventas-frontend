@@ -86,7 +86,7 @@ export class ServicePoliciesComponent implements OnInit {
     recordColumns: string[] = ['service_date', 'description', 'start_time', 'end_time', 'duration', 'service_type', 'actions'];
 
     hours: number[] = Array.from({ length: 24 }, (_, i) => i);
-    minutes: number[] = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+    minutes: number[] = Array.from({ length: 60 }, (_, i) => i);
 
     constructor(
         private api: ApiService,
