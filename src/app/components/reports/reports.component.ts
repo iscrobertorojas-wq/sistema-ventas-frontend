@@ -203,21 +203,27 @@ export class ReportsComponent implements OnInit {
     const today = new Date();
     const firstDay = new Date(today.setDate(today.getDate() - today.getDay()));
     const lastDay = new Date(today.setDate(today.getDate() - today.getDay() + 6));
-    this.loadSales(this.formatDateForAPI(firstDay), this.formatDateForAPI(lastDay));
+    this.startDate = firstDay;
+    this.endDate = lastDay;
+    this.applyDateFilters();
   }
 
   filterThisMonth() {
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    this.loadSales(this.formatDateForAPI(firstDay), this.formatDateForAPI(lastDay));
+    this.startDate = firstDay;
+    this.endDate = lastDay;
+    this.applyDateFilters();
   }
 
   filterThisYear() {
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), 0, 1);
     const lastDay = new Date(today.getFullYear(), 11, 31);
-    this.loadSales(this.formatDateForAPI(firstDay), this.formatDateForAPI(lastDay));
+    this.startDate = firstDay;
+    this.endDate = lastDay;
+    this.applyDateFilters();
   }
 
   formatDateForAPI(date: Date): string {
