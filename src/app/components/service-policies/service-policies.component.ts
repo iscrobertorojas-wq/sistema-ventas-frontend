@@ -359,8 +359,20 @@ export class ServicePoliciesComponent implements OnInit {
 
     // ─── Helpers ───────────────────────────────────────────────────
 
-    formatDate(date: Date): string {
-        const d = new Date(date);
+    formatDate(date: any): string {
+        if (!date) return '';
+        let d: Date;
+        if (typeof date === 'string') {
+            const parts = date.split('T')[0].split('-');
+            if (parts.length === 3) {
+                return `${parts[0]}-${parts[1]}-${parts[2]}`;
+            }
+            d = new Date(date);
+        } else {
+            d = new Date(date);
+        }
+
+        // Use local time for formatting because the datepicker sets local time
         const year = d.getFullYear();
         const month = (d.getMonth() + 1).toString().padStart(2, '0');
         const day = d.getDate().toString().padStart(2, '0');
@@ -383,23 +395,25 @@ export class ServicePoliciesComponent implements OnInit {
     formatDisplayDate(dateStr: any): string {
         if (!dateStr) return '';
 
-        let d: Date;
-        if (dateStr instanceof Date) {
-            d = dateStr;
-        } else if (typeof dateStr === 'string') {
-            // If it's just a date YYYY-MM-DD, append T12:00:00 to avoid timezone shifts
-            if (dateStr.length === 10 && dateStr.includes('-')) {
-                d = new Date(dateStr + 'T12:00:00');
-            } else {
-                d = new Date(dateStr);
+        let year, month, day;
+
+        if (typeof dateStr === 'string') {
+            const parts = dateStr.split('T')[0].split('-');
+            if (parts.length === 3) {
+                year = parts[0];
+                month = parts[1];
+                day = parts[2];
+                return `${day}/${month}/${year}`;
             }
-        } else {
-            return 'Fecha inválida';
         }
 
+        let d = new Date(dateStr);
         if (isNaN(d.getTime())) return 'Fecha inválida';
 
-        return d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        year = d.getFullYear();
+        month = (d.getMonth() + 1).toString().padStart(2, '0');
+        day = d.getDate().toString().padStart(2, '0');
+        return `${day}/${month}/${year}`;
     }
 
     getUsedPercent(): number {
