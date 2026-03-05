@@ -284,6 +284,11 @@ body.dark-theme mat-nav-list a {
     /* Brighter text */
 }
 
+body.dark-theme .nav-expansion-panel {
+    margin: 0 10px !important;
+    border-radius: 24px !important;
+}
+
 body.dark-theme mat-nav-list a .mdc-list-item__primary-text,
 body.dark-theme mat-nav-list a .mdc-list-item__content,
 body.dark-theme .mat-expansion-panel-header-title,
