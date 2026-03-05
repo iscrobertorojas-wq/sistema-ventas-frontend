@@ -45,8 +45,8 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 24px;
-    background-color: white;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .table-header-group {
@@ -113,10 +113,12 @@ table {
 
 .header-filter {
     font-size: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
     padding: 4px 8px;
     border-radius: 4px;
     width: 90%;
+    background-color: var(--bg-input);
+    color: var(--text-main);
 }
 
 .type-badge {
@@ -137,8 +139,8 @@ table {
 .no-data {
     padding: 48px;
     text-align: center;
-    color: rgba(0, 0, 0, 0.5);
-    background-color: white;
+    color: var(--text-muted);
+    background-color: var(--bg-card);
 }
 
 /* Material Header Styling Improvements */
