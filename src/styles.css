@@ -270,11 +270,14 @@ body.dark-theme mat-nav-list a {
 }
 
 body.dark-theme mat-nav-list a .mdc-list-item__primary-text,
-body.dark-theme mat-nav-list a .mdc-list-item__content {
+body.dark-theme mat-nav-list a .mdc-list-item__content,
+body.dark-theme .mat-expansion-panel-header-title,
+body.dark-theme .nav-title {
     color: #e3e3e3 !important;
 }
 
-body.dark-theme mat-nav-list a mat-icon {
+body.dark-theme mat-nav-list a mat-icon,
+body.dark-theme .mat-expansion-panel-header mat-icon {
     color: #e3e3e3 !important;
     /* Ensure icons are also bright */
 }

@@ -152,12 +152,11 @@ table {
     z-index: 100 !important;
 }
 
-/* Ensure filter row also has solid background when sticky */
-.filter-header-row ::ng-deep .mat-mdc-header-cell {
+.filter-header-row th {
     background-color: #f8f9fa !important;
 }
 
-body.dark-theme .filter-header-row ::ng-deep .mat-mdc-header-cell {
+body.dark-theme .filter-header-row th {
     background-color: var(--bg-input) !important;
 }
 
