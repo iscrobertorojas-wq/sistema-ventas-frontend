@@ -147,17 +147,14 @@ table {
 ::ng-deep .mat-mdc-header-cell {
     font-weight: 600 !important;
     font-size: 12px !important;
-    color: #333 !important;
+    color: var(--text-main) !important;
     background-color: var(--bg-card) !important;
     z-index: 100 !important;
 }
 
 .filter-header-row th {
-    background-color: #f8f9fa !important;
-}
-
-body.dark-theme .filter-header-row th {
-    background-color: var(--bg-input) !important;
+    background-color: var(--bg-card) !important;
+    border-bottom: 1px solid var(--border-color) !important;
 }
 
 @media (max-width: 1200px) {
