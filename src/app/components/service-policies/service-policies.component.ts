@@ -254,10 +254,11 @@ export class ServicePoliciesComponent implements OnInit {
         this.isEditingRecord = true;
         const [sh, sm] = record.start_time.split(':').map(Number);
         const [eh, em] = record.end_time.split(':').map(Number);
+        const dateStr = typeof record.service_date === 'string' ? record.service_date.split('T')[0] : this.formatDate(record.service_date);
         this.recordForm = {
             id: record.id,
             policy_id: this.selectedPolicy.id,
-            service_date: new Date(record.service_date + 'T12:00:00'),
+            service_date: new Date(dateStr + 'T12:00:00'),
             description: record.description,
             start_hour: sh,
             start_minute: sm,
