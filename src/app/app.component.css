@@ -59,8 +59,19 @@ mat-sidenav {
 }
 
 .nav-title {
-  margin-left: 12px;
+  margin-left: 0;
   font-weight: 400;
+  font-size: 1rem;
+}
+
+.nav-panel-title {
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+}
+
+.nav-panel-title mat-icon {
+  margin-right: 16px !important;
 }
 
 .sub-nav-list mat-icon {

@@ -227,6 +227,21 @@ body.dark-theme .mat-mdc-header-cell {
     border-bottom: 1px solid var(--border-color) !important;
 }
 
+body.dark-theme .filter-header-row th,
+body.dark-theme .filter-header-row .mat-mdc-header-cell {
+    background-color: var(--bg-input) !important;
+}
+
+body.dark-theme .header-filter {
+    background-color: var(--bg-input) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme input.header-filter::placeholder {
+    color: var(--text-muted) !important;
+}
+
 body.dark-theme .mat-mdc-cell {
     color: var(--text-main) !important;
     border-bottom: 1px solid var(--border-color) !important;
