@@ -15,7 +15,8 @@
             class="stat-card animate-in"
             [ngClass]="[card.class === 'income' ? 'highlight-card' : '', card.gradient, 'delay-' + (i % 4 + 1), 'hover-lift']"
             [style]="card.border"
-            cdkDrag>
+            cdkDrag
+            cdkDragBoundary=".dashboard-container">
             
             <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
 
@@ -42,7 +43,8 @@
         <mat-card *ngFor="let chart of chartCards"
             class="chart-card"
             [ngClass]="[chart.isLarge ? 'large-chart' : '', 'animate-in', chart.delay]"
-            cdkDrag>
+            cdkDrag
+            cdkDragBoundary=".dashboard-container">
             
             <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
 
