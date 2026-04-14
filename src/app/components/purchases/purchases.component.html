@@ -8,96 +8,117 @@
 </mat-card>
 
 <div class="container">
+    <div class="purchases-layout">
+        <div class="main-panel">
+            <!-- Header Info -->
+            <mat-card class="section-card">
+                <mat-card-content class="header-content">
+                    <mat-form-field appearance="outline" class="supplier-select">
+                        <mat-label>Proveedor</mat-label>
+                        <mat-select [(ngModel)]="newPurchase.supplier_id">
+                            <mat-option *ngFor="let s of suppliers" [value]="s.id">
+                                {{s.name}}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
 
-    <!-- New Purchase Form -->
-    <mat-card class="form-card">
-        <mat-card-header>
-            <mat-card-title>Nueva Compra</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
+                    <mat-form-field appearance="outline">
+                        <mat-label>Fecha de Compra</mat-label>
+                        <input matInput [matDatepicker]="picker" [(ngModel)]="newPurchase.date">
+                        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-datepicker #picker></mat-datepicker>
+                    </mat-form-field>
+                </mat-card-content>
+            </mat-card>
 
-            <!-- Header fields -->
-            <div class="header-row">
-                <mat-form-field appearance="outline">
-                    <mat-label>Proveedor</mat-label>
-                    <mat-select [(ngModel)]="newPurchase.supplier_id">
-                        <mat-option *ngFor="let s of suppliers" [value]="s.id">
-                            {{s.name}}
-                        </mat-option>
-                    </mat-select>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                    <mat-label>Fecha</mat-label>
-                    <input matInput type="date" [(ngModel)]="newPurchase.date">
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="notes-field">
-                    <mat-label>Notas (opcional)</mat-label>
-                    <input matInput [(ngModel)]="newPurchase.notes" placeholder="Referencia, factura, etc.">
-                </mat-form-field>
-            </div>
-
-            <mat-divider></mat-divider>
-
-            <!-- Items Section -->
-            <div class="items-section">
-                <div class="items-header">
-                    <h3>Productos / Servicios</h3>
-                    <button mat-stroked-button color="primary" type="button" (click)="addItem()">
-                        <mat-icon>add</mat-icon> Agregar ítem
-                    </button>
-                </div>
-
-                <div class="items-list">
-                    <div class="item-row" *ngFor="let item of newPurchase.items; let i = index">
-                        <span class="item-number">{{i + 1}}</span>
-
+            <!-- Add Items Section -->
+            <mat-card class="section-card">
+                <mat-card-header>
+                    <mat-card-title>Agregar Producto / Servicio</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <div class="add-item-row">
                         <mat-form-field appearance="outline" class="item-desc-field">
                             <mat-label>Descripción</mat-label>
-                            <input matInput [(ngModel)]="item.description"
-                                placeholder="Nombre del producto o servicio">
+                            <input matInput [(ngModel)]="currentDescription" placeholder="Nombre del producto o servicio">
                         </mat-form-field>
 
                         <mat-form-field appearance="outline" class="item-cost-field">
                             <mat-label>Costo</mat-label>
                             <span matPrefix>$&nbsp;</span>
-                            <input matInput type="number" min="0" step="0.01"
-                                [(ngModel)]="item.cost" placeholder="0.00">
+                            <input matInput type="number" [(ngModel)]="currentCost" placeholder="0.00">
                         </mat-form-field>
 
-                        <button mat-icon-button color="warn" (click)="removeItem(i)"
-                            [disabled]="newPurchase.items.length === 1"
-                            matTooltip="Eliminar ítem">
-                            <mat-icon>remove_circle_outline</mat-icon>
+                        <button mat-raised-button color="accent" (click)="addItem()">
+                            <mat-icon>add</mat-icon> Agregar
                         </button>
                     </div>
+                </mat-card-content>
+            </mat-card>
+
+            <!-- Pending Items Table -->
+            <mat-card class="table-card">
+                <table mat-table [dataSource]="purchaseItems" class="mat-elevation-z0">
+                    <ng-container matColumnDef="description">
+                        <th mat-header-cell *matHeaderCellDef> Descripción </th>
+                        <td mat-cell *matCellDef="let item"> {{item.description}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="cost">
+                        <th mat-header-cell *matHeaderCellDef> Costo </th>
+                        <td mat-cell *matCellDef="let item"> {{item.cost | currency}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef> </th>
+                        <td mat-cell *matCellDef="let item; let i = index">
+                            <button mat-icon-button color="warn" (click)="removeItem(i)">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="['description', 'cost', 'actions']"></tr>
+                    <tr mat-row *matRowDef="let row; columns: ['description', 'cost', 'actions'];"></tr>
+                </table>
+                <div class="empty-message" *ngIf="purchaseItems.length === 0">
+                    No hay ítems agregados a esta compra.
                 </div>
+            </mat-card>
+        </div>
 
-                <!-- Total -->
-                <div class="total-row">
-                    <span class="total-label">Total de la compra:</span>
-                    <span class="total-value">{{ purchaseTotal | currency }}</span>
-                </div>
-            </div>
+        <!-- Sidebar Summary -->
+        <div class="sidebar-panel">
+            <mat-card class="totals-card">
+                <mat-card-header>
+                    <mat-card-title>Resumen de Compra</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <div class="total-row large">
+                        <span>Total:</span>
+                        <span>{{purchaseTotal | currency}}</span>
+                    </div>
 
-            <!-- Save Button -->
-            <div class="save-row">
-                <button mat-raised-button color="primary" (click)="savePurchase()"
-                    [disabled]="!isFormValid || isSaving">
-                    <mat-icon>save</mat-icon>
-                    {{ isSaving ? 'Guardando...' : 'Registrar Compra' }}
-                </button>
-                <button mat-button (click)="resetForm()">
-                    Limpiar
-                </button>
-            </div>
-
-        </mat-card-content>
-    </mat-card>
+                    <mat-form-field appearance="outline" class="full-width mt-10">
+                        <mat-label>Observaciones / Notas</mat-label>
+                        <textarea matInput [(ngModel)]="newPurchase.notes" rows="4" placeholder="Referencia, factura, etc."></textarea>
+                    </mat-form-field>
+                </mat-card-content>
+                <mat-card-actions>
+                    <button mat-raised-button color="primary" class="full-width" (click)="savePurchase()" [disabled]="!isFormValid || isSaving">
+                        <mat-icon>save</mat-icon>
+                        {{ isSaving ? 'Guardando...' : 'Registrar Compra' }}
+                    </button>
+                    <button mat-button class="full-width mt-10" (click)="resetForm()">
+                        Limpiar Formulario
+                    </button>
+                </mat-card-actions>
+            </mat-card>
+        </div>
+    </div>
 
     <!-- Purchases History Table -->
-    <mat-card class="table-card">
+    <mat-card class="table-card history-card" style="margin-top: 30px;">
         <mat-card-header>
             <mat-card-title>Historial de Compras</mat-card-title>
         </mat-card-header>

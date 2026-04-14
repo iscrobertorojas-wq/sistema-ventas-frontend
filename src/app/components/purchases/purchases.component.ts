@@ -47,9 +47,12 @@ export class PurchasesComponent implements OnInit {
   newPurchase: any = {
     supplier_id: null,
     date: new Date().toISOString().split('T')[0],
-    notes: '',
-    items: []
+    notes: ''
   };
+  
+  purchaseItems: any[] = [];
+  currentDescription: string = '';
+  currentCost: number | null = null;
 
   isSaving = false;
 
@@ -61,7 +64,6 @@ export class PurchasesComponent implements OnInit {
   ngOnInit(): void {
     this.loadSuppliers();
     this.loadPurchases();
-    this.addItem(); // Start with one empty item
   }
 
   loadSuppliers() {
@@ -79,28 +81,31 @@ export class PurchasesComponent implements OnInit {
   }
 
   addItem() {
-    this.newPurchase.items.push({ description: '', cost: null });
+    if (!this.currentDescription?.trim() || !this.currentCost || this.currentCost <= 0) {
+      this.snackBar.open('Ingresa una descripción y un costo válido', 'Cerrar', { duration: 2000 });
+      return;
+    }
+
+    this.purchaseItems = [...this.purchaseItems, {
+      description: this.currentDescription.trim(),
+      cost: this.currentCost
+    }];
+
+    this.currentDescription = '';
+    this.currentCost = null;
   }
 
   removeItem(index: number) {
-    if (this.newPurchase.items.length > 1) {
-      this.newPurchase.items.splice(index, 1);
-    }
+    this.purchaseItems.splice(index, 1);
+    this.purchaseItems = [...this.purchaseItems];
   }
 
   get purchaseTotal(): number {
-    return this.newPurchase.items.reduce((sum: number, item: any) => {
-      const cost = parseFloat(item.cost);
-      return sum + (isNaN(cost) ? 0 : cost);
-    }, 0);
+    return this.purchaseItems.reduce((sum: number, item: any) => sum + parseFloat(item.cost), 0);
   }
 
   get isFormValid(): boolean {
-    if (!this.newPurchase.supplier_id) return false;
-    if (!this.newPurchase.date) return false;
-    return this.newPurchase.items.every((item: any) =>
-      item.description?.trim() && item.cost && parseFloat(item.cost) > 0
-    );
+    return !!this.newPurchase.supplier_id && !!this.newPurchase.date && this.purchaseItems.length > 0;
   }
 
   savePurchase() {
@@ -111,10 +116,7 @@ export class PurchasesComponent implements OnInit {
       supplier_id: this.newPurchase.supplier_id,
       date: this.newPurchase.date,
       notes: this.newPurchase.notes,
-      items: this.newPurchase.items.map((item: any) => ({
-        description: item.description.trim(),
-        cost: parseFloat(item.cost)
-      }))
+      items: this.purchaseItems
     };
 
     this.api.createPurchase(payload).subscribe({
@@ -135,9 +137,11 @@ export class PurchasesComponent implements OnInit {
     this.newPurchase = {
       supplier_id: null,
       date: new Date().toISOString().split('T')[0],
-      notes: '',
-      items: [{ description: '', cost: null }]
+      notes: ''
     };
+    this.purchaseItems = [];
+    this.currentDescription = '';
+    this.currentCost = null;
     this.isSaving = false;
   }
 }
