@@ -10,181 +10,87 @@
 <div class="dashboard-container">
 
     <!-- Statistics Cards -->
-    <div class="stats-grid">
-        <mat-card class="stat-card highlight-card animate-in delay-1 hover-lift hover-gradient-income">
+    <div class="stats-grid" cdkDropList cdkDropListOrientation="horizontal" (cdkDropListDropped)="drop($event, 'stats')">
+        <mat-card *ngFor="let card of statCards; let i = index" 
+            class="stat-card animate-in"
+            [ngClass]="[card.class === 'income' ? 'highlight-card' : '', card.gradient, 'delay-' + (i % 4 + 1), 'hover-lift']"
+            [style]="card.border"
+            cdkDrag>
+            
             <mat-card-content>
-                <div class="stat-icon income">
-                    <mat-icon>attach_money</mat-icon>
+                <div class="stat-icon" [ngClass]="card.class">
+                    <mat-icon>{{card.icon}}</mat-icon>
                 </div>
                 <div class="stat-info">
-                    <h3>Ingresos del Mes</h3>
-                    <p class="stat-value">{{stats.monthlyIncome?.total | currency}}</p>
-                    <p class="stat-subtitle">Cobrado efectivamente</p>
-                </div>
-            </mat-card-content>
-        </mat-card>
-
-        <mat-card class="stat-card animate-in delay-2 hover-lift hover-gradient-week">
-            <mat-card-content>
-                <div class="stat-icon week">
-                    <mat-icon>calendar_today</mat-icon>
-                </div>
-                <div class="stat-info">
-                    <h3>Esta Semana</h3>
-                    <p class="stat-value">{{stats.week.total | currency}}</p>
-                    <p class="stat-subtitle">{{stats.week.count}} ventas</p>
-                </div>
-            </mat-card-content>
-        </mat-card>
-
-        <mat-card class="stat-card animate-in delay-3 hover-lift hover-gradient-month">
-            <mat-card-content>
-                <div class="stat-icon month">
-                    <mat-icon>date_range</mat-icon>
-                </div>
-                <div class="stat-info">
-                    <h3>Este Mes (Ventas)</h3>
-                    <p class="stat-value">{{stats.month.total | currency}}</p>
-                    <p class="stat-subtitle">{{stats.month.count}} ventas</p>
-                </div>
-            </mat-card-content>
-        </mat-card>
-
-        <mat-card class="stat-card animate-in delay-4 hover-lift hover-gradient-pending">
-
-            <mat-card-content>
-                <div class="stat-icon pending">
-                    <mat-icon>pending_actions</mat-icon>
-                </div>
-                <div class="stat-info">
-                    <h3>Por Cobrar</h3>
-                    <p class="stat-value">{{stats.pending.total | currency}}</p>
-                    <p class="stat-subtitle">{{stats.pending.count}} ventas</p>
-                </div>
-            </mat-card-content>
-        </mat-card>
-
-        <mat-card class="stat-card animate-in delay-1 hover-lift hover-gradient-year"
-            style="border-left: 4px solid var(--brand-color);">
-            <mat-card-content>
-                <div class="stat-icon year">
-                    <mat-icon>analytics</mat-icon>
-                </div>
-                <div class="stat-info">
-                    <h3>Ventas del Año</h3>
-                    <p class="stat-value">{{stats.year.total | currency}}</p>
-                    <p class="stat-subtitle">{{stats.year.count}} ventas en 2024</p>
-                </div>
-            </mat-card-content>
-        </mat-card>
-
-        <mat-card class="stat-card animate-in delay-2 hover-lift hover-gradient-purchases">
-            <mat-card-content>
-                <div class="stat-icon purchases">
-                    <mat-icon>shopping_cart</mat-icon>
-                </div>
-                <div class="stat-info">
-                    <h3>Compras del Mes</h3>
-                    <p class="stat-value">{{stats.monthPurchases?.total | currency}}</p>
-                    <p class="stat-subtitle">{{stats.monthPurchases?.count}} compras registradas</p>
-                </div>
-            </mat-card-content>
-        </mat-card>
-
-        <mat-card class="stat-card animate-in delay-3 hover-lift hover-gradient-net">
-            <mat-card-content>
-                <div class="stat-icon net">
-                    <mat-icon>balance</mat-icon>
-                </div>
-                <div class="stat-info">
-                    <h3>Ventas − Compras del Mes</h3>
-                    <p class="stat-value" [class.negative-value]="(stats.month?.total - stats.monthPurchases?.total) < 0">
-                        {{(stats.month?.total - stats.monthPurchases?.total) | currency}}
+                    <h3>{{card.title}}</h3>
+                    <p class="stat-value" [class.negative-value]="(card.id === 'net' || card.id === 'profit') && getStatValue(card.id) < 0">
+                        {{getStatValue(card.id) | currency}}
                     </p>
-                    <p class="stat-subtitle">Ventas vs gastos del mes</p>
+                    <p class="stat-subtitle">{{getStatSubtitle(card)}}</p>
                 </div>
             </mat-card-content>
-        </mat-card>
 
-        <mat-card class="stat-card animate-in delay-4 hover-lift hover-gradient-profit">
-            <mat-card-content>
-                <div class="stat-icon profit">
-                    <mat-icon>trending_up</mat-icon>
-                </div>
-                <div class="stat-info">
-                    <h3>Utilidad del Mes</h3>
-                    <p class="stat-value" [class.negative-value]="(stats.monthlyIncome?.total - stats.monthPurchases?.total) < 0">
-                        {{(stats.monthlyIncome?.total - stats.monthPurchases?.total) | currency}}
-                    </p>
-                    <p class="stat-subtitle">Ingresos cobrados − Compras</p>
-                </div>
-            </mat-card-content>
+            <!-- Drag Preview Placeholder -->
+            <div class="cdk-drag-placeholder" *cdkDragPlaceholder></div>
         </mat-card>
     </div>
 
     <!-- Charts Grid -->
-    <div class="charts-grid">
-        <mat-card class="chart-card large-chart animate-in delay-2">
+    <div class="charts-grid" cdkDropList (cdkDropListDropped)="drop($event, 'charts')">
+        <mat-card *ngFor="let chart of chartCards"
+            class="chart-card"
+            [ngClass]="[chart.isLarge ? 'large-chart' : '', 'animate-in', chart.delay]"
+            cdkDrag>
+            
             <mat-card-header>
-                <mat-card-title>Historial de Ventas (Mensual)</mat-card-title>
+                <mat-card-title>
+                    <mat-icon *ngIf="chart.icon" style="vertical-align: middle; margin-right: 8px;">{{chart.icon}}</mat-icon>
+                    {{chart.title}}
+                </mat-card-title>
             </mat-card-header>
+            
             <mat-card-content>
-                <div class="chart-container main-chart" *ngIf="chartsReady">
-                    <canvas baseChart [data]="salesByMonthData" [options]="salesByMonthOptions"
+                <!-- Sales History Chart -->
+                <div *ngIf="chart.id === 'sales_history'" class="chart-container main-chart">
+                    <canvas *ngIf="chartsReady" baseChart [data]="salesByMonthData" [options]="salesByMonthOptions"
                         [type]="salesByMonthType">
                     </canvas>
                 </div>
-            </mat-card-content>
-        </mat-card>
 
-        <mat-card class="chart-card">
-            <mat-card-header>
-                <mat-card-title>Top 5 Clientes</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <div class="chart-container" *ngIf="chartsReady">
-                    <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType">
+                <!-- Top Clients Chart -->
+                <div *ngIf="chart.id === 'clients'" class="chart-container">
+                    <canvas *ngIf="chartsReady" baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType">
                     </canvas>
                 </div>
-            </mat-card-content>
-        </mat-card>
 
-        <mat-card class="chart-card animate-in delay-3">
-            <mat-card-header>
-                <mat-card-title>Estado de Pagos</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <div class="chart-container doughnut-chart" *ngIf="chartsReady">
-                    <canvas baseChart [data]="doughnutChartData" [options]="doughnutChartOptions"
-                        [type]="doughnutChartType">
-                    </canvas>
-                </div>
-                <div class="numerical-summary">
-                    <div class="summary-item">
-                        <span class="label">Total Pagado:</span>
-                        <span class="value paid">{{stats.monthlyIncome?.total | currency}}</span>
+                <!-- Payment Status Chart -->
+                <div *ngIf="chart.id === 'payments'">
+                    <div class="chart-container doughnut-chart">
+                        <canvas *ngIf="chartsReady" baseChart [data]="doughnutChartData" [options]="doughnutChartOptions"
+                            [type]="doughnutChartType">
+                        </canvas>
                     </div>
-                    <div class="summary-item">
-                        <span class="label">Por Cobrar:</span>
-                        <span class="value pending">{{stats.pending?.total | currency}}</span>
+                    <div class="numerical-summary">
+                        <div class="summary-item">
+                            <span class="label">Total Pagado:</span>
+                            <span class="value paid">{{stats.monthlyIncome?.total | currency}}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Por Cobrar:</span>
+                            <span class="value pending">{{stats.pending?.total | currency}}</span>
+                        </div>
                     </div>
                 </div>
-            </mat-card-content>
-        </mat-card>
 
-        <mat-card class="chart-card large-chart animate-in delay-4">
-            <mat-card-header>
-                <mat-card-title>
-                    <mat-icon style="vertical-align: middle; margin-right: 8px;">trending_up</mat-icon>
-                    Utilidad Mensual
-                </mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <div class="chart-container main-chart" *ngIf="chartsReady">
-                    <canvas baseChart [data]="profitChartData" [type]="profitChartType">
+                <!-- Profit History Chart -->
+                <div *ngIf="chart.id === 'profit_history'" class="chart-container main-chart">
+                    <canvas *ngIf="chartsReady" baseChart [data]="profitChartData" [type]="profitChartType">
                     </canvas>
                 </div>
             </mat-card-content>
+
+            <!-- Drag Preview Placeholder -->
+            <div class="cdk-drag-placeholder" *cdkDragPlaceholder></div>
         </mat-card>
     </div>
 </div>

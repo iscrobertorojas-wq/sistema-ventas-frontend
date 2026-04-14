@@ -1,13 +1,14 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartData, ChartType, Chart } from 'chart.js';
+import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { ThemeService } from '../../services/theme.service';
 import { Subscription } from 'rxjs';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 @Component({
     selector: 'app-dashboard',
@@ -17,12 +18,13 @@ import { Subscription } from 'rxjs';
         MatCardModule,
         MatIconModule,
         MatGridListModule,
-        BaseChartDirective
+        BaseChartDirective,
+        DragDropModule
     ],
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.css'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
     stats: any = {
         week: { count: 0, total: 0 },
         month: { count: 0, total: 0 },
@@ -32,6 +34,28 @@ export class DashboardComponent implements OnInit {
         monthPurchases: { total: 0, count: 0 }
     };
     chartsReady = false;
+
+    // Persistable Layout
+    statCards: any[] = [];
+    chartCards: any[] = [];
+
+    private defaultStats = [
+        { id: 'income', title: 'Ingresos del Mes', icon: 'attach_money', class: 'income', gradient: 'hover-gradient-income', subtitle: 'Cobrado efectivamente' },
+        { id: 'week', title: 'Esta Semana', icon: 'calendar_today', class: 'week', gradient: 'hover-gradient-week' },
+        { id: 'month', title: 'Este Mes (Ventas)', icon: 'date_range', class: 'month', gradient: 'hover-gradient-month' },
+        { id: 'pending', title: 'Por Cobrar', icon: 'pending_actions', class: 'pending', gradient: 'hover-gradient-pending' },
+        { id: 'year', title: 'Ventas del Año', icon: 'analytics', class: 'year', gradient: 'hover-gradient-year', border: 'border-left: 4px solid var(--brand-color)' },
+        { id: 'purchases', title: 'Compras del Mes', icon: 'shopping_cart', class: 'purchases', gradient: 'hover-gradient-purchases' },
+        { id: 'net', title: 'Ventas − Compras del Mes', icon: 'balance', class: 'net', gradient: 'hover-gradient-net', subtitle: 'Ventas vs gastos del mes' },
+        { id: 'profit', title: 'Utilidad del Mes', icon: 'trending_up', class: 'profit', gradient: 'hover-gradient-profit', subtitle: 'Ingresos cobrados − Compras' }
+    ];
+
+    private defaultCharts = [
+        { id: 'sales_history', title: 'Historial de Ventas (Mensual)', icon: 'bar_chart', isLarge: true, delay: 'delay-1' },
+        { id: 'clients', title: 'Top 5 Clientes', icon: 'people', isLarge: false, delay: 'delay-2' },
+        { id: 'payments', title: 'Estado de Pagos', icon: 'pie_chart', isLarge: false, delay: 'delay-3' },
+        { id: 'profit_history', title: 'Utilidad Mensual', icon: 'trending_up', isLarge: true, delay: 'delay-4' }
+    ];
 
     private monthNames = [
         'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
@@ -142,6 +166,7 @@ export class DashboardComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
+        this.loadLayout();
         this.loadStats();
         this.themeSubscription = this.themeService.isDarkTheme$.subscribe(isDark => {
             this.updateChartTheme(isDark);
@@ -150,6 +175,70 @@ export class DashboardComponent implements OnInit {
 
     ngOnDestroy(): void {
         this.themeSubscription?.unsubscribe();
+    }
+
+    loadLayout() {
+        const savedStats = localStorage.getItem('dashboard_stats_order');
+        const savedCharts = localStorage.getItem('dashboard_charts_order');
+
+        if (savedStats) {
+            const order = JSON.parse(savedStats);
+            this.statCards = order.map((id: string) => this.defaultStats.find(s => s.id === id)).filter(Boolean);
+            // Add any missing default stats (in case of updates)
+            this.defaultStats.forEach(s => {
+                if (!this.statCards.find(sc => sc.id === s.id)) this.statCards.push(s);
+            });
+        } else {
+            this.statCards = [...this.defaultStats];
+        }
+
+        if (savedCharts) {
+            const order = JSON.parse(savedCharts);
+            this.chartCards = order.map((id: string) => this.defaultCharts.find(c => c.id === id)).filter(Boolean);
+            // Add any missing default charts
+            this.defaultCharts.forEach(c => {
+                if (!this.chartCards.find(cc => cc.id === c.id)) this.chartCards.push(c);
+            });
+        } else {
+            this.chartCards = [...this.defaultCharts];
+        }
+    }
+
+    saveLayout() {
+        localStorage.setItem('dashboard_stats_order', JSON.stringify(this.statCards.map(s => s.id)));
+        localStorage.setItem('dashboard_charts_order', JSON.stringify(this.chartCards.map(c => c.id)));
+    }
+
+    drop(event: CdkDragDrop<any[]>, list: 'stats' | 'charts') {
+        const array = list === 'stats' ? this.statCards : this.chartCards;
+        moveItemInArray(array, event.previousIndex, event.currentIndex);
+        this.saveLayout();
+    }
+
+    getStatValue(id: string): any {
+        switch (id) {
+            case 'income': return this.stats.monthlyIncome?.total;
+            case 'week': return this.stats.week?.total;
+            case 'month': return this.stats.month?.total;
+            case 'pending': return this.stats.pending?.total;
+            case 'year': return this.stats.year?.total;
+            case 'purchases': return this.stats.monthPurchases?.total;
+            case 'net': return this.stats.month?.total - this.stats.monthPurchases?.total;
+            case 'profit': return this.stats.monthlyIncome?.total - this.stats.monthPurchases?.total;
+            default: return 0;
+        }
+    }
+
+    getStatSubtitle(card: any): string {
+        if (card.subtitle) return card.subtitle;
+        switch (card.id) {
+            case 'week': return `${this.stats.week?.count || 0} ventas`;
+            case 'month': return `${this.stats.month?.count || 0} ventas`;
+            case 'pending': return `${this.stats.pending?.count || 0} ventas`;
+            case 'year': return `${this.stats.year?.count || 0} ventas en 2024`;
+            case 'purchases': return `${this.stats.monthPurchases?.count || 0} compras registradas`;
+            default: return '';
+        }
     }
 
     updateChartTheme(isDark: boolean) {
