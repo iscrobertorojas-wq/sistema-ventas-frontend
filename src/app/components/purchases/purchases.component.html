@@ -104,7 +104,7 @@
                         <textarea matInput [(ngModel)]="newPurchase.notes" rows="4" placeholder="Referencia, factura, etc."></textarea>
                     </mat-form-field>
                 </mat-card-content>
-                <card-actions>
+                <mat-card-actions>
                     <button mat-raised-button color="primary" class="full-width" (click)="savePurchase()" [disabled]="!isFormValid || isSaving">
                         <mat-icon>{{ isEditing ? 'update' : 'save' }}</mat-icon>
                         {{ isSaving ? 'Guardando...' : (isEditing ? 'Actualizar Compra' : 'Registrar Compra') }}
@@ -112,7 +112,7 @@
                     <button mat-button class="full-width mt-10" (click)="resetForm()">
                         {{ isEditing ? 'Cancelar Edición' : 'Limpiar Formulario' }}
                     </button>
-                </card-actions>
+                </mat-card-actions>
             </mat-card>
         </div>
     </div>
