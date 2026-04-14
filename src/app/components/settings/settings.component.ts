@@ -42,6 +42,25 @@ export class SettingsComponent implements OnInit {
     companyLogo: string | null = null;
     brandColor: string = '#1a73e8';
 
+    // Dashboard Ordering
+    statCardsOrder: any[] = [
+        { id: 'income', title: 'Ingresos del Mes', order: 1 },
+        { id: 'week', title: 'Esta Semana', order: 2 },
+        { id: 'month', title: 'Este Mes (Ventas)', order: 3 },
+        { id: 'pending', title: 'Por Cobrar', order: 4 },
+        { id: 'year', title: 'Ventas del Año', order: 5 },
+        { id: 'purchases', title: 'Compras del Mes', order: 6 },
+        { id: 'net', title: 'Ventas − Compras del Mes', order: 7 },
+        { id: 'profit', title: 'Utilidad del Mes', order: 8 }
+    ];
+
+    chartCardsOrder: any[] = [
+        { id: 'sales_history', title: 'Historial de Ventas', order: 1 },
+        { id: 'clients', title: 'Top 5 Clientes', order: 2 },
+        { id: 'payments', title: 'Estado de Pagos', order: 3 },
+        { id: 'profit_history', title: 'Utilidad Mensual', order: 4 }
+    ];
+
     constructor(
         private api: ApiService,
         private snackBar: MatSnackBar,
@@ -65,6 +84,29 @@ export class SettingsComponent implements OnInit {
                 this.footerText = settings.footer_text || this.footerText;
                 this.companyLogo = settings.company_logo || null;
                 this.brandColor = settings.brand_color || '#1a73e8';
+
+                if (settings.dashboard_stats_order) {
+                    try {
+                        const savedStats = JSON.parse(settings.dashboard_stats_order);
+                        this.statCardsOrder.forEach(card => {
+                            const index = savedStats.indexOf(card.id);
+                            card.order = index !== -1 ? index + 1 : 99;
+                        });
+                        this.statCardsOrder.sort((a, b) => a.order - b.order);
+                    } catch (e) { console.error('Error parsing stats order', e); }
+                }
+
+                if (settings.dashboard_charts_order) {
+                    try {
+                        const savedCharts = JSON.parse(settings.dashboard_charts_order);
+                        this.chartCardsOrder.forEach(card => {
+                            const index = savedCharts.indexOf(card.id);
+                            card.order = index !== -1 ? index + 1 : 99;
+                        });
+                        this.chartCardsOrder.sort((a, b) => a.order - b.order);
+                    } catch (e) { console.error('Error parsing charts order', e); }
+                }
+
                 this.applyTheme(this.isDarkMode);
                 this.themeService.setBrandColor(this.brandColor);
             },
@@ -157,6 +199,30 @@ export class SettingsComponent implements OnInit {
         this.saveSetting('bank_card', this.bankCard);
         this.saveSetting('footer_text', this.footerText);
         this.snackBar.open('Información de empresa actualizada', 'Cerrar', { duration: 2000 });
+    }
+
+    saveDashboardOrder() {
+        const statsOrder = this.statCardsOrder
+            .sort((a, b) => a.order - b.order)
+            .map(c => c.id);
+        
+        const chartsOrder = this.chartCardsOrder
+            .sort((a, b) => a.order - b.order)
+            .map(c => c.id);
+
+        this.api.updateSetting('dashboard_stats_order', JSON.stringify(statsOrder)).subscribe();
+        this.api.updateSetting('dashboard_charts_order', JSON.stringify(chartsOrder)).subscribe({
+            next: () => {
+                this.snackBar.open('Orden del dashboard actualizado', 'Cerrar', { duration: 2000 });
+                // Re-sort current view
+                this.statCardsOrder.sort((a, b) => a.order - b.order);
+                this.chartCardsOrder.sort((a, b) => a.order - b.order);
+            },
+            error: (err) => {
+                console.error('Error saving dashboard order:', err);
+                this.snackBar.open('Error al guardar el orden', 'Cerrar', { duration: 3000 });
+            }
+        });
     }
 
     private saveSetting(key: string, value: string) {

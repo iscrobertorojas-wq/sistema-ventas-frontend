@@ -276,64 +276,48 @@ body.dark-theme .summary-item .label {
     }
 }
 
-/* Fix for Drag Transition Conficts */
-.cdk-drop-list-dragging .stat-card,
-.cdk-drop-list-dragging .chart-card {
-    animation: none !important;
-    transform: none !important;
-    transition: transform 300ms cubic-bezier(0, 0, 0.2, 1) !important;
-}
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 12px;
+    }
 
-/* Drag Handle Styles */
-.drag-handle {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 6px;
-    border-radius: 6px;
-    color: var(--text-muted);
-    opacity: 0.25;
-    z-index: 20;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.03);
-    transition: all 0.2s;
-}
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
 
-.stat-card:hover .drag-handle, 
-.chart-card:hover .drag-handle {
-    opacity: 1;
-    background: rgba(var(--brand-color-rgb), 0.1);
-    color: var(--brand-color);
-}
+    .stat-card mat-card-content {
+        padding: 12px !important;
+        gap: 12px;
+    }
 
-.cdk-drag-preview {
-    box-sizing: border-box;
-    border-radius: 16px;
-    z-index: 2000 !important;
-    opacity: 0.9;
-    transform: scale(1.02); /* Slightly larger instead of smaller to avoid mouse overlap issues */
-    backdrop-filter: blur(10px);
-    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5);
-    pointer-events: none; /* Crucial to avoid blocking drop detections */
-}
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+    }
 
-.cdk-drag-placeholder {
-    opacity: 1;
-    border: 3px dashed var(--brand-color) !important;
-    background: rgba(var(--brand-color-rgb), 0.05) !important;
-    border-radius: 16px !important;
-    position: relative;
-    visibility: visible !important;
-}
+    .stat-icon mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+    }
 
-.cdk-drag-animating {
-    transition: transform 300ms cubic-bezier(0, 0, 0.2, 1) !important;
-}
+    .stat-value {
+        font-size: 20px;
+    }
 
-/* Ensure other items move smoothly out of the way */
-.cdk-drop-list-dragging .stat-card:not(.cdk-drag-placeholder),
-.cdk-drop-list-dragging .chart-card:not(.cdk-drag-placeholder) {
-    transition: transform 300ms cubic-bezier(0, 0, 0.2, 1) !important;
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .chart-card {
+        flex: 0 0 100%;
+        min-height: 300px;
+    }
+
+    .chart-container.main-chart,
+    .chart-container.doughnut-chart {
+        height: 250px;
+    }
 }

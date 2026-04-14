@@ -125,4 +125,51 @@
             </mat-card-content>
         </mat-card>
     </div>
+
+    <!-- Dashboard Ordering Section -->
+    <div class="settings-grid" style="margin-top: 20px;">
+        <mat-card class="full-width-card">
+            <mat-card-header>
+                <mat-card-title>Ordenamiento Paneles Dashboard</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <p class="section-hint">Establece el número de orden para cada panel. Los paneles se mostrarán de menor a mayor número.</p>
+                
+                <div class="ordering-container">
+                    <div class="order-column">
+                        <h3>Tarjetas de Estadísticas</h3>
+                        <div class="order-list">
+                            <div *ngFor="let card of statCardsOrder" class="order-item">
+                                <span class="card-name">{{card.title}}</span>
+                                <mat-form-field appearance="outline" class="order-input">
+                                    <input matInput type="number" [(ngModel)]="card.order" min="1">
+                                </mat-form-field>
+                            </div>
+                        </div>
+                    </div>
+
+                    <mat-divider [vertical]="true" class="desktop-only-divider"></mat-divider>
+
+                    <div class="order-column">
+                        <h3>Gráficos</h3>
+                        <div class="order-list">
+                            <div *ngFor="let chart of chartCardsOrder" class="order-item">
+                                <span class="card-name">{{chart.title}}</span>
+                                <mat-form-field appearance="outline" class="order-input">
+                                    <input matInput type="number" [(ngModel)]="chart.order" min="1">
+                                </mat-form-field>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="save-footer">
+                    <button mat-raised-button color="primary" (click)="saveDashboardOrder()">
+                        <mat-icon>save</mat-icon>
+                        Guardar Ordenamiento Dashboard
+                    </button>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
 </div>

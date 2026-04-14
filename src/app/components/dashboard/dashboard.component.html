@@ -10,16 +10,12 @@
 <div class="dashboard-container">
 
     <!-- Statistics Cards -->
-    <div class="stats-grid" cdkDropList cdkDropListOrientation="horizontal" (cdkDropListDropped)="drop($event, 'stats')">
+    <div class="stats-grid">
         <mat-card *ngFor="let card of statCards; let i = index" 
             class="stat-card animate-in"
             [ngClass]="[card.class === 'income' ? 'highlight-card' : '', card.gradient, 'delay-' + (i % 4 + 1), 'hover-lift']"
-            [style]="card.border"
-            cdkDrag
-            cdkDragBoundary=".dashboard-container">
+            [style]="card.border">
             
-            <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
-
             <mat-card-content>
                 <div class="stat-icon" [ngClass]="card.class">
                     <mat-icon>{{card.icon}}</mat-icon>
@@ -32,22 +28,15 @@
                     <p class="stat-subtitle">{{getStatSubtitle(card)}}</p>
                 </div>
             </mat-card-content>
-
-            <!-- Drag Preview Placeholder -->
-            <div class="cdk-drag-placeholder" *cdkDragPlaceholder></div>
         </mat-card>
     </div>
 
     <!-- Charts Grid -->
-    <div class="charts-grid" cdkDropList cdkDropListOrientation="horizontal" (cdkDropListDropped)="drop($event, 'charts')">
+    <div class="charts-grid">
         <mat-card *ngFor="let chart of chartCards"
             class="chart-card"
-            [ngClass]="[chart.isLarge ? 'large-chart' : '', 'animate-in', chart.delay]"
-            cdkDrag
-            cdkDragBoundary=".dashboard-container">
+            [ngClass]="[chart.isLarge ? 'large-chart' : '', 'animate-in', chart.delay]">
             
-            <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
-
             <mat-card-header>
                 <mat-card-title>
                     <mat-icon *ngIf="chart.icon" style="vertical-align: middle; margin-right: 8px;">{{chart.icon}}</mat-icon>
@@ -94,9 +83,6 @@
                     </canvas>
                 </div>
             </mat-card-content>
-
-            <!-- Drag Preview Placeholder -->
-            <div class="cdk-drag-placeholder" *cdkDragPlaceholder></div>
         </mat-card>
     </div>
 </div>

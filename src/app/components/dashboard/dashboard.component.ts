@@ -8,7 +8,6 @@ import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { ThemeService } from '../../services/theme.service';
 import { Subscription } from 'rxjs';
-import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 @Component({
     selector: 'app-dashboard',
@@ -18,8 +17,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
         MatCardModule,
         MatIconModule,
         MatGridListModule,
-        BaseChartDirective,
-        DragDropModule
+        BaseChartDirective
     ],
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.css'
@@ -178,41 +176,47 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     loadLayout() {
-        const savedStats = localStorage.getItem('dashboard_stats_order');
-        const savedCharts = localStorage.getItem('dashboard_charts_order');
+        this.api.getSettings().subscribe({
+            next: (settings) => {
+                const savedStats = settings.dashboard_stats_order;
+                const savedCharts = settings.dashboard_charts_order;
 
-        if (savedStats) {
-            const order = JSON.parse(savedStats);
-            this.statCards = order.map((id: string) => this.defaultStats.find(s => s.id === id)).filter(Boolean);
-            // Add any missing default stats (in case of updates)
-            this.defaultStats.forEach(s => {
-                if (!this.statCards.find(sc => sc.id === s.id)) this.statCards.push(s);
-            });
-        } else {
-            this.statCards = [...this.defaultStats];
-        }
+                if (savedStats) {
+                    try {
+                        const order = JSON.parse(savedStats);
+                        this.statCards = order.map((id: string) => this.defaultStats.find(s => s.id === id)).filter(Boolean);
+                        // Add any missing default stats
+                        this.defaultStats.forEach(s => {
+                            if (!this.statCards.find(sc => sc.id === s.id)) this.statCards.push(s);
+                        });
+                    } catch (e) {
+                        this.statCards = [...this.defaultStats];
+                    }
+                } else {
+                    this.statCards = [...this.defaultStats];
+                }
 
-        if (savedCharts) {
-            const order = JSON.parse(savedCharts);
-            this.chartCards = order.map((id: string) => this.defaultCharts.find(c => c.id === id)).filter(Boolean);
-            // Add any missing default charts
-            this.defaultCharts.forEach(c => {
-                if (!this.chartCards.find(cc => cc.id === c.id)) this.chartCards.push(c);
-            });
-        } else {
-            this.chartCards = [...this.defaultCharts];
-        }
-    }
-
-    saveLayout() {
-        localStorage.setItem('dashboard_stats_order', JSON.stringify(this.statCards.map(s => s.id)));
-        localStorage.setItem('dashboard_charts_order', JSON.stringify(this.chartCards.map(c => c.id)));
-    }
-
-    drop(event: CdkDragDrop<any[]>, list: 'stats' | 'charts') {
-        const array = list === 'stats' ? this.statCards : this.chartCards;
-        moveItemInArray(array, event.previousIndex, event.currentIndex);
-        this.saveLayout();
+                if (savedCharts) {
+                    try {
+                        const order = JSON.parse(savedCharts);
+                        this.chartCards = order.map((id: string) => this.defaultCharts.find(c => c.id === id)).filter(Boolean);
+                        // Add any missing default charts
+                        this.defaultCharts.forEach(c => {
+                            if (!this.chartCards.find(cc => cc.id === c.id)) this.chartCards.push(c);
+                        });
+                    } catch (e) {
+                        this.chartCards = [...this.defaultCharts];
+                    }
+                } else {
+                    this.chartCards = [...this.defaultCharts];
+                }
+            },
+            error: (err) => {
+                console.error('Error loading settings for layout:', err);
+                this.statCards = [...this.defaultStats];
+                this.chartCards = [...this.defaultCharts];
+            }
+        });
     }
 
     getStatValue(id: string): any {
