@@ -172,7 +172,7 @@
             </mat-card-content>
         </mat-card>
 
-        <mat-card class="chart-card">
+        <mat-card class="chart-card large-chart animate-in delay-4">
             <mat-card-header>
                 <mat-card-title>
                     <mat-icon style="vertical-align: middle; margin-right: 8px;">trending_up</mat-icon>
@@ -180,7 +180,7 @@
                 </mat-card-title>
             </mat-card-header>
             <mat-card-content>
-                <div class="chart-container" *ngIf="chartsReady">
+                <div class="chart-container main-chart" *ngIf="chartsReady">
                     <canvas baseChart [data]="profitChartData" [type]="profitChartType">
                     </canvas>
                 </div>
