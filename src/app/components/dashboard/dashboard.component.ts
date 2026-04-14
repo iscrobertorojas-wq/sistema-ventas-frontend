@@ -122,18 +122,19 @@ export class DashboardComponent implements OnInit {
 
     public doughnutChartType: ChartType = 'doughnut';
 
-    // Bar Chart - Top Services
-    public servicesChartData: ChartData<'bar'> = {
+    // Bar Chart - Monthly Profit
+    public profitChartData: ChartData<'bar'> = {
         labels: [],
         datasets: [
             {
                 data: [],
-                label: 'Cantidad Vendida',
-                backgroundColor: '#8b5cf6'
+                label: 'Utilidad ($)',
+                backgroundColor: '#10b981', // Emerald/Green
+                hoverBackgroundColor: '#059669'
             }
         ]
     };
-    public servicesChartType: ChartType = 'bar';
+    public profitChartType: ChartType = 'bar';
 
     constructor(
         private api: ApiService,
@@ -192,16 +193,13 @@ export class DashboardComponent implements OnInit {
                 this.chartsReady = false;
 
                 // Update Bar Chart - Sales by Month
-                this.salesByMonthData.labels = data.salesByMonth.map((item: any) => {
+                const labels = data.salesByMonth.map((item: any) => {
                     const [year, month] = item.month.split('-');
                     return `${this.monthNames[parseInt(month) - 1]} ${year.substring(2)}`;
                 });
+                
+                this.salesByMonthData.labels = labels;
                 this.salesByMonthData.datasets[0].data = data.salesByMonth.map((item: any) => item.total);
-
-                // Re-trigger charts after data is set and DOM updates
-                setTimeout(() => {
-                    this.chartsReady = true;
-                }, 100);
 
                 // Update Bar Chart - Top Clients
                 this.barChartData.labels = data.topClients.map((item: any) => item.name);
@@ -222,9 +220,24 @@ export class DashboardComponent implements OnInit {
                 });
                 this.doughnutChartData.datasets[0].data = statusCounts;
 
-                // Update Services Chart
-                this.servicesChartData.labels = data.topServices.map((item: any) => item.description);
-                this.servicesChartData.datasets[0].data = data.topServices.map((item: any) => item.count);
+                // Update Profit Chart (Utilidad por Mes)
+                // Create a map of purchases by month for easy lookup
+                const purchasesMap: { [key: string]: number } = {};
+                data.purchasesByMonth.forEach((p: any) => {
+                    purchasesMap[p.month] = parseFloat(p.total);
+                });
+
+                this.profitChartData.labels = labels;
+                this.profitChartData.datasets[0].data = data.salesByMonth.map((s: any) => {
+                    const salesTotal = parseFloat(s.total) || 0;
+                    const purchasesTotal = purchasesMap[s.month] || 0;
+                    return salesTotal - purchasesTotal;
+                });
+
+                // Re-trigger charts after data is set and DOM updates
+                setTimeout(() => {
+                    this.chartsReady = true;
+                }, 100);
             },
             error: (err) => console.error('Error loading stats:', err)
         });

@@ -174,11 +174,14 @@
 
         <mat-card class="chart-card">
             <mat-card-header>
-                <mat-card-title>Servicios Más Vendidos</mat-card-title>
+                <mat-card-title>
+                    <mat-icon style="vertical-align: middle; margin-right: 8px;">trending_up</mat-icon>
+                    Utilidad Mensual
+                </mat-card-title>
             </mat-card-header>
             <mat-card-content>
                 <div class="chart-container" *ngIf="chartsReady">
-                    <canvas baseChart [data]="servicesChartData" [type]="servicesChartType">
+                    <canvas baseChart [data]="profitChartData" [type]="profitChartType">
                     </canvas>
                 </div>
             </mat-card-content>
