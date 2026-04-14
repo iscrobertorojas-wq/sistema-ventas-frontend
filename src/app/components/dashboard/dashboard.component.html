@@ -79,7 +79,7 @@
 
                 <!-- Profit History Chart -->
                 <div *ngIf="chart.id === 'profit_history'" class="chart-container main-chart">
-                    <canvas *ngIf="chartsReady" baseChart [data]="profitChartData" [type]="profitChartType">
+                    <canvas *ngIf="chartsReady" baseChart [data]="profitChartData" [options]="profitChartOptions" [type]="profitChartType">
                     </canvas>
                 </div>
             </mat-card-content>

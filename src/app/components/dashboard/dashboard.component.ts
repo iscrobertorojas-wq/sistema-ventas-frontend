@@ -157,6 +157,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
         ]
     };
     public profitChartType: ChartType = 'bar';
+    public profitChartOptions: ChartConfiguration['options'] = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: { color: '#888' }
+            },
+            y: {
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                ticks: { color: '#888' }
+            }
+        }
+    };
 
     constructor(
         private api: ApiService,
@@ -272,11 +289,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
             this.doughnutChartOptions.plugins.legend.labels.color = textColor;
         }
 
+        if (this.profitChartOptions?.scales?.['x']) {
+            this.profitChartOptions.scales['x'].ticks!.color = textColor;
+        }
+        if (this.profitChartOptions?.scales?.['y']) {
+            this.profitChartOptions.scales['y'].ticks!.color = textColor;
+            this.profitChartOptions.scales['y'].grid!.color = gridColor;
+        }
+
         // Trigger chart updates if they exist
         // Note: ng2-charts usually handles this via change detection if options are re-assigned
         this.salesByMonthOptions = { ...this.salesByMonthOptions };
         this.barChartOptions = { ...this.barChartOptions };
         this.doughnutChartOptions = { ...this.doughnutChartOptions };
+        this.profitChartOptions = { ...this.profitChartOptions };
     }
 
     loadStats() {
