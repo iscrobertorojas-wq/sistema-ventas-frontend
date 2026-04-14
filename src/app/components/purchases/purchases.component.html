@@ -155,8 +155,8 @@
                         </td>
                     </ng-container>
 
-                    <tr mat-header-row *matHeaderRowDef="['date', 'supplier_name', 'notes', 'total', 'actions']; sticky: true"></tr>
-                    <tr mat-row *matRowDef="let row; columns: ['date', 'supplier_name', 'notes', 'total', 'actions'];"></tr>
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
                 </table>
                 <div *ngIf="purchases.length === 0" class="empty-state">
                     <mat-icon>shopping_cart</mat-icon>
