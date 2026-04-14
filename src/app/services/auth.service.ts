@@ -24,7 +24,7 @@ export class AuthService {
     }
 
     private hasToken(): boolean {
-        return !!localStorage.getItem('token');
+        return !!sessionStorage.getItem('token');
     }
 
     get isAuthenticated$(): Observable<boolean> {
@@ -45,7 +45,7 @@ export class AuthService {
             password
         }).pipe(
             tap(res => {
-                localStorage.setItem('token', res.token);
+                sessionStorage.setItem('token', res.token);
                 this.authStatus.next(true);
                 this.resetInactivityTimer();
             })
@@ -53,7 +53,7 @@ export class AuthService {
     }
 
     logout() {
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         this.authStatus.next(false);
         this.router.navigate(['/login']);
     }
