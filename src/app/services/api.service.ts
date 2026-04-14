@@ -183,6 +183,15 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/purchases`, purchase);
   }
 
+  updatePurchase(purchase: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/purchases`, purchase);
+  }
+
+  getPurchaseById(id: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/purchases/${id}`);
+  }
+
+
   // Database Management
   backupDatabase(): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/database/backup`, { responseType: 'blob' });

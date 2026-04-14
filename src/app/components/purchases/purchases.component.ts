@@ -55,6 +55,8 @@ export class PurchasesComponent implements OnInit {
   currentCost: number | null = null;
 
   isSaving = false;
+  isEditing = false;
+  editPurchaseId: number | null = null;
 
   constructor(
     private api: ApiService,
@@ -77,6 +79,29 @@ export class PurchasesComponent implements OnInit {
     this.api.getPurchases().subscribe({
       next: (data) => this.purchases = data,
       error: (err) => console.error('Error loading purchases', err)
+    });
+  }
+
+  loadPurchaseForEdit(id: number) {
+    this.api.getPurchaseById(id).subscribe({
+      next: (purchase) => {
+        this.isEditing = true;
+        this.editPurchaseId = id;
+        this.newPurchase = {
+          supplier_id: purchase.supplier_id,
+          date: new Date(purchase.date).toISOString().split('T')[0],
+          notes: purchase.notes || ''
+        };
+        this.purchaseItems = purchase.items.map((item: any) => ({
+          description: item.description,
+          cost: item.cost
+        }));
+        // Scroll to top to see the form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      error: (err) => {
+        this.snackBar.open('Error al cargar la compra para editar', 'Cerrar', { duration: 3000 });
+      }
     });
   }
 
@@ -113,20 +138,23 @@ export class PurchasesComponent implements OnInit {
     this.isSaving = true;
 
     const payload = {
+      id: this.editPurchaseId,
       supplier_id: this.newPurchase.supplier_id,
       date: this.newPurchase.date,
       notes: this.newPurchase.notes,
       items: this.purchaseItems
     };
 
-    this.api.createPurchase(payload).subscribe({
+    const request = this.isEditing ? this.api.updatePurchase(payload) : this.api.createPurchase(payload);
+
+    request.subscribe({
       next: () => {
         this.loadPurchases();
         this.resetForm();
-        this.snackBar.open('Compra registrada correctamente', 'Cerrar', { duration: 3000 });
+        this.snackBar.open(`Compra ${this.isEditing ? 'actualizada' : 'registrada'} correctamente`, 'Cerrar', { duration: 3000 });
       },
       error: (err) => {
-        const message = err.error?.error || 'Error al registrar la compra';
+        const message = err.error?.error || 'Error al procesar la compra';
         this.snackBar.open(message, 'Cerrar', { duration: 5000 });
       },
       complete: () => { this.isSaving = false; }
@@ -143,5 +171,7 @@ export class PurchasesComponent implements OnInit {
     this.currentDescription = '';
     this.currentCost = null;
     this.isSaving = false;
+    this.isEditing = false;
+    this.editPurchaseId = null;
   }
 }
