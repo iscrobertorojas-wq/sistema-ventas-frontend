@@ -1,5 +1,6 @@
 :root {
     --brand-color: #1a73e8;
+    --brand-color-rgb: 26, 115, 232;
     --brand-color-dark: #1557b0;
     --brand-color-light: rgba(26, 115, 232, 0.1);
     --brand-color-hover: rgba(26, 115, 232, 0.04);
