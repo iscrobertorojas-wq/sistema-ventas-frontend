@@ -41,7 +41,7 @@ export class PurchasesComponent implements OnInit {
   suppliers: any[] = [];
   purchases: any[] = [];
 
-  displayedColumns: string[] = ['date', 'supplier_name', 'notes', 'total', 'actions'];
+  displayedColumns: string[] = ['date', 'supplier_name', 'items_description', 'total', 'actions'];
 
   // New purchase form
   newPurchase: any = {
