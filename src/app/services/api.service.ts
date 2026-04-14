@@ -154,6 +154,35 @@ export class ApiService {
     return this.http.delete<any>(`${this.baseUrl}/policy-records`, { params: { id: id.toString() } });
   }
 
+  // Suppliers
+  getSuppliers(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/suppliers`);
+  }
+
+  createSupplier(supplier: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/suppliers`, supplier);
+  }
+
+  updateSupplier(supplier: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/suppliers`, supplier);
+  }
+
+  deleteSupplier(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/suppliers`, { params: { id: id.toString() } });
+  }
+
+  // Purchases
+  getPurchases(startDate?: string, endDate?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+    return this.http.get<any[]>(`${this.baseUrl}/purchases`, { params });
+  }
+
+  createPurchase(purchase: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/purchases`, purchase);
+  }
+
   // Database Management
   backupDatabase(): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/database/backup`, { responseType: 'blob' });

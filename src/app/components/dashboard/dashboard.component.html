@@ -77,6 +77,49 @@
                 </div>
             </mat-card-content>
         </mat-card>
+
+        <mat-card class="stat-card animate-in delay-2 hover-lift hover-gradient-purchases">
+            <mat-card-content>
+                <div class="stat-icon purchases">
+                    <mat-icon>shopping_cart</mat-icon>
+                </div>
+                <div class="stat-info">
+                    <h3>Compras del Mes</h3>
+                    <p class="stat-value">{{stats.monthPurchases?.total | currency}}</p>
+                    <p class="stat-subtitle">{{stats.monthPurchases?.count}} compras registradas</p>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="stat-card animate-in delay-3 hover-lift hover-gradient-net">
+            <mat-card-content>
+                <div class="stat-icon net">
+                    <mat-icon>balance</mat-icon>
+                </div>
+                <div class="stat-info">
+                    <h3>Ventas − Compras del Mes</h3>
+                    <p class="stat-value" [class.negative-value]="(stats.month?.total - stats.monthPurchases?.total) < 0">
+                        {{(stats.month?.total - stats.monthPurchases?.total) | currency}}
+                    </p>
+                    <p class="stat-subtitle">Ventas vs gastos del mes</p>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="stat-card animate-in delay-4 hover-lift hover-gradient-profit">
+            <mat-card-content>
+                <div class="stat-icon profit">
+                    <mat-icon>trending_up</mat-icon>
+                </div>
+                <div class="stat-info">
+                    <h3>Utilidad del Mes</h3>
+                    <p class="stat-value" [class.negative-value]="(stats.monthlyIncome?.total - stats.monthPurchases?.total) < 0">
+                        {{(stats.monthlyIncome?.total - stats.monthPurchases?.total) | currency}}
+                    </p>
+                    <p class="stat-subtitle">Ingresos cobrados − Compras</p>
+                </div>
+            </mat-card-content>
+        </mat-card>
     </div>
 
     <!-- Charts Grid -->

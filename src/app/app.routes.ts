@@ -12,6 +12,8 @@ import { PaymentsByClientReportComponent } from './components/payments-by-client
 import { SettingsComponent } from './components/settings/settings.component';
 import { ServicePoliciesComponent } from './components/service-policies/service-policies.component';
 import { DatabaseManagementComponent } from './components/database-management/database-management.component';
+import { SuppliersComponent } from './components/suppliers/suppliers.component';
+import { PurchasesComponent } from './components/purchases/purchases.component';
 import { AuthGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -20,6 +22,8 @@ export const routes: Routes = [
     { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
     { path: 'sales', component: SalesComponent, canActivate: [AuthGuard] },
     { path: 'clients', component: ClientsComponent, canActivate: [AuthGuard] },
+    { path: 'suppliers', component: SuppliersComponent, canActivate: [AuthGuard] },
+    { path: 'purchases', component: PurchasesComponent, canActivate: [AuthGuard] },
     { path: 'services', component: ServicesComponent, canActivate: [AuthGuard] },
     { path: 'payments', component: PaymentsComponent, canActivate: [AuthGuard] },
     { path: 'reports', component: ReportsComponent, canActivate: [AuthGuard] },
@@ -30,4 +34,3 @@ export const routes: Routes = [
     { path: 'service-policies', component: ServicePoliciesComponent, canActivate: [AuthGuard] },
     { path: 'database-management', component: DatabaseManagementComponent, canActivate: [AuthGuard] }
 ];
-

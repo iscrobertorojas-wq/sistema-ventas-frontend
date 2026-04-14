@@ -28,7 +28,8 @@ export class DashboardComponent implements OnInit {
         month: { count: 0, total: 0 },
         year: { count: 0, total: 0 },
         pending: { count: 0, total: 0 },
-        monthlyIncome: { total: 0 }
+        monthlyIncome: { total: 0 },
+        monthPurchases: { total: 0, count: 0 }
     };
     chartsReady = false;
 
