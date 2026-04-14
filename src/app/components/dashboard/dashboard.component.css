@@ -142,7 +142,9 @@ h2 {
 }
 
 .chart-card.large-chart {
-    flex: 0 0 100%;
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
 }
 
 .chart-container.main-chart {
