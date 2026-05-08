@@ -55,7 +55,7 @@ export class UtilityReportComponent implements OnInit {
   // Filters
   startDate: Date | null = null;
   endDate: Date | null = null;
-  activeFilterLabel: string = 'de este mes';
+  activeFilterLabel: string = 'general';
 
   paymentColumns: string[] = ['date', 'client', 'total', 'subtotal', 'iva'];
   purchaseColumns: string[] = ['date', 'supplier', 'total', 'subtotal', 'iva'];
@@ -66,8 +66,7 @@ export class UtilityReportComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // Default to this month
-    this.filterThisMonth();
+    this.loadData();
   }
 
   loadData(start?: string, end?: string) {
