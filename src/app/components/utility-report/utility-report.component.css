@@ -104,11 +104,18 @@
     background-color: rgba(var(--primary-rgb), 0.05);
     padding: 16px 24px;
     border-bottom: 1px solid var(--border-color);
+    position: relative;
+    z-index: 10;
 }
 
 .table-container {
     max-height: 500px;
     overflow: auto;
+}
+
+.table-container th {
+    background: var(--bg-card);
+    z-index: 100;
 }
 
 table {

@@ -92,6 +92,11 @@ table {
     overflow-y: auto;
 }
 
+.table-container th {
+    background: var(--bg-card);
+    z-index: 100;
+}
+
 .total-cell {
     font-weight: 600;
     color: var(--brand-color);
