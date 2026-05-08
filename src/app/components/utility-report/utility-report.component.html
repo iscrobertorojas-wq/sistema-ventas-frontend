@@ -1,0 +1,148 @@
+<mat-card class="header-card-global">
+    <mat-card-header>
+        <mat-card-title>
+            <mat-icon>monetization_on</mat-icon>
+            Reporte de Utilidad
+        </mat-card-title>
+    </mat-card-header>
+</mat-card>
+
+<div class="reports-container">
+    <!-- Filters -->
+    <mat-card class="date-only-card">
+        <mat-card-content>
+            <div class="date-filters-flex">
+                <div class="quick-dates">
+                    <button mat-stroked-button (click)="filterThisWeek()">Esta Semana</button>
+                    <button mat-stroked-button (click)="filterThisMonth()">Este Mes</button>
+                    <button mat-stroked-button (click)="filterThisYear()">Este Año</button>
+                </div>
+
+                <mat-form-field appearance="outline" class="compact-form-field">
+                    <mat-label>Rango de Fechas</mat-label>
+                    <mat-date-range-input [rangePicker]="picker">
+                        <input matStartDate [(ngModel)]="startDate" placeholder="Desde">
+                        <input matEndDate [(ngModel)]="endDate" (dateChange)="applyDateFilters()" placeholder="Hasta">
+                    </mat-date-range-input>
+                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-date-range-picker #picker></mat-date-range-picker>
+                </mat-form-field>
+
+                <button mat-button color="warn" (click)="clearFilters()">
+                    <mat-icon>filter_alt_off</mat-icon>
+                    Limpiar Filtros
+                </button>
+            </div>
+        </mat-card-content>
+    </mat-card>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+        <mat-card class="summary-card paid">
+            <mat-card-content>
+                <div class="summary-label">Total Pagado</div>
+                <div class="summary-value">{{totalPaid | currency}}</div>
+                <mat-icon class="summary-icon">payments</mat-icon>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card purchases">
+            <mat-card-content>
+                <div class="summary-label">Total Compras</div>
+                <div class="summary-value">{{totalPurchases | currency}}</div>
+                <mat-icon class="summary-icon">shopping_cart</mat-icon>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card utility" [class.negative]="utility < 0">
+            <mat-card-content>
+                <div class="summary-label">Utilidad</div>
+                <div class="summary-value">{{utility | currency}}</div>
+                <mat-icon class="summary-icon">trending_up</mat-icon>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card iva">
+            <mat-card-content>
+                <div class="summary-label">IVA (Pagos)</div>
+                <div class="summary-value">{{totalIVA | currency}}</div>
+                <mat-icon class="summary-icon">account_balance</mat-icon>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <!-- Tables Section -->
+    <div class="tables-grid">
+        <!-- Payments Section -->
+        <mat-card class="table-card">
+            <mat-card-header>
+                <mat-card-title>Ingresos (Pagos)</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="table-container">
+                    <table mat-table [dataSource]="payments">
+                        <ng-container matColumnDef="date">
+                            <th mat-header-cell *matHeaderCellDef> Fecha </th>
+                            <td mat-cell *matCellDef="let p"> {{p.formatted_date}} </td>
+                        </ng-container>
+                        <ng-container matColumnDef="client">
+                            <th mat-header-cell *matHeaderCellDef> Cliente </th>
+                            <td mat-cell *matCellDef="let p"> {{p.client_name}} </td>
+                        </ng-container>
+                        <ng-container matColumnDef="total">
+                            <th mat-header-cell *matHeaderCellDef> Total </th>
+                            <td mat-cell *matCellDef="let p"> {{p.total | currency}} </td>
+                        </ng-container>
+                        <ng-container matColumnDef="subtotal">
+                            <th mat-header-cell *matHeaderCellDef> Subtotal </th>
+                            <td mat-cell *matCellDef="let p"> 
+                                <span *ngIf="p.subtotal > 0">{{p.subtotal | currency}}</span>
+                                <span *ngIf="p.subtotal === 0" class="text-muted">-</span>
+                            </td>
+                        </ng-container>
+                        <ng-container matColumnDef="iva">
+                            <th mat-header-cell *matHeaderCellDef> IVA (16%) </th>
+                            <td mat-cell *matCellDef="let p"> 
+                                <span *ngIf="p.iva > 0">{{p.iva | currency}}</span>
+                                <span *ngIf="p.iva === 0" class="text-muted">-</span>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="paymentColumns; sticky: true"></tr>
+                        <tr mat-row *matRowDef="let row; columns: paymentColumns;"></tr>
+                    </table>
+                    <div class="no-data" *ngIf="payments.length === 0">No hay pagos en este periodo</div>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <!-- Purchases Section -->
+        <mat-card class="table-card">
+            <mat-card-header>
+                <mat-card-title>Gastos (Compras)</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="table-container">
+                    <table mat-table [dataSource]="purchases">
+                        <ng-container matColumnDef="date">
+                            <th mat-header-cell *matHeaderCellDef> Fecha </th>
+                            <td mat-cell *matCellDef="let p"> {{p.formatted_date}} </td>
+                        </ng-container>
+                        <ng-container matColumnDef="supplier">
+                            <th mat-header-cell *matHeaderCellDef> Proveedor </th>
+                            <td mat-cell *matCellDef="let p"> {{p.supplier_name || 'General'}} </td>
+                        </ng-container>
+                        <ng-container matColumnDef="total">
+                            <th mat-header-cell *matHeaderCellDef> Total </th>
+                            <td mat-cell *matCellDef="let p"> {{p.total | currency}} </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="purchaseColumns; sticky: true"></tr>
+                        <tr mat-row *matRowDef="let row; columns: purchaseColumns;"></tr>
+                    </table>
+                    <div class="no-data" *ngIf="purchases.length === 0">No hay compras en este periodo</div>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+</div>

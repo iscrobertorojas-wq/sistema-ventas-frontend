@@ -14,6 +14,7 @@ import { ServicePoliciesComponent } from './components/service-policies/service-
 import { DatabaseManagementComponent } from './components/database-management/database-management.component';
 import { SuppliersComponent } from './components/suppliers/suppliers.component';
 import { PurchasesComponent } from './components/purchases/purchases.component';
+import { UtilityReportComponent } from './components/utility-report/utility-report.component';
 import { AuthGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -31,6 +32,7 @@ export const routes: Routes = [
     { path: 'sales-by-client-report', component: SalesByClientReportComponent, canActivate: [AuthGuard] },
     { path: 'payments-by-client-report', component: PaymentsByClientReportComponent, canActivate: [AuthGuard] },
     { path: 'settings', component: SettingsComponent, canActivate: [AuthGuard] },
+    { path: 'utility-report', component: UtilityReportComponent, canActivate: [AuthGuard] },
     { path: 'service-policies', component: ServicePoliciesComponent, canActivate: [AuthGuard] },
     { path: 'database-management', component: DatabaseManagementComponent, canActivate: [AuthGuard] }
 ];

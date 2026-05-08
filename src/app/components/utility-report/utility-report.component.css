@@ -1,0 +1,142 @@
+.reports-container {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.date-only-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.date-filters-flex {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.quick-dates {
+    display: flex;
+    gap: 12px;
+}
+
+.compact-form-field {
+    width: 320px;
+}
+
+.compact-form-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
+/* Summary Grid */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.summary-card {
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+}
+
+.summary-card mat-card-content {
+    padding: 24px !important;
+}
+
+.summary-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.summary-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.summary-icon {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    opacity: 0.1;
+}
+
+.summary-card.paid { border-left: 6px solid #4caf50; }
+.summary-card.purchases { border-left: 6px solid #f44336; }
+.summary-card.utility { border-left: 6px solid #2196f3; }
+.summary-card.iva { border-left: 6px solid #ff9800; }
+
+.summary-card.utility.negative .summary-value {
+    color: #f44336;
+}
+
+/* Tables Grid */
+.tables-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.table-card {
+    border-radius: 16px;
+    overflow: hidden;
+    height: 100%;
+}
+
+.table-card mat-card-header {
+    background-color: rgba(var(--primary-rgb), 0.05);
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-container {
+    max-height: 500px;
+    overflow: auto;
+}
+
+table {
+    width: 100%;
+}
+
+.text-muted {
+    color: #999;
+    font-style: italic;
+}
+
+.no-data {
+    padding: 48px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+@media (max-width: 1200px) {
+    .tables-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .quick-dates {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .compact-form-field {
+        width: 100%;
+    }
+}
