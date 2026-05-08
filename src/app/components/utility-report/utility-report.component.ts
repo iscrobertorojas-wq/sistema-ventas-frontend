@@ -49,6 +49,7 @@ export class UtilityReportComponent implements OnInit {
   totalPaid: number = 0;
   totalPurchases: number = 0;
   totalIVA: number = 0;
+  totalIVAPurchases: number = 0;
   utility: number = 0;
 
   // Filters
@@ -56,7 +57,7 @@ export class UtilityReportComponent implements OnInit {
   endDate: Date | null = null;
 
   paymentColumns: string[] = ['date', 'client', 'total', 'subtotal', 'iva'];
-  purchaseColumns: string[] = ['date', 'supplier', 'total'];
+  purchaseColumns: string[] = ['date', 'supplier', 'total', 'subtotal', 'iva'];
 
   constructor(
     private api: ApiService,
@@ -99,11 +100,19 @@ export class UtilityReportComponent implements OnInit {
     // Load Purchases
     this.api.getPurchases(start, end).subscribe({
       next: (data) => {
-        this.purchases = data.map(p => ({
-          ...p,
-          total: parseFloat(p.total) || 0,
-          formatted_date: this.formatDate(p.date)
-        }));
+        this.purchases = data.map(p => {
+          const total = parseFloat(p.total) || 0;
+          const subtotal = total / 1.16;
+          const iva = total - subtotal;
+
+          return {
+            ...p,
+            total,
+            subtotal,
+            iva,
+            formatted_date: this.formatDate(p.date)
+          };
+        });
         this.calculateTotals();
       },
       error: (err) => this.handleError('Error al cargar compras', err)
@@ -114,6 +123,7 @@ export class UtilityReportComponent implements OnInit {
     this.totalPaid = this.payments.reduce((sum, p) => sum + p.total, 0);
     this.totalIVA = this.payments.reduce((sum, p) => sum + p.iva, 0);
     this.totalPurchases = this.purchases.reduce((sum, p) => sum + p.total, 0);
+    this.totalIVAPurchases = this.purchases.reduce((sum, p) => sum + p.iva, 0);
     this.utility = this.totalPaid - this.totalPurchases;
   }
 

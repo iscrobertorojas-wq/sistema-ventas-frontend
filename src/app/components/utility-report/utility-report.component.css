@@ -79,6 +79,7 @@
 .summary-card.purchases { border-left: 6px solid #f44336; }
 .summary-card.utility { border-left: 6px solid #2196f3; }
 .summary-card.iva { border-left: 6px solid #ff9800; }
+.summary-card.iva-purchases { border-left: 6px solid #9c27b0; }
 
 .summary-card.utility.negative .summary-value {
     color: #f44336;

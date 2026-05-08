@@ -46,6 +46,14 @@
             </mat-card-content>
         </mat-card>
 
+        <mat-card class="summary-card iva">
+            <mat-card-content>
+                <div class="summary-label">IVA (Pagos)</div>
+                <div class="summary-value">{{totalIVA | currency}}</div>
+                <mat-icon class="summary-icon">account_balance</mat-icon>
+            </mat-card-content>
+        </mat-card>
+
         <mat-card class="summary-card purchases">
             <mat-card-content>
                 <div class="summary-label">Total Compras</div>
@@ -54,19 +62,19 @@
             </mat-card-content>
         </mat-card>
 
+        <mat-card class="summary-card iva-purchases">
+            <mat-card-content>
+                <div class="summary-label">IVA (Compras)</div>
+                <div class="summary-value">{{totalIVAPurchases | currency}}</div>
+                <mat-icon class="summary-icon">account_balance_wallet</mat-icon>
+            </mat-card-content>
+        </mat-card>
+
         <mat-card class="summary-card utility" [class.negative]="utility < 0">
             <mat-card-content>
                 <div class="summary-label">Utilidad</div>
                 <div class="summary-value">{{utility | currency}}</div>
                 <mat-icon class="summary-icon">trending_up</mat-icon>
-            </mat-card-content>
-        </mat-card>
-
-        <mat-card class="summary-card iva">
-            <mat-card-content>
-                <div class="summary-label">IVA (Pagos)</div>
-                <div class="summary-value">{{totalIVA | currency}}</div>
-                <mat-icon class="summary-icon">account_balance</mat-icon>
             </mat-card-content>
         </mat-card>
     </div>
@@ -135,6 +143,14 @@
                         <ng-container matColumnDef="total">
                             <th mat-header-cell *matHeaderCellDef> Total </th>
                             <td mat-cell *matCellDef="let p"> {{p.total | currency}} </td>
+                        </ng-container>
+                        <ng-container matColumnDef="subtotal">
+                            <th mat-header-cell *matHeaderCellDef> Subtotal </th>
+                            <td mat-cell *matCellDef="let p"> {{p.subtotal | currency}} </td>
+                        </ng-container>
+                        <ng-container matColumnDef="iva">
+                            <th mat-header-cell *matHeaderCellDef> IVA (16%) </th>
+                            <td mat-cell *matCellDef="let p"> {{p.iva | currency}} </td>
                         </ng-container>
 
                         <tr mat-header-row *matHeaderRowDef="purchaseColumns; sticky: true"></tr>
