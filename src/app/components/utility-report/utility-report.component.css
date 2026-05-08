@@ -33,45 +33,46 @@
 /* Summary Grid */
 .summary-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
 }
 
 .summary-card {
-    border-radius: 16px;
+    border-radius: 12px;
     position: relative;
     overflow: hidden;
     transition: transform 0.3s ease;
 }
 
 .summary-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
 }
 
 .summary-card mat-card-content {
-    padding: 24px !important;
+    padding: 16px !important;
 }
 
 .summary-label {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 500;
     color: var(--text-muted);
-    margin-bottom: 8px;
+    margin-bottom: 4px;
+    white-space: nowrap;
 }
 
 .summary-value {
-    font-size: 1.8rem;
-    font-weight: 800;
+    font-size: 1.3rem;
+    font-weight: 700;
     color: var(--text-main);
 }
 
 .summary-icon {
     position: absolute;
-    right: 16px;
-    bottom: 16px;
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
+    right: 8px;
+    bottom: 8px;
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
     opacity: 0.1;
 }
 
@@ -129,6 +130,9 @@ table {
     .tables-grid {
         grid-template-columns: 1fr;
     }
+    .summary-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 @media (max-width: 768px) {
@@ -139,5 +143,9 @@ table {
     
     .compact-form-field {
         width: 100%;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr 1fr;
     }
 }
