@@ -4,6 +4,7 @@
             <mat-icon>analytics</mat-icon>
             Reportes de Ventas
         </mat-card-title>
+        <mat-card-subtitle *ngIf="activeFilterLabel">Mostrando ventas {{activeFilterLabel}}</mat-card-subtitle>
     </mat-card-header>
 </mat-card>
 
@@ -42,7 +43,7 @@
     <mat-card class="table-card">
         <div class="table-card-header">
             <div class="table-header-group">
-                <h3 class="table-title">Listado de Ventas</h3>
+                <h3 class="table-title">Listado {{activeFilterLabel === 'de todas' ? 'de todas las' : 'de'}} ventas {{activeFilterLabel !== 'de todas' ? activeFilterLabel : ''}}</h3>
 
                 <div class="header-chips-group">
                     <mat-chip-listbox [(ngModel)]="statusFilter" (ngModelChange)="applyInternalFilters()"

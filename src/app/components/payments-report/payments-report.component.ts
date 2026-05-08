@@ -74,6 +74,7 @@ export class PaymentsReportComponent implements OnInit {
     // Filters State
     startDate: Date | null = null;
     endDate: Date | null = null;
+    activeFilterLabel: string = 'de todos';
     clientFilter: string = '';
     folioFilter: string = '';
     typeFilter: string = ''; // 'Remission' or 'Invoice'
@@ -171,6 +172,9 @@ export class PaymentsReportComponent implements OnInit {
 
     applyDateFilters() {
         if (this.startDate && this.endDate) {
+            if (this.activeFilterLabel === 'de todos') {
+                this.activeFilterLabel = `del ${this.formatDate(this.formatDateForAPI(this.startDate))} al ${this.formatDate(this.formatDateForAPI(this.endDate))}`;
+            }
             this.loadPayments(this.formatDateForAPI(this.startDate), this.formatDateForAPI(this.endDate));
         }
     }
@@ -181,6 +185,7 @@ export class PaymentsReportComponent implements OnInit {
         const lastDay = new Date(today.setDate(today.getDate() - today.getDay() + 6));
         this.startDate = firstDay;
         this.endDate = lastDay;
+        this.activeFilterLabel = 'de esta semana';
         this.applyDateFilters();
     }
 
@@ -190,6 +195,7 @@ export class PaymentsReportComponent implements OnInit {
         const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         this.startDate = firstDay;
         this.endDate = lastDay;
+        this.activeFilterLabel = 'de este mes';
         this.applyDateFilters();
     }
 
@@ -199,6 +205,7 @@ export class PaymentsReportComponent implements OnInit {
         const lastDay = new Date(today.getFullYear(), 11, 31);
         this.startDate = firstDay;
         this.endDate = lastDay;
+        this.activeFilterLabel = 'de este año';
         this.applyDateFilters();
     }
 
@@ -229,6 +236,7 @@ export class PaymentsReportComponent implements OnInit {
     clearFilters() {
         this.startDate = null;
         this.endDate = null;
+        this.activeFilterLabel = 'de todos';
         this.clientFilter = '';
         this.folioFilter = '';
         this.typeFilter = '';

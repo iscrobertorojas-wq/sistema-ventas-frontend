@@ -86,6 +86,7 @@ export class ReportsComponent implements OnInit {
   // Filters State
   startDate: Date | null = null;
   endDate: Date | null = null;
+  activeFilterLabel: string = 'de todas';
 
   clientFilter: string = '';
   remissionFilter: string = '';
@@ -195,6 +196,10 @@ export class ReportsComponent implements OnInit {
     if (this.startDate && this.endDate) {
       const start = this.formatDateForAPI(this.startDate);
       const end = this.formatDateForAPI(this.endDate);
+      // If using custom date range (not quick filters), show the date range
+      if (this.activeFilterLabel === 'de todas') {
+        this.activeFilterLabel = `del ${this.formatDate(start)} al ${this.formatDate(end)}`;
+      }
       this.loadSales(start, end);
     }
   }
@@ -205,6 +210,7 @@ export class ReportsComponent implements OnInit {
     const lastDay = new Date(today.setDate(today.getDate() - today.getDay() + 6));
     this.startDate = firstDay;
     this.endDate = lastDay;
+    this.activeFilterLabel = 'de esta semana';
     this.applyDateFilters();
   }
 
@@ -214,6 +220,7 @@ export class ReportsComponent implements OnInit {
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     this.startDate = firstDay;
     this.endDate = lastDay;
+    this.activeFilterLabel = 'de este mes';
     this.applyDateFilters();
   }
 
@@ -223,6 +230,7 @@ export class ReportsComponent implements OnInit {
     const lastDay = new Date(today.getFullYear(), 11, 31);
     this.startDate = firstDay;
     this.endDate = lastDay;
+    this.activeFilterLabel = 'de este año';
     this.applyDateFilters();
   }
 
@@ -264,6 +272,7 @@ export class ReportsComponent implements OnInit {
   clearFilters() {
     this.startDate = null;
     this.endDate = null;
+    this.activeFilterLabel = 'de todas';
     this.clientFilter = '';
     this.remissionFilter = '';
     this.invoiceFilter = '';

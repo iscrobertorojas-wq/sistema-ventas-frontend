@@ -4,6 +4,7 @@
             <mat-icon>analytics</mat-icon>
             Ventas Agrupadas por Cliente
         </mat-card-title>
+        <mat-card-subtitle *ngIf="activeFilterLabel">Mostrando ventas {{activeFilterLabel}}</mat-card-subtitle>
     </mat-card-header>
 </mat-card>
 
@@ -40,7 +41,7 @@
     <mat-card class="table-card">
         <div class="table-card-header">
             <div class="table-header-group">
-                <h3 class="table-title">Resumen de Ventas por Cliente</h3>
+                <h3 class="table-title">Resumen de ventas por cliente {{activeFilterLabel !== 'de todas' ? activeFilterLabel : ''}}</h3>
             </div>
 
             <div class="header-actions">

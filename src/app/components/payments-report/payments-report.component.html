@@ -4,6 +4,7 @@
             <mat-icon>receipt_long</mat-icon>
             Reporte de Pagos
         </mat-card-title>
+        <mat-card-subtitle *ngIf="activeFilterLabel">Mostrando pagos {{activeFilterLabel}}</mat-card-subtitle>
     </mat-card-header>
 </mat-card>
 
@@ -42,7 +43,7 @@
     <mat-card class="table-card">
         <div class="table-card-header">
             <div class="table-header-group">
-                <h3 class="table-title">Historial de Pagos</h3>
+                <h3 class="table-title">Historial {{activeFilterLabel === 'de todos' ? 'de todos los' : 'de'}} pagos {{activeFilterLabel !== 'de todos' ? activeFilterLabel : ''}}</h3>
 
                 <div class="header-chips-group">
                     <mat-chip-listbox [(ngModel)]="typeFilter" (ngModelChange)="applyInternalFilters()"

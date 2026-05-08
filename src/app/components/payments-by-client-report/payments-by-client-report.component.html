@@ -4,6 +4,7 @@
             <mat-icon>payments</mat-icon>
             Pagos Agrupados por Cliente
         </mat-card-title>
+        <mat-card-subtitle *ngIf="activeFilterLabel">Mostrando pagos {{activeFilterLabel}}</mat-card-subtitle>
     </mat-card-header>
 </mat-card>
 
@@ -40,7 +41,7 @@
     <mat-card class="table-card">
         <div class="table-card-header">
             <div class="table-header-group">
-                <h3 class="table-title">Resumen de Pagos por Cliente</h3>
+                <h3 class="table-title">Resumen de pagos por cliente {{activeFilterLabel !== 'de todos' ? activeFilterLabel : ''}}</h3>
             </div>
 
             <div class="header-actions">

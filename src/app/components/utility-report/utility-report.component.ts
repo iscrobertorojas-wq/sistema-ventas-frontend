@@ -55,6 +55,7 @@ export class UtilityReportComponent implements OnInit {
   // Filters
   startDate: Date | null = null;
   endDate: Date | null = null;
+  activeFilterLabel: string = 'de este mes';
 
   paymentColumns: string[] = ['date', 'client', 'total', 'subtotal', 'iva'];
   purchaseColumns: string[] = ['date', 'supplier', 'total', 'subtotal', 'iva'];
@@ -129,6 +130,9 @@ export class UtilityReportComponent implements OnInit {
 
   applyDateFilters() {
     if (this.startDate && this.endDate) {
+      if (this.activeFilterLabel === 'general') {
+        this.activeFilterLabel = `del ${this.formatDate(this.formatDateForAPI(this.startDate))} al ${this.formatDate(this.formatDateForAPI(this.endDate))}`;
+      }
       this.loadData(this.formatDateForAPI(this.startDate), this.formatDateForAPI(this.endDate));
     }
   }
@@ -139,6 +143,7 @@ export class UtilityReportComponent implements OnInit {
     const lastDay = new Date(today.setDate(today.getDate() - today.getDay() + 6));
     this.startDate = firstDay;
     this.endDate = lastDay;
+    this.activeFilterLabel = 'de esta semana';
     this.applyDateFilters();
   }
 
@@ -148,6 +153,7 @@ export class UtilityReportComponent implements OnInit {
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     this.startDate = firstDay;
     this.endDate = lastDay;
+    this.activeFilterLabel = 'de este mes';
     this.applyDateFilters();
   }
 
@@ -157,12 +163,14 @@ export class UtilityReportComponent implements OnInit {
     const lastDay = new Date(today.getFullYear(), 11, 31);
     this.startDate = firstDay;
     this.endDate = lastDay;
+    this.activeFilterLabel = 'de este año';
     this.applyDateFilters();
   }
 
   clearFilters() {
     this.startDate = null;
     this.endDate = null;
+    this.activeFilterLabel = 'general';
     this.loadData();
   }
 
