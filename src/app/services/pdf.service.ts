@@ -469,7 +469,7 @@ export class PdfService {
 
         if (isIvaEnabled) {
             if (hasDiscount) {
-                tableColumn = ["Cant.", "Descripción", "P. Unitario (S/IVA)", "Desc. %", "Impuesto (IVA)", "Importe (C/IVA)"];
+                tableColumn = ["Cant.", "Descripción", "P. Unitario", "Desc. %", "Impuesto", "Importe"];
                 columnStyles = {
                     0: { cellWidth: 12, halign: 'center' },
                     1: { cellWidth: 'auto' },
@@ -479,7 +479,7 @@ export class PdfService {
                     5: { cellWidth: 25, halign: 'right' }
                 };
             } else {
-                tableColumn = ["Cant.", "Descripción", "P. Unitario (S/IVA)", "Impuesto (IVA)", "Importe (C/IVA)"];
+                tableColumn = ["Cant.", "Descripción", "P. Unitario", "Impuesto", "Importe"];
                 columnStyles = {
                     0: { cellWidth: 15, halign: 'center' },
                     1: { cellWidth: 'auto' },
