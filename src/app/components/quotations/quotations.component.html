@@ -7,187 +7,250 @@
     </mat-card-header>
 </mat-card>
 
-<div class="container">
-    <div class="sales-layout">
-        <div class="main-panel">
-            <!-- Header Info -->
-            <mat-card class="section-card">
-                <mat-card-content class="header-content">
-                    <mat-form-field appearance="outline" class="client-select">
-                        <mat-label>Cliente</mat-label>
-                        <input type="text" matInput [(ngModel)]="clientSearchTerm" (ngModelChange)="onClientSearch()"
-                            [matAutocomplete]="auto">
-                        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectClient($event)">
-                            <mat-option *ngFor="let client of filteredClients" [value]="client">
-                                {{client.name}}
-                            </mat-option>
-                        </mat-autocomplete>
-                    </mat-form-field>
+<mat-tab-group animationDuration="0ms">
+    <mat-tab label="Nueva Cotización">
+        <div class="container mt-20">
+            <div class="sales-layout">
+                <div class="main-panel">
+                    <!-- Header Info -->
+                    <mat-card class="section-card">
+                        <mat-card-content class="header-content">
+                            <mat-form-field appearance="outline" class="client-select">
+                                <mat-label>Cliente</mat-label>
+                                <input type="text" matInput [(ngModel)]="clientSearchTerm"
+                                    (ngModelChange)="onClientSearch()" [matAutocomplete]="auto">
+                                <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectClient($event)">
+                                    <mat-option *ngFor="let client of filteredClients" [value]="client">
+                                        {{client.name}}
+                                    </mat-option>
+                                </mat-autocomplete>
+                            </mat-form-field>
 
-                    <div class="folio-display" *ngIf="nextFolio">
-                        <strong>Folio:</strong> {{nextFolio}}
-                    </div>
+                            <div class="folio-display" *ngIf="nextFolio">
+                                <strong>Folio:</strong> {{nextFolio}}
+                            </div>
 
-                    <mat-form-field appearance="outline">
-                        <mat-label>Fecha</mat-label>
-                        <input matInput [matDatepicker]="picker" [(ngModel)]="today">
-                        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker></mat-datepicker>
-                    </mat-form-field>
-                </mat-card-content>
-            </mat-card>
+                            <mat-form-field appearance="outline">
+                                <mat-label>Fecha</mat-label>
+                                <input matInput [matDatepicker]="picker" [(ngModel)]="today">
+                                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                                <mat-datepicker #picker></mat-datepicker>
+                            </mat-form-field>
+                        </mat-card-content>
+                    </mat-card>
 
-            <!-- IVA Mode -->
-            <mat-card class="section-card">
-                <mat-card-header>
-                    <mat-card-title>Configuración de IVA</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                    <mat-radio-group [(ngModel)]="ivaMode" class="iva-radio-group">
-                        <mat-radio-button value="none">Sin IVA</mat-radio-button>
-                        <mat-radio-button value="add">Añadir IVA (16%)</mat-radio-button>
-                        <mat-radio-button value="breakdown">Desglosar IVA (precios ya incluyen IVA)</mat-radio-button>
-                    </mat-radio-group>
-                </mat-card-content>
-            </mat-card>
+                    <!-- IVA Mode -->
+                    <mat-card class="section-card">
+                        <mat-card-header>
+                            <mat-card-title>Configuración de IVA</mat-card-title>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <mat-radio-group [(ngModel)]="ivaMode" class="iva-radio-group">
+                                <mat-radio-button value="none">Sin IVA</mat-radio-button>
+                                <mat-radio-button value="add">Añadir IVA (16%)</mat-radio-button>
+                                <mat-radio-button value="breakdown">Desglosar IVA (precios ya incluyen
+                                    IVA)</mat-radio-button>
+                            </mat-radio-group>
+                        </mat-card-content>
+                    </mat-card>
 
-            <!-- Add Items -->
-            <mat-card class="section-card">
-                <mat-card-header>
-                    <mat-card-title>Agregar Producto / Servicio</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                    <div class="add-item-row">
-                        <mat-form-field appearance="outline" class="description-input">
-                            <mat-label>Descripción</mat-label>
-                            <input matInput [(ngModel)]="currentDescription"
-                                placeholder="Ej: Mantenimiento preventivo">
-                        </mat-form-field>
+                    <!-- Add Items -->
+                    <mat-card class="section-card">
+                        <mat-card-header>
+                            <mat-card-title>Agregar Producto / Servicio</mat-card-title>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <div class="add-item-row">
+                                <mat-form-field appearance="outline" class="description-input">
+                                    <mat-label>Descripción</mat-label>
+                                    <input matInput [(ngModel)]="currentDescription"
+                                        placeholder="Ej: Mantenimiento preventivo">
+                                </mat-form-field>
 
-                        <mat-form-field appearance="outline" class="price-input">
-                            <mat-label>Precio Unit.</mat-label>
-                            <input matInput type="number" [(ngModel)]="currentUnitPrice" min="0">
-                        </mat-form-field>
+                                <mat-form-field appearance="outline" class="price-input">
+                                    <mat-label>Precio Unit.</mat-label>
+                                    <input matInput type="number" [(ngModel)]="currentUnitPrice" min="0">
+                                </mat-form-field>
 
-                        <mat-form-field appearance="outline" class="qty-input">
-                            <mat-label>Cant.</mat-label>
-                            <input matInput type="number" [(ngModel)]="currentQuantity" min="1">
-                        </mat-form-field>
+                                <mat-form-field appearance="outline" class="qty-input">
+                                    <mat-label>Cant.</mat-label>
+                                    <input matInput type="number" [(ngModel)]="currentQuantity" min="1">
+                                </mat-form-field>
 
-                        <mat-form-field appearance="outline" class="discount-input">
-                            <mat-label>Desc. %</mat-label>
-                            <input matInput type="number" [(ngModel)]="currentDiscount" min="0" max="100">
-                        </mat-form-field>
+                                <mat-form-field appearance="outline" class="discount-input">
+                                    <mat-label>Desc. %</mat-label>
+                                    <input matInput type="number" [(ngModel)]="currentDiscount" min="0" max="100">
+                                </mat-form-field>
 
-                        <button mat-raised-button color="accent" (click)="addItem()"
-                            [disabled]="!currentDescription || currentUnitPrice <= 0">
-                            <mat-icon>add</mat-icon> Agregar
-                        </button>
-                    </div>
-                </mat-card-content>
-            </mat-card>
+                                <button mat-raised-button color="accent" (click)="addItem()"
+                                    [disabled]="!currentDescription || currentUnitPrice <= 0">
+                                    <mat-icon>add</mat-icon> Agregar
+                                </button>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
 
-            <!-- Items Table -->
-            <mat-card class="table-card">
-                <table mat-table [dataSource]="quotationItems" class="mat-elevation-z0">
-                    <ng-container matColumnDef="description">
-                        <th mat-header-cell *matHeaderCellDef> Descripción </th>
-                        <td mat-cell *matCellDef="let item"> {{item.description}} </td>
-                    </ng-container>
+                    <!-- Items Table -->
+                    <mat-card class="table-card">
+                        <table mat-table [dataSource]="quotationItems" class="mat-elevation-z0">
+                            <ng-container matColumnDef="description">
+                                <th mat-header-cell *matHeaderCellDef> Descripción </th>
+                                <td mat-cell *matCellDef="let item"> {{item.description}} </td>
+                            </ng-container>
 
-                    <ng-container matColumnDef="unitPrice">
-                        <th mat-header-cell *matHeaderCellDef> Precio Unit. </th>
-                        <td mat-cell *matCellDef="let item"> {{item.unitPrice | currency}} </td>
-                    </ng-container>
+                            <ng-container matColumnDef="unitPrice">
+                                <th mat-header-cell *matHeaderCellDef> Precio Unit. </th>
+                                <td mat-cell *matCellDef="let item"> {{item.unitPrice | currency}} </td>
+                            </ng-container>
 
-                    <ng-container matColumnDef="quantity">
-                        <th mat-header-cell *matHeaderCellDef> Cant. </th>
-                        <td mat-cell *matCellDef="let item"> {{item.quantity}} </td>
-                    </ng-container>
+                            <ng-container matColumnDef="quantity">
+                                <th mat-header-cell *matHeaderCellDef> Cant. </th>
+                                <td mat-cell *matCellDef="let item"> {{item.quantity}} </td>
+                            </ng-container>
 
-                    <ng-container matColumnDef="discount">
-                        <th mat-header-cell *matHeaderCellDef> Desc. % </th>
-                        <td mat-cell *matCellDef="let item"> {{item.discount}}% </td>
-                    </ng-container>
+                            <ng-container matColumnDef="discount">
+                                <th mat-header-cell *matHeaderCellDef> Desc. % </th>
+                                <td mat-cell *matCellDef="let item"> {{item.discount}}% </td>
+                            </ng-container>
 
-                    <ng-container matColumnDef="amount">
-                        <th mat-header-cell *matHeaderCellDef> Importe </th>
-                        <td mat-cell *matCellDef="let item"> {{item.amount | currency}} </td>
-                    </ng-container>
+                            <ng-container matColumnDef="amount">
+                                <th mat-header-cell *matHeaderCellDef> Importe </th>
+                                <td mat-cell *matCellDef="let item"> {{item.amount | currency}} </td>
+                            </ng-container>
 
-                    <ng-container matColumnDef="actions">
-                        <th mat-header-cell *matHeaderCellDef> </th>
-                        <td mat-cell *matCellDef="let item; let i = index">
-                            <button mat-icon-button color="warn" (click)="removeItem(i)">
-                                <mat-icon>delete</mat-icon>
-                            </button>
-                        </td>
-                    </ng-container>
+                            <ng-container matColumnDef="actions">
+                                <th mat-header-cell *matHeaderCellDef> </th>
+                                <td mat-cell *matCellDef="let item; let i = index">
+                                    <button mat-icon-button color="warn" (click)="removeItem(i)">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                </td>
+                            </ng-container>
 
-                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-                </table>
+                            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                        </table>
 
-                <div class="empty-message" *ngIf="quotationItems.length === 0">
-                    No hay productos o servicios agregados.
+                        <div class="empty-message" *ngIf="quotationItems.length === 0">
+                            No hay productos o servicios agregados.
+                        </div>
+                    </mat-card>
                 </div>
-            </mat-card>
-        </div>
 
-        <!-- Sidebar Totals -->
-        <div class="sidebar-panel">
-            <mat-card class="totals-card">
-                <mat-card-header>
-                    <mat-card-title>Resumen</mat-card-title>
-                </mat-card-header>
+                <!-- Sidebar Totals -->
+                <div class="sidebar-panel">
+                    <mat-card class="totals-card">
+                        <mat-card-header>
+                            <mat-card-title>Resumen</mat-card-title>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <!-- Subtotal before IVA (only shown when breakdown) -->
+                            <div class="total-row" *ngIf="ivaMode === 'breakdown'">
+                                <span>Subtotal (sin IVA):</span>
+                                <span>{{getSubtotalBeforeIva() | currency}}</span>
+                            </div>
+
+                            <!-- Subtotal -->
+                            <div class="total-row" *ngIf="ivaMode !== 'breakdown'">
+                                <span>Subtotal:</span>
+                                <span>{{getSubtotal() | currency}}</span>
+                            </div>
+
+                            <!-- Total Discount -->
+                            <div class="total-row discount-row" *ngIf="getTotalDiscount() > 0">
+                                <span>Descuento Total:</span>
+                                <span>-{{getTotalDiscount() | currency}}</span>
+                            </div>
+
+                            <!-- IVA -->
+                            <div class="total-row iva-row" *ngIf="ivaMode !== 'none'">
+                                <span>IVA (16%):</span>
+                                <span>{{getIva() | currency}}</span>
+                            </div>
+
+                            <!-- Total -->
+                            <div class="total-row large">
+                                <span>Total:</span>
+                                <span>{{getTotal() | currency}}</span>
+                            </div>
+
+                            <mat-form-field appearance="outline" class="full-width mt-10">
+                                <mat-label>Observaciones</mat-label>
+                                <textarea matInput [(ngModel)]="observations" rows="3"
+                                    placeholder="Ej: Vigencia de la cotización, condiciones, etc."></textarea>
+                            </mat-form-field>
+                        </mat-card-content>
+                        <mat-card-actions>
+                            <button mat-raised-button color="primary" class="full-width" (click)="saveQuotation()"
+                                [disabled]="quotationItems.length === 0 || !selectedClient">
+                                <mat-icon>{{ isEditing ? 'update' : 'save' }}</mat-icon> {{ isEditing ? 'Actualizar Cotización'
+                                : 'Guardar Cotización' }}
+                            </button>
+                            <button mat-button class="full-width mt-10" *ngIf="isEditing" (click)="startNewQuotation()">
+                                Cancelar Edición
+                            </button>
+                        </mat-card-actions>
+                    </mat-card>
+                </div>
+            </div>
+        </div>
+    </mat-tab>
+
+    <mat-tab label="Listado de Cotizaciones">
+        <div class="container mt-20">
+            <mat-card>
                 <mat-card-content>
-                    <!-- Subtotal before IVA (only shown when breakdown) -->
-                    <div class="total-row" *ngIf="ivaMode === 'breakdown'">
-                        <span>Subtotal (sin IVA):</span>
-                        <span>{{getSubtotalBeforeIva() | currency}}</span>
+                    <table mat-table [dataSource]="allQuotations" class="mat-elevation-z0 full-width-table">
+                        <!-- Folio Column -->
+                        <ng-container matColumnDef="folio">
+                            <th mat-header-cell *matHeaderCellDef> Folio </th>
+                            <td mat-cell *matCellDef="let q"> <strong>{{q.folio}}</strong> </td>
+                        </ng-container>
+
+                        <!-- Date Column -->
+                        <ng-container matColumnDef="date">
+                            <th mat-header-cell *matHeaderCellDef> Fecha </th>
+                            <td mat-cell *matCellDef="let q"> {{q.date | date:'dd/MM/yyyy'}} </td>
+                        </ng-container>
+
+                        <!-- Client Column -->
+                        <ng-container matColumnDef="client">
+                            <th mat-header-cell *matHeaderCellDef> Cliente </th>
+                            <td mat-cell *matCellDef="let q"> {{q.client_name}} </td>
+                        </ng-container>
+
+                        <!-- Total Column -->
+                        <ng-container matColumnDef="total">
+                            <th mat-header-cell *matHeaderCellDef> Total </th>
+                            <td mat-cell *matCellDef="let q"> {{q.total | currency}} </td>
+                        </ng-container>
+
+                        <!-- Actions Column -->
+                        <ng-container matColumnDef="actions">
+                            <th mat-header-cell *matHeaderCellDef> Acciones </th>
+                            <td mat-cell *matCellDef="let q">
+                                <button mat-icon-button color="primary" (click)="editQuotation(q)" matTooltip="Editar">
+                                    <mat-icon>edit</mat-icon>
+                                </button>
+                                <button mat-icon-button color="accent" (click)="printQuotation(q)" matTooltip="Reimprimir PDF">
+                                    <mat-icon>print</mat-icon>
+                                </button>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="quotationsColumns"></tr>
+                        <tr mat-row *matRowDef="let row; columns: quotationsColumns;"></tr>
+                    </table>
+
+                    <div class="empty-message" *ngIf="allQuotations.length === 0 && !isLoadingList">
+                        No hay cotizaciones registradas.
                     </div>
 
-                    <!-- Subtotal -->
-                    <div class="total-row" *ngIf="ivaMode !== 'breakdown'">
-                        <span>Subtotal:</span>
-                        <span>{{getSubtotal() | currency}}</span>
+                    <div class="loading-spinner" *ngIf="isLoadingList">
+                        Cargando cotizaciones...
                     </div>
-
-                    <!-- Total Discount -->
-                    <div class="total-row discount-row" *ngIf="getTotalDiscount() > 0">
-                        <span>Descuento Total:</span>
-                        <span>-{{getTotalDiscount() | currency}}</span>
-                    </div>
-
-                    <!-- IVA -->
-                    <div class="total-row iva-row" *ngIf="ivaMode !== 'none'">
-                        <span>IVA (16%):</span>
-                        <span>{{getIva() | currency}}</span>
-                    </div>
-
-                    <!-- Total -->
-                    <div class="total-row large">
-                        <span>Total:</span>
-                        <span>{{getTotal() | currency}}</span>
-                    </div>
-
-                    <mat-form-field appearance="outline" class="full-width mt-10">
-                        <mat-label>Observaciones</mat-label>
-                        <textarea matInput [(ngModel)]="observations" rows="3"
-                            placeholder="Ej: Vigencia de la cotización, condiciones, etc."></textarea>
-                    </mat-form-field>
                 </mat-card-content>
-                <mat-card-actions>
-                    <button mat-raised-button color="primary" class="full-width" (click)="saveQuotation()"
-                        [disabled]="quotationItems.length === 0 || !selectedClient">
-                        <mat-icon>{{ isEditing ? 'update' : 'save' }}</mat-icon> {{ isEditing ? 'Actualizar Cotización'
-                        : 'Guardar Cotización' }}
-                    </button>
-                    <button mat-button class="full-width mt-10" *ngIf="isEditing" routerLink="/quotations">
-                        Cancelar Edición
-                    </button>
-                </mat-card-actions>
             </mat-card>
         </div>
-    </div>
-</div>
+    </mat-tab>
+</mat-tab-group>

@@ -16,6 +16,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatRadioModule } from '@angular/material/radio';
+import { MatTabsModule } from '@angular/material/tabs';
 
 @Component({
     selector: 'app-quotations',
@@ -34,7 +35,8 @@ import { MatRadioModule } from '@angular/material/radio';
         MatDatepickerModule,
         MatNativeDateModule,
         MatAutocompleteModule,
-        MatRadioModule
+        MatRadioModule,
+        MatTabsModule
     ],
     templateUrl: './quotations.component.html',
     styleUrl: './quotations.component.css'
@@ -43,6 +45,8 @@ export class QuotationsComponent implements OnInit {
     clients: any[] = [];
     selectedClient: any = null;
     quotationItems: any[] = [];
+    allQuotations: any[] = [];
+    isLoadingList: boolean = false;
 
     // Autocomplete
     clientSearchTerm: string = '';
@@ -65,6 +69,7 @@ export class QuotationsComponent implements OnInit {
     settings: any = null;
 
     displayedColumns: string[] = ['description', 'unitPrice', 'quantity', 'discount', 'amount', 'actions'];
+    quotationsColumns: string[] = ['folio', 'date', 'client', 'total', 'actions'];
 
     constructor(
         private api: ApiService,
@@ -78,6 +83,7 @@ export class QuotationsComponent implements OnInit {
         this.loadClients();
         this.loadGlobalSettings();
         this.loadNextFolio();
+        this.loadQuotations();
 
         // Check for edit mode
         this.route.queryParams.subscribe(params => {
@@ -132,6 +138,20 @@ export class QuotationsComponent implements OnInit {
                 this.nextFolio = `C-${currentFolio}`;
             },
             error: (err) => console.error('Error loading folio:', err)
+        });
+    }
+
+    loadQuotations() {
+        this.isLoadingList = true;
+        this.api.getQuotations().subscribe({
+            next: (data) => {
+                this.allQuotations = data;
+                this.isLoadingList = false;
+            },
+            error: (err) => {
+                console.error('Error loading quotations', err);
+                this.isLoadingList = false;
+            }
         });
     }
 
@@ -263,9 +283,11 @@ export class QuotationsComponent implements OnInit {
 
                 if (this.isEditing) {
                     this.router.navigate(['/quotations']);
-                } else {
-                    this.startNewQuotation();
+                    this.isEditing = false;
+                    this.quotationId = null;
                 }
+                this.startNewQuotation();
+                this.loadQuotations();
             },
             error: (err) => {
                 console.error('Error saving quotation', err);
@@ -284,6 +306,44 @@ export class QuotationsComponent implements OnInit {
         this.currentDiscount = 0;
         this.ivaMode = 'none';
         this.observations = '';
+        this.isEditing = false;
+        this.quotationId = null;
         this.loadNextFolio();
+    }
+
+    editQuotation(q: any) {
+        this.isEditing = true;
+        this.quotationId = q.id;
+        this.loadQuotationForEdit(q.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    printQuotation(q: any) {
+        this.api.getQuotationById(q.id).subscribe({
+            next: (quotation) => {
+                const client = { id: quotation.client_id, name: quotation.client_name };
+                const items = quotation.items.map((item: any) => ({
+                    description: item.description,
+                    unitPrice: parseFloat(item.unit_price),
+                    quantity: item.quantity,
+                    discount: parseFloat(item.discount_percent),
+                    amount: parseFloat(item.amount)
+                }));
+
+                this.pdfService.generateQuotationPdf(
+                    {
+                        id: quotation.id,
+                        folio: quotation.folio,
+                        date: quotation.date,
+                        iva_mode: quotation.iva_mode,
+                        observations: quotation.observations
+                    },
+                    items,
+                    client,
+                    this.settings
+                );
+            },
+            error: () => this.snackBar.open('Error al cargar cotización para imprimir', 'Cerrar', { duration: 3000 })
+        });
     }
 }

@@ -603,18 +603,10 @@ export class PdfService {
         const hasDiscount = items.some((item: any) => item.discount > 0);
 
         let tableColumn: string[];
-        let tableRows: any[];
         let columnStyles: any;
 
         if (hasDiscount) {
             tableColumn = ["Cant.", "Descripción", "P. Unitario", "Desc. %", "Importe"];
-            tableRows = items.map((item: any) => [
-                String(item.quantity || 1),
-                item.description || 'Producto',
-                `$${parseFloat(item.unitPrice || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
-                item.discount > 0 ? `${item.discount}%` : '-',
-                `$${parseFloat(item.amount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-            ]);
             columnStyles = {
                 0: { cellWidth: 15, halign: 'center' },
                 1: { cellWidth: 'auto' },
@@ -624,12 +616,6 @@ export class PdfService {
             };
         } else {
             tableColumn = ["Cant.", "Descripción", "Precio Unitario", "Importe"];
-            tableRows = items.map((item: any) => [
-                String(item.quantity || 1),
-                item.description || 'Producto',
-                `$${parseFloat(item.unitPrice || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
-                `$${parseFloat(item.amount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-            ]);
             columnStyles = {
                 0: { cellWidth: 15, halign: 'center' },
                 1: { cellWidth: 'auto' },
@@ -637,6 +623,34 @@ export class PdfService {
                 3: { cellWidth: 35, halign: 'right' }
             };
         }
+
+        // Calculate items for the table - Unit Price should be without IVA for 'breakdown' mode
+        const tableRows = items.map((item: any) => {
+            let displayUnitPrice = parseFloat(item.unitPrice || 0);
+            let displayAmount = parseFloat(item.amount || 0);
+
+            if (ivaMode === 'breakdown') {
+                displayUnitPrice = displayUnitPrice / 1.16;
+                displayAmount = displayAmount / 1.16;
+            }
+
+            if (hasDiscount) {
+                return [
+                    String(item.quantity || 1),
+                    item.description || 'Producto',
+                    `$${displayUnitPrice.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                    item.discount > 0 ? `${item.discount}%` : '-',
+                    `$${displayAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                ];
+            } else {
+                return [
+                    String(item.quantity || 1),
+                    item.description || 'Producto',
+                    `$${displayUnitPrice.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                    `$${displayAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                ];
+            }
+        });
 
         autoTable(doc, {
             head: [tableColumn],

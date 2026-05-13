@@ -128,6 +128,21 @@ table {
     font-style: italic;
 }
 
+.mt-20 {
+    margin-top: 20px;
+}
+
+.full-width-table {
+    width: 100%;
+}
+
+.loading-spinner {
+    padding: 30px;
+    text-align: center;
+    color: var(--brand-color);
+    font-weight: 500;
+}
+
 @media (max-width: 900px) {
     .sales-layout {
         grid-template-columns: 1fr;
