@@ -47,6 +47,7 @@ export class QuotationsComponent implements OnInit {
     quotationItems: any[] = [];
     allQuotations: any[] = [];
     isLoadingList: boolean = false;
+    selectedTab: number = 0;
 
     // Autocomplete
     clientSearchTerm: string = '';
@@ -312,6 +313,7 @@ export class QuotationsComponent implements OnInit {
     }
 
     editQuotation(q: any) {
+        this.selectedTab = 0;
         this.isEditing = true;
         this.quotationId = q.id;
         this.loadQuotationForEdit(q.id);

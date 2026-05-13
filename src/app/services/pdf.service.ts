@@ -624,6 +624,10 @@ export class PdfService {
             };
         }
 
+        // Calculate totals based on IVA mode
+        const subtotalItems = items.reduce((sum: number, item: any) => sum + parseFloat(item.amount || 0), 0);
+        const ivaMode = quotation.iva_mode || 'none';
+
         // Calculate items for the table - Unit Price should be without IVA for 'breakdown' mode
         const tableRows = items.map((item: any) => {
             let displayUnitPrice = parseFloat(item.unitPrice || 0);
@@ -674,10 +678,6 @@ export class PdfService {
 
         // -- BOTTOM SECTION --
         const finalY = (doc as any).lastAutoTable.finalY + 10;
-
-        // Calculate totals based on IVA mode
-        const subtotalItems = items.reduce((sum: number, item: any) => sum + parseFloat(item.amount || 0), 0);
-        const ivaMode = quotation.iva_mode || 'none';
 
         let subtotalDisplay: number;
         let ivaAmount: number;
