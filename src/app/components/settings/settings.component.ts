@@ -85,7 +85,8 @@ export class SettingsComponent implements OnInit {
                 this.bankCard = settings.bank_card || this.bankCard;
                 this.footerText = settings.footer_text || this.footerText;
                 this.companyLogo = settings.company_logo || null;
-                this.brandColor = settings.brand_color || '#1a73e8';
+                const rawColor = settings.brand_color;
+                this.brandColor = (rawColor && rawColor.startsWith('#')) ? rawColor : '#1a73e8';
 
                 if (settings.dashboard_stats_order) {
                     try {
