@@ -209,6 +209,10 @@ export class ApiService {
     return this.http.put<any>(`${this.baseUrl}/quotations`, quotation);
   }
 
+  deleteQuotation(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/quotations/${id}`);
+  }
+
   // Database Management
   backupDatabase(): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/database/backup`, { responseType: 'blob' });

@@ -348,4 +348,19 @@ export class QuotationsComponent implements OnInit {
             error: () => this.snackBar.open('Error al cargar cotización para imprimir', 'Cerrar', { duration: 3000 })
         });
     }
+
+    deleteQuotation(q: any) {
+        if (confirm(`¿Estás seguro de que deseas eliminar la cotización ${q.folio}?`)) {
+            this.api.deleteQuotation(q.id).subscribe({
+                next: () => {
+                    this.snackBar.open('Cotización eliminada con éxito', 'Cerrar', { duration: 3000 });
+                    this.loadQuotations();
+                },
+                error: (err) => {
+                    console.error('Error deleting quotation', err);
+                    this.snackBar.open('Error al eliminar la cotización', 'Cerrar', { duration: 3000 });
+                }
+            });
+        }
+    }
 }
