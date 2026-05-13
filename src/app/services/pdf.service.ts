@@ -465,25 +465,109 @@ export class PdfService {
 
         let tableColumn: string[];
         let columnStyles: any;
-        if (hasDiscount) {
-            tableColumn = ["Cant.", "Descripción", "P. Unitario", "Desc. %", "Importe"];
-            columnStyles = { 0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 30, halign: 'right' }, 3: { cellWidth: 20, halign: 'center' }, 4: { cellWidth: 30, halign: 'right' } };
+        const isIvaEnabled = ivaMode !== 'none';
+
+        if (isIvaEnabled) {
+            if (hasDiscount) {
+                tableColumn = ["Cant.", "Descripción", "P. Unitario (S/IVA)", "Desc. %", "Impuesto (IVA)", "Importe (C/IVA)"];
+                columnStyles = {
+                    0: { cellWidth: 12, halign: 'center' },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 25, halign: 'right' },
+                    3: { cellWidth: 15, halign: 'center' },
+                    4: { cellWidth: 25, halign: 'right' },
+                    5: { cellWidth: 25, halign: 'right' }
+                };
+            } else {
+                tableColumn = ["Cant.", "Descripción", "P. Unitario (S/IVA)", "Impuesto (IVA)", "Importe (C/IVA)"];
+                columnStyles = {
+                    0: { cellWidth: 15, halign: 'center' },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 30, halign: 'right' },
+                    3: { cellWidth: 30, halign: 'right' },
+                    4: { cellWidth: 30, halign: 'right' }
+                };
+            }
         } else {
-            tableColumn = ["Cant.", "Descripción", "Precio Unitario", "Importe"];
-            columnStyles = { 0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 35, halign: 'right' }, 3: { cellWidth: 35, halign: 'right' } };
+            if (hasDiscount) {
+                tableColumn = ["Cant.", "Descripción", "P. Unitario", "Desc. %", "Importe"];
+                columnStyles = {
+                    0: { cellWidth: 15, halign: 'center' },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 30, halign: 'right' },
+                    3: { cellWidth: 20, halign: 'center' },
+                    4: { cellWidth: 30, halign: 'right' }
+                };
+            } else {
+                tableColumn = ["Cant.", "Descripción", "Precio Unitario", "Importe"];
+                columnStyles = {
+                    0: { cellWidth: 15, halign: 'center' },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 35, halign: 'right' },
+                    3: { cellWidth: 35, halign: 'right' }
+                };
+            }
         }
 
         const tableRows = items.map((item: any) => {
-            let displayUnitPrice = parseFloat(item.unitPrice || 0);
-            let displayAmount = parseFloat(item.amount || 0);
+            let unitPrice = parseFloat(item.unitPrice || 0);
+            let quantity = parseFloat(item.quantity || 1);
+            let discountPercent = parseFloat(item.discount || 0);
+            
+            // Base price calculation depending on mode
+            let unitPriceSiva: number;
             if (ivaMode === 'breakdown') {
-                displayUnitPrice = displayUnitPrice / 1.16;
-                displayAmount = displayAmount / 1.16;
-            }
-            if (hasDiscount) {
-                return [String(item.quantity || 1), item.description || 'Producto', `$${displayUnitPrice.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, item.discount > 0 ? `${item.discount}%` : '-', `$${displayAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` ];
+                unitPriceSiva = unitPrice / 1.16;
             } else {
-                return [String(item.quantity || 1), item.description || 'Producto', `$${displayUnitPrice.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, `$${displayAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` ];
+                // For 'none' or 'add', the captured price is the base price
+                unitPriceSiva = unitPrice;
+            }
+
+            // Calculate values
+            const subtotalItemSiva = unitPriceSiva * quantity;
+            const discountAmount = subtotalItemSiva * (discountPercent / 100);
+            const baseForIva = subtotalItemSiva - discountAmount;
+            const ivaItem = baseForIva * 0.16;
+            const totalItemCiva = baseForIva + ivaItem;
+
+            if (isIvaEnabled) {
+                if (hasDiscount) {
+                    return [
+                        String(quantity),
+                        item.description || 'Producto',
+                        `$${unitPriceSiva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                        discountPercent > 0 ? `${discountPercent}%` : '-',
+                        `$${ivaItem.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                        `$${totalItemCiva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                    ];
+                } else {
+                    return [
+                        String(quantity),
+                        item.description || 'Producto',
+                        `$${unitPriceSiva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                        `$${ivaItem.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                        `$${totalItemCiva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                    ];
+                }
+            } else {
+                // No IVA mode - Original simple display
+                const finalAmountNoIva = subtotalItemSiva - discountAmount;
+                if (hasDiscount) {
+                    return [
+                        String(quantity),
+                        item.description || 'Producto',
+                        `$${unitPriceSiva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                        discountPercent > 0 ? `${discountPercent}%` : '-',
+                        `$${finalAmountNoIva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                    ];
+                } else {
+                    return [
+                        String(quantity),
+                        item.description || 'Producto',
+                        `$${unitPriceSiva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                        `$${finalAmountNoIva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                    ];
+                }
             }
         });
 
@@ -494,7 +578,7 @@ export class PdfService {
             margin: { left: 10, right: 10 },
             theme: 'grid',
             headStyles: { fillColor: [30, 78, 140], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
-            styles: { fontSize: 9, cellPadding: 3, textColor: [31, 45, 61] },
+            styles: { fontSize: 8, cellPadding: 2, textColor: [31, 45, 61] }, // Reduced font size for more columns
             columnStyles
         });
 
@@ -541,7 +625,7 @@ export class PdfService {
         doc.line(130, finalY + 9, 200, finalY + 9);
         let totalY = finalY + 9;
         if (ivaMode !== 'none') {
-            const ivaLabel = ivaMode === 'breakdown' ? 'IVA (desglosado 16%):' : 'IVA (16%):';
+            const ivaLabel = 'IVA 16%:';
             doc.text(ivaLabel, 135, finalY + 17);
             doc.text(`$${ivaAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, finalY + 17, { align: 'right' });
             doc.line(130, finalY + 20, 200, finalY + 20);
