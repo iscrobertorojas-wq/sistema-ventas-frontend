@@ -15,6 +15,7 @@ import { DatabaseManagementComponent } from './components/database-management/da
 import { SuppliersComponent } from './components/suppliers/suppliers.component';
 import { PurchasesComponent } from './components/purchases/purchases.component';
 import { UtilityReportComponent } from './components/utility-report/utility-report.component';
+import { QuotationsComponent } from './components/quotations/quotations.component';
 import { AuthGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -22,6 +23,7 @@ export const routes: Routes = [
     { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
     { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
     { path: 'sales', component: SalesComponent, canActivate: [AuthGuard] },
+    { path: 'quotations', component: QuotationsComponent, canActivate: [AuthGuard] },
     { path: 'clients', component: ClientsComponent, canActivate: [AuthGuard] },
     { path: 'suppliers', component: SuppliersComponent, canActivate: [AuthGuard] },
     { path: 'purchases', component: PurchasesComponent, canActivate: [AuthGuard] },

@@ -66,6 +66,22 @@
                         Guardar Consecutivo de Factura
                     </button>
                 </div>
+
+                <mat-divider style="margin: 20px 0;"></mat-divider>
+
+                <div class="setting-item vertical">
+                    <div class="setting-label">
+                        <h3>Consecutivo de Cotizaciones</h3>
+                        <p>Define el próximo número de folio para cotizaciones (C-XXXXXX)</p>
+                    </div>
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Número Consecutivo</mat-label>
+                        <input matInput type="number" [(ngModel)]="folioQuotation" min="1">
+                    </mat-form-field>
+                    <button mat-raised-button color="primary" (click)="saveFolioQuotation()">
+                        Guardar Consecutivo de Cotización
+                    </button>
+                </div>
             </mat-card-content>
         </mat-card>
     </div>

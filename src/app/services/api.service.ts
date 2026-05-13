@@ -192,6 +192,23 @@ export class ApiService {
   }
 
 
+  // Quotations
+  getQuotations(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/quotations`);
+  }
+
+  getQuotationById(id: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/quotations/${id}`);
+  }
+
+  createQuotation(quotation: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/quotations`, quotation);
+  }
+
+  updateQuotation(quotation: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/quotations`, quotation);
+  }
+
   // Database Management
   backupDatabase(): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/database/backup`, { responseType: 'blob' });

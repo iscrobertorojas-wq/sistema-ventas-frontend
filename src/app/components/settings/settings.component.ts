@@ -34,6 +34,7 @@ export class SettingsComponent implements OnInit {
     isDarkMode: boolean = false;
     folioRemission: string = '1';
     folioInvoice: string = '1';
+    folioQuotation: string = '1';
     companyName: string = 'ROBERTO ROJAS SALDAÑA';
     companyProfession: string = 'Ingeniero en Sistemas Computacionales';
     bankName: string = 'BBVA';
@@ -77,6 +78,7 @@ export class SettingsComponent implements OnInit {
                 this.isDarkMode = settings.theme === 'dark';
                 this.folioRemission = settings.folio_remission || '1';
                 this.folioInvoice = settings.folio_invoice || '1';
+                this.folioQuotation = settings.folio_quotation || '1';
                 this.companyName = settings.company_name || this.companyName;
                 this.companyProfession = settings.company_profession || this.companyProfession;
                 this.bankName = settings.bank_name || this.bankName;
@@ -171,6 +173,25 @@ export class SettingsComponent implements OnInit {
         this.api.updateSetting('folio_invoice', valueToSave).subscribe({
             next: () => {
                 this.snackBar.open('Consecutivo de factura actualizado', 'Cerrar', { duration: 2000 });
+                this.loadSettings();
+            },
+            error: (err) => {
+                console.error('Error saving folio:', err);
+                this.snackBar.open('Error al guardar consecutivo', 'Cerrar', { duration: 3000 });
+            }
+        });
+    }
+
+    saveFolioQuotation() {
+        const valueToSave = String(this.folioQuotation).trim();
+        if (!valueToSave || isNaN(Number(valueToSave))) {
+            this.snackBar.open('Por favor ingresa un número válido', 'Cerrar', { duration: 3000 });
+            return;
+        }
+
+        this.api.updateSetting('folio_quotation', valueToSave).subscribe({
+            next: () => {
+                this.snackBar.open('Consecutivo de cotización actualizado', 'Cerrar', { duration: 2000 });
                 this.loadSettings();
             },
             error: (err) => {

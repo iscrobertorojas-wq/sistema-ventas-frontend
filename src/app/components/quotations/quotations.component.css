@@ -1,0 +1,174 @@
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.sales-layout {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+}
+
+.section-card {
+    margin-bottom: 20px;
+}
+
+.header-content {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.client-select {
+    flex: 2;
+    min-width: 200px;
+}
+
+.folio-display {
+    padding: 10px 15px;
+    background: var(--brand-color-light);
+    border-radius: 4px;
+    font-weight: 500;
+    color: var(--brand-color);
+}
+
+.folio-display strong {
+    margin-right: 8px;
+}
+
+.iva-radio-group {
+    display: flex;
+    gap: 20px;
+    padding: 8px 0;
+    flex-wrap: wrap;
+}
+
+.iva-radio-group mat-radio-button {
+    font-size: 0.95rem;
+}
+
+.add-item-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.description-input {
+    flex: 3;
+    min-width: 200px;
+}
+
+.price-input {
+    width: 130px;
+}
+
+.qty-input {
+    width: 90px;
+}
+
+.discount-input {
+    width: 100px;
+}
+
+.totals-card {
+    position: sticky;
+    top: 20px;
+}
+
+.table-card {
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+table {
+    background-color: transparent !important;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 8px 0;
+    font-size: 1rem;
+    color: var(--text-main);
+}
+
+.total-row.large {
+    font-weight: bold;
+    font-size: 2rem;
+    color: var(--brand-color);
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 2px solid var(--border-color);
+}
+
+.total-row.discount-row {
+    color: #e53935;
+}
+
+.total-row.iva-row {
+    color: var(--text-muted);
+}
+
+.full-width {
+    width: 100%;
+    padding: 8px;
+    font-size: 1.2rem;
+}
+
+.mt-10 {
+    margin-top: 10px;
+}
+
+.empty-message {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+@media (max-width: 900px) {
+    .sales-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .client-select,
+    .folio-display {
+        width: 100%;
+    }
+
+    .add-item-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .price-input,
+    .qty-input,
+    .discount-input {
+        width: 100%;
+    }
+
+    .iva-radio-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .table-card {
+        overflow-x: auto;
+    }
+
+    .totals-card {
+        position: static;
+        margin-top: 20px;
+    }
+
+    .total-row.large {
+        font-size: 1.5rem;
+    }
+}

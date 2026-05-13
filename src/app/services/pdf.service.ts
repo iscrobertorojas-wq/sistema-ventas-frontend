@@ -503,5 +503,289 @@ export class PdfService {
 
         return doc;
     }
+
+    generateQuotationPdf(quotation: any, items: any[], client: any, settings: any, autoOpen: boolean = true): jsPDF {
+        const doc = new jsPDF();
+
+        // Settings / Brand Data
+        const companyName = settings.company_name || 'ROBERTO ROJAS SALDAÑA';
+        const profession = settings.company_profession || 'Ingeniero en Sistemas Computacionales';
+        const logo = settings.company_logo;
+        const bankName = settings.bank_name || 'BBVA';
+        const bankCard = settings.bank_card || '4152 3141 8750 3829';
+        const footerText = settings.footer_text || 'Esta cotización se emite para describir los servicios y/o productos ofrecidos.';
+
+        const primaryColor = [30, 78, 140];
+        const textColor = [31, 45, 61];
+
+        // -- HEADER --
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(10, 10, 190, 25, 'F');
+
+        // Logo
+        if (logo) {
+            try {
+                const format = logo.split(';')[0].split('/')[1].toUpperCase();
+                doc.addImage(logo, format, 15, 12, 21, 21, undefined, 'FAST');
+            } catch (e) {
+                console.error("Error adding logo to PDF:", e);
+                doc.setFillColor(255, 255, 255);
+                doc.circle(25, 22.5, 9, 'F');
+            }
+        } else {
+            doc.setFillColor(255, 255, 255);
+            doc.circle(25, 22.5, 9, 'F');
+        }
+
+        // Company Text
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(companyName.toUpperCase(), 40, 18);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text(profession, 40, 23);
+
+        // WhatsApp Icon
+        const whatsappIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAADgklEQVRYhaWXT4jVVRTHv/fHQwZ5yFOkxeBCRERCJGQIMxEZXEmkyCxcBJpEiDtFslUbCRciEiHiokBikhbhwj8guNFoKBUMTUpLZNBFNamVf94MM+OnxT0/3vF233u/+XU2v3fvOed7vvfce8+5L6iiAJK0RtJmSW9IWiGpJamQNCnpgaQbki5JOh9CeFQVu1/gBrALuEl1aQOjwKp++KFP8PWSTkh6NVE9lfSj4qoLSU1JSyUtt3EpM5I+l3QghPBX1UULEPAhMO1W9QQ4BqwDGl38FgM7gW+SjNwFVs8l+DHnPAucAF6pvIKIMwz85HAeA69XcTyUOG2eS+AEawA46fAeAit7OYwkxq/VDe4wBRx1uLeB+TnDRcCEGU0DGzJA2b2vQKIAvnIkjuSMjjiDjxLdctvPaeBoTRJN4J7hTwHLvLJFPOWY0byE/XVH7hnQqklim8M57hXvOcWexGmY/8r7NQkUwC3DeAwMlEVji30nJX2Z+OUO4o46BEIILySdtGFL0oaCWOPX2eRYpmJN1gnWQ866328WkgYlLbKJKxmHsWT8p2pmwORnSf/Y75WFpCVOOZ5x+EHSd258MYTwa93otg2/2XCwkOSLwouMgyQdcLoRYG1dAibP7Tu/UOxYpczLGCuEcFmxq0lSQ9IosPh/ECgL2kyhTjqkzlnIyV7F/ZOkZZIukDQou2ZvAwu6gdihH7ThH+WDo21380wv2sAKYo8oZRzY5PQHbf4h8AEwkMFY6vwPl5Nl/36Sc0oA1loR8XIO+DRTsMZJXkXAbqffVk7ud5MjvQiY/Srgl0zAnGxKfL+1+TblVgFL6Lx+vifuUz8STWIDa6cRnUwATeez3ulOpYBfOOXOvgw6foPEvb+fBL8FDDm7BnDVdLPAmhRotXPueRi7EGkQz8dW+xaJ/mOHP5oD2F4nAxXJ7bJVA/xO7n0JfG0GbWr2+wxmecDL4FPAcM6wSXxovJR+2989xKszp+cY8b6fc1mdBrZ3M/bpPwjsI16XWTd/24h0rZa24iHiM97fjr+Bt3I+wRxPS9pacXEzih3yhmIZn5K0ULE8D6lTZksZk/RuCOFON9YLyN/lCeAz4qn+xFYxF7lpmS2ygR0Bn/77xJK6kWTPjeg7wCniw3WWl+UZsYgdJv59q5TOAByy36clXbMHQ18h9oyWYmudlPSoqq+XfwGSWyAUtQxUyQAAAABJRU5ErkJggg==';
+
+        try {
+            doc.addImage(whatsappIcon, 'PNG', 39.5, 25.8, 3.2, 3.2);
+        } catch (e) {
+            console.error("Error al cargar icono manual:", e);
+        }
+
+        doc.setFontSize(7);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`476-135-7354`, 44.5, 28.5);
+
+        // Email Icon
+        doc.setFillColor(255, 255, 255);
+        doc.rect(73, 26, 3, 2, 'F');
+        doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setLineWidth(0.1);
+        doc.line(73, 26, 74.5, 27);
+        doc.line(76, 26, 74.5, 27);
+        doc.text(`iscroberto.rojas@gmail.com`, 77, 28);
+
+        // Title - COTIZACIÓN instead of ORDEN DE SERVICIO
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('COTIZACIÓN', 195, 24, { align: 'right' });
+
+        // -- INFO ROWS --
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.setDrawColor(204, 204, 204);
+
+        // Row 1 - Quotation number
+        doc.line(10, 40, 200, 40);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Cotización No.:', 15, 46);
+        doc.setFont('helvetica', 'normal');
+        doc.text(String(quotation.folio || 'S/N'), 43, 46);
+
+        const dateStr = quotation.date ? new Date(quotation.date).toLocaleDateString('es-MX') : new Date().toLocaleDateString('es-MX');
+        doc.setFont('helvetica', 'bold');
+        doc.text('Fecha:', 160, 46);
+        doc.setFont('helvetica', 'normal');
+        doc.text(dateStr, 175, 46);
+        doc.line(10, 50, 200, 50);
+
+        // Row 2 - Client
+        doc.setFont('helvetica', 'bold');
+        doc.text('Cliente:', 15, 56);
+        doc.setFont('helvetica', 'normal');
+        doc.text(String(client?.name || 'Público General'), 31, 56);
+        doc.line(10, 60, 200, 60);
+
+        // -- TABLE --
+        const hasDiscount = items.some((item: any) => item.discount > 0);
+
+        let tableColumn: string[];
+        let tableRows: any[];
+        let columnStyles: any;
+
+        if (hasDiscount) {
+            tableColumn = ["Cant.", "Descripción", "P. Unitario", "Desc. %", "Importe"];
+            tableRows = items.map((item: any) => [
+                String(item.quantity || 1),
+                item.description || 'Producto',
+                `$${parseFloat(item.unitPrice || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                item.discount > 0 ? `${item.discount}%` : '-',
+                `$${parseFloat(item.amount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+            ]);
+            columnStyles = {
+                0: { cellWidth: 15, halign: 'center' },
+                1: { cellWidth: 'auto' },
+                2: { cellWidth: 30, halign: 'right' },
+                3: { cellWidth: 20, halign: 'center' },
+                4: { cellWidth: 30, halign: 'right' }
+            };
+        } else {
+            tableColumn = ["Cant.", "Descripción", "Precio Unitario", "Importe"];
+            tableRows = items.map((item: any) => [
+                String(item.quantity || 1),
+                item.description || 'Producto',
+                `$${parseFloat(item.unitPrice || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                `$${parseFloat(item.amount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+            ]);
+            columnStyles = {
+                0: { cellWidth: 15, halign: 'center' },
+                1: { cellWidth: 'auto' },
+                2: { cellWidth: 35, halign: 'right' },
+                3: { cellWidth: 35, halign: 'right' }
+            };
+        }
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 65,
+            margin: { left: 10, right: 10 },
+            theme: 'grid',
+            headStyles: {
+                fillColor: [30, 78, 140],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                halign: 'center'
+            },
+            styles: {
+                fontSize: 9,
+                cellPadding: 3,
+                textColor: [31, 45, 61]
+            },
+            columnStyles
+        });
+
+        // -- BOTTOM SECTION --
+        const finalY = (doc as any).lastAutoTable.finalY + 10;
+
+        // Calculate totals based on IVA mode
+        const subtotalItems = items.reduce((sum: number, item: any) => sum + parseFloat(item.amount || 0), 0);
+        const ivaMode = quotation.iva_mode || 'none';
+
+        let subtotalDisplay: number;
+        let ivaAmount: number;
+        let totalDisplay: number;
+
+        if (ivaMode === 'add') {
+            subtotalDisplay = subtotalItems;
+            ivaAmount = subtotalItems * 0.16;
+            totalDisplay = subtotalItems + ivaAmount;
+        } else if (ivaMode === 'breakdown') {
+            subtotalDisplay = subtotalItems / 1.16;
+            ivaAmount = subtotalItems - subtotalDisplay;
+            totalDisplay = subtotalItems;
+        } else {
+            subtotalDisplay = subtotalItems;
+            ivaAmount = 0;
+            totalDisplay = subtotalItems;
+        }
+
+        // Observations (Left)
+        if (quotation.observations && quotation.observations.trim() !== '') {
+            doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+            doc.rect(10, finalY, 110, 7, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Observaciones:', 13, finalY + 4.5);
+
+            doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            const splitObs = doc.splitTextToSize(quotation.observations, 104);
+            doc.text(splitObs, 13, finalY + 12);
+        }
+
+        // Totals (Right)
+        const totalsHeight = ivaMode !== 'none' ? 28 : 16;
+        doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(130, finalY, 70, totalsHeight);
+
+        doc.setFontSize(9);
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+
+        // Subtotal row
+        doc.text('Subtotal:', 135, finalY + 6);
+        doc.text(`$${subtotalDisplay.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, finalY + 6, { align: 'right' });
+        doc.line(130, finalY + 9, 200, finalY + 9);
+
+        let totalY = finalY + 9;
+
+        if (ivaMode !== 'none') {
+            // IVA row
+            const ivaLabel = ivaMode === 'breakdown' ? 'IVA (desglosado 16%):' : 'IVA (16%):';
+            doc.text(ivaLabel, 135, finalY + 17);
+            doc.text(`$${ivaAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, finalY + 17, { align: 'right' });
+            doc.line(130, finalY + 20, 200, finalY + 20);
+            totalY = finalY + 20;
+        }
+
+        // Total row
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(130, totalY, 70, 7, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.text('TOTAL:', 135, totalY + 5);
+        doc.text(`$${totalDisplay.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, totalY + 5, { align: 'right' });
+
+        // Amount in letters
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        const lettersY = totalY + 14;
+        doc.text('CANTIDAD CON LETRA:', 10, lettersY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${this.numeroALetras(totalDisplay)}`, 45, lettersY);
+
+        // -- BANK DATA --
+        const bankY = Math.max(lettersY + 8, (doc as any).lastAutoTable.finalY + 40);
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(10, bankY, 190, 7, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Datos para transferencia:', 13, bankY + 4.5);
+
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Banco: ${bankName}`, 13, bankY + 13);
+        doc.text(`Tarjeta / Cuenta: ${bankCard}`, 80, bankY + 13);
+
+        // -- FOOTER --
+        doc.setDrawColor(204, 204, 204);
+        doc.line(10, 275, 200, 275);
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.text(footerText, 10, 280, { maxWidth: 190 });
+
+        // Output
+        if (autoOpen) {
+            const fileName = `${quotation.folio} - ${client.name}.pdf`;
+            doc.setProperties({ title: fileName });
+            const pdfBlob = doc.output('blob');
+            const url = URL.createObjectURL(pdfBlob);
+
+            const pdfWindow = window.open("", "_blank");
+            if (pdfWindow) {
+                pdfWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>${fileName}</title>
+                            <style>body { margin: 0; padding: 0; overflow: hidden; }</style>
+                        </head>
+                        <body>
+                            <embed src="${url}" type="application/pdf" width="100%" height="100%">
+                        </body>
+                    </html>
+                `);
+                pdfWindow.document.close();
+            }
+        }
+
+        return doc;
+    }
 }
 
