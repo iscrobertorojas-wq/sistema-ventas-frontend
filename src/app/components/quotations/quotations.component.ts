@@ -17,6 +17,9 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
+
 
 @Component({
     selector: 'app-quotations',
@@ -36,7 +39,8 @@ import { MatTabsModule } from '@angular/material/tabs';
         MatNativeDateModule,
         MatAutocompleteModule,
         MatRadioModule,
-        MatTabsModule
+        MatTabsModule,
+        MatDialogModule
     ],
     templateUrl: './quotations.component.html',
     styleUrl: './quotations.component.css'
@@ -77,7 +81,8 @@ export class QuotationsComponent implements OnInit {
         private pdfService: PdfService,
         private snackBar: MatSnackBar,
         private route: ActivatedRoute,
-        private router: Router
+        private router: Router,
+        private dialog: MatDialog
     ) { }
 
     ngOnInit(): void {
@@ -350,17 +355,27 @@ export class QuotationsComponent implements OnInit {
     }
 
     deleteQuotation(q: any) {
-        if (confirm(`¿Estás seguro de que deseas eliminar la cotización ${q.folio}?`)) {
-            this.api.deleteQuotation(q.id).subscribe({
-                next: () => {
-                    this.snackBar.open('Cotización eliminada con éxito', 'Cerrar', { duration: 3000 });
-                    this.loadQuotations();
-                },
-                error: (err) => {
-                    console.error('Error deleting quotation', err);
-                    this.snackBar.open('Error al eliminar la cotización', 'Cerrar', { duration: 3000 });
-                }
-            });
-        }
+        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+            width: '400px',
+            data: {
+                title: 'Eliminar Cotización',
+                message: `¿Estás seguro de que deseas eliminar la cotización ${q.folio}?`
+            }
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                this.api.deleteQuotation(q.id).subscribe({
+                    next: () => {
+                        this.snackBar.open('Cotización eliminada con éxito', 'Cerrar', { duration: 3000 });
+                        this.loadQuotations();
+                    },
+                    error: (err) => {
+                        console.error('Error deleting quotation', err);
+                        this.snackBar.open('Error al eliminar la cotización', 'Cerrar', { duration: 3000 });
+                    }
+                });
+            }
+        });
     }
 }
