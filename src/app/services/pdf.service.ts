@@ -469,7 +469,7 @@ export class PdfService {
 
         if (isIvaEnabled) {
             if (hasDiscount) {
-                tableColumn = ["Cant.", "Descripción", "P. Unitario", "Desc. %", "Impuesto", "Importe"];
+                tableColumn = ["Cant.", "Descripción", "P. Unitario", "Desc. %", "IVA 16%", "Importe"];
                 columnStyles = {
                     0: { cellWidth: 12, halign: 'center' },
                     1: { cellWidth: 'auto' },
@@ -479,7 +479,7 @@ export class PdfService {
                     5: { cellWidth: 25, halign: 'right' }
                 };
             } else {
-                tableColumn = ["Cant.", "Descripción", "P. Unitario", "Impuesto", "Importe"];
+                tableColumn = ["Cant.", "Descripción", "P. Unitario", "IVA 16%", "Importe"];
                 columnStyles = {
                     0: { cellWidth: 15, halign: 'center' },
                     1: { cellWidth: 'auto' },
@@ -670,7 +670,7 @@ export class PdfService {
         doc.setTextColor(textColor[0], textColor[1], textColor[2]);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
-        const lettersY = currentY + 14;
+        const lettersY = currentY + 20;
         doc.text('CANTIDAD CON LETRA:', 10, lettersY);
         doc.setFont('helvetica', 'normal');
         doc.text(`${this.numeroALetras(totalDisplay)}`, 45, lettersY);
