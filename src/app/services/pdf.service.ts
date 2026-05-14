@@ -519,16 +519,18 @@ export class PdfService {
             if (ivaMode === 'breakdown') {
                 unitPriceSiva = unitPrice / 1.16;
             } else {
-                // For 'none' or 'add', the captured price is the base price
                 unitPriceSiva = unitPrice;
             }
 
-            // Calculate values
             const subtotalItemSiva = unitPriceSiva * quantity;
             const discountAmount = subtotalItemSiva * (discountPercent / 100);
             const baseForIva = subtotalItemSiva - discountAmount;
             const ivaItem = baseForIva * 0.16;
             const totalItemCiva = baseForIva + ivaItem;
+
+            const discountDisplay = discountPercent > 0 
+                ? `${discountPercent}% - $${discountAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` 
+                : '-';
 
             if (isIvaEnabled) {
                 if (hasDiscount) {
@@ -536,7 +538,7 @@ export class PdfService {
                         String(quantity),
                         item.description || 'Producto',
                         `$${unitPriceSiva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
-                        discountPercent > 0 ? `${discountPercent}%` : '-',
+                        discountDisplay,
                         `$${ivaItem.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
                         `$${totalItemCiva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
                     ];
@@ -550,14 +552,13 @@ export class PdfService {
                     ];
                 }
             } else {
-                // No IVA mode - Original simple display
                 const finalAmountNoIva = subtotalItemSiva - discountAmount;
                 if (hasDiscount) {
                     return [
                         String(quantity),
                         item.description || 'Producto',
                         `$${unitPriceSiva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
-                        discountPercent > 0 ? `${discountPercent}%` : '-',
+                        discountDisplay,
                         `$${finalAmountNoIva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
                     ];
                 } else {
@@ -578,7 +579,7 @@ export class PdfService {
             margin: { left: 10, right: 10 },
             theme: 'grid',
             headStyles: { fillColor: [30, 78, 140], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
-            styles: { fontSize: 8, cellPadding: 2, textColor: [31, 45, 61] }, // Reduced font size for more columns
+            styles: { fontSize: 8, cellPadding: 2, textColor: [31, 45, 61] },
             columnStyles
         });
 
@@ -586,6 +587,15 @@ export class PdfService {
         let subtotalDisplay: number;
         let ivaAmount: number;
         let totalDisplay: number;
+        
+        // Calculate total discount for the summary
+        const totalDiscountAmount = items.reduce((sum, item) => {
+            const up = parseFloat(item.unitPrice || 0);
+            const q = parseFloat(item.quantity || 1);
+            const dp = parseFloat(item.discount || 0);
+            const base = ivaMode === 'breakdown' ? up / 1.16 : up;
+            return sum + (base * q * (dp / 100));
+        }, 0);
 
         if (ivaMode === 'add') {
             subtotalDisplay = subtotalItems;
@@ -615,28 +625,47 @@ export class PdfService {
             doc.text(splitObs, 13, finalY + 12);
         }
 
-        const totalsHeight = ivaMode !== 'none' ? 28 : 16;
+        const hasAnyDiscount = totalDiscountAmount > 0;
+        let totalsHeight = 16; // Basic: Subtotal + Total
+        if (ivaMode !== 'none') totalsHeight += 12; // + IVA row
+        if (hasAnyDiscount) totalsHeight += 12; // + Discount row
+
         doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
         doc.rect(130, finalY, 70, totalsHeight);
         doc.setFontSize(9);
         doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+
+        // Subtotal row (Bruto)
+        const subtotalBruto = subtotalDisplay + totalDiscountAmount;
         doc.text('Subtotal:', 135, finalY + 6);
-        doc.text(`$${subtotalDisplay.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, finalY + 6, { align: 'right' });
+        doc.text(`$${subtotalBruto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, finalY + 6, { align: 'right' });
         doc.line(130, finalY + 9, 200, finalY + 9);
-        let totalY = finalY + 9;
-        if (ivaMode !== 'none') {
-            const ivaLabel = 'IVA 16%:';
-            doc.text(ivaLabel, 135, finalY + 17);
-            doc.text(`$${ivaAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, finalY + 17, { align: 'right' });
-            doc.line(130, finalY + 20, 200, finalY + 20);
-            totalY = finalY + 20;
+        
+        let currentY = finalY + 9;
+
+        // Discount row
+        if (hasAnyDiscount) {
+            doc.text('Descuento Total:', 135, currentY + 6);
+            doc.text(`-$${totalDiscountAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, currentY + 6, { align: 'right' });
+            doc.line(130, currentY + 9, 200, currentY + 9);
+            currentY += 9;
         }
+
+        // IVA row
+        if (ivaMode !== 'none') {
+            doc.text('IVA 16%:', 135, currentY + 6);
+            doc.text(`$${ivaAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, currentY + 6, { align: 'right' });
+            doc.line(130, currentY + 9, 200, currentY + 9);
+            currentY += 9;
+        }
+
+        // Total row
         doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        doc.rect(130, totalY, 70, 7, 'F');
+        doc.rect(130, currentY, 70, 7, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.text('TOTAL:', 135, totalY + 5);
-        doc.text(`$${totalDisplay.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, totalY + 5, { align: 'right' });
+        doc.text('TOTAL:', 135, currentY + 5);
+        doc.text(`$${totalDisplay.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, currentY + 5, { align: 'right' });
 
         doc.setTextColor(textColor[0], textColor[1], textColor[2]);
         doc.setFontSize(8);
