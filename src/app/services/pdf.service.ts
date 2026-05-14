@@ -670,7 +670,7 @@ export class PdfService {
         doc.setTextColor(textColor[0], textColor[1], textColor[2]);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
-        const lettersY = totalY + 14;
+        const lettersY = currentY + 14;
         doc.text('CANTIDAD CON LETRA:', 10, lettersY);
         doc.setFont('helvetica', 'normal');
         doc.text(`${this.numeroALetras(totalDisplay)}`, 45, lettersY);
