@@ -645,7 +645,7 @@ export class PdfService {
 
         // Discount row
         if (hasAnyDiscount) {
-            doc.text('Descuento Total:', 135, currentY + 6);
+            doc.text('Descuento:', 135, currentY + 6);
             doc.text(`-$${totalDiscountAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 195, currentY + 6, { align: 'right' });
             doc.line(130, currentY + 9, 200, currentY + 9);
             currentY += 9;
