@@ -11,10 +11,11 @@ export class ApiService {
   constructor(private http: HttpClient) {
     // Detect window host to allow access from other devices in the same network
     const host = window.location.hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
 
     // In production, you can set a specific URL, otherwise it defaults to the current host
     // To use a specific production URL, change 'http://${host}:3000/api' to your Vercel URL
-    this.baseUrl = `https://sistema-ventas-backend.vercel.app/api`;
+    this.baseUrl = isLocal ? `http://${host}:3000/api` : `https://sistema-ventas-backend.vercel.app/api`;
   }
 
   // Clients

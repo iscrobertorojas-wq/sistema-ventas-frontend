@@ -19,7 +19,8 @@ export class AuthService {
         private ngZone: NgZone
     ) {
         const host = window.location.hostname;
-        this.baseUrl = `https://sistema-ventas-backend.vercel.app/api/auth`;
+        const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
+        this.baseUrl = isLocal ? `http://${host}:3000/api/auth` : `https://sistema-ventas-backend.vercel.app/api/auth`;
         this.setupInactivityTracker();
     }
 
