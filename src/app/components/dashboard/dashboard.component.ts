@@ -339,18 +339,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 });
                 this.doughnutChartData.datasets[0].data = statusCounts;
 
-                // Update Profit Chart (Utilidad por Mes)
+                // Update Profit Chart (Utilidad por Mes: Ingresos Cobrados - Compras)
                 // Create a map of purchases by month for easy lookup
                 const purchasesMap: { [key: string]: number } = {};
                 data.purchasesByMonth.forEach((p: any) => {
-                    purchasesMap[p.month] = parseFloat(p.total);
+                    purchasesMap[p.month] = parseFloat(p.total) || 0;
+                });
+
+                // Create a map of payments (income) by month for easy lookup
+                const paymentsMap: { [key: string]: number } = {};
+                data.paymentsByMonth.forEach((pay: any) => {
+                    paymentsMap[pay.month] = parseFloat(pay.total) || 0;
                 });
 
                 this.profitChartData.labels = labels;
                 this.profitChartData.datasets[0].data = data.salesByMonth.map((s: any) => {
-                    const salesTotal = parseFloat(s.total) || 0;
+                    const incomeTotal = paymentsMap[s.month] || 0;
                     const purchasesTotal = purchasesMap[s.month] || 0;
-                    return salesTotal - purchasesTotal;
+                    return incomeTotal - purchasesTotal;
                 });
 
                 // Re-trigger charts after data is set and DOM updates
