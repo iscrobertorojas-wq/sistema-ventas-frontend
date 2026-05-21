@@ -130,6 +130,24 @@ export class QuotationsComponent implements OnInit {
         this.api.getClients().subscribe(data => {
             this.clients = data;
             this.filteredClients = data;
+
+            // Check for pre-fill parameters
+            this.route.queryParams.subscribe(params => {
+                if (params['clientId']) {
+                    const cId = +params['clientId'];
+                    const foundClient = this.clients.find(c => c.id === cId);
+                    if (foundClient) {
+                        this.selectedClient = foundClient;
+                        this.clientSearchTerm = foundClient.name;
+                    }
+                }
+                if (params['productName']) {
+                    this.currentDescription = params['productName'];
+                }
+                if (params['price']) {
+                    this.currentUnitPrice = +params['price'];
+                }
+            });
         });
     }
 

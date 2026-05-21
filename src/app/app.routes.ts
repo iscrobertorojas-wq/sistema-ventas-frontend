@@ -16,6 +16,8 @@ import { SuppliersComponent } from './components/suppliers/suppliers.component';
 import { PurchasesComponent } from './components/purchases/purchases.component';
 import { UtilityReportComponent } from './components/utility-report/utility-report.component';
 import { QuotationsComponent } from './components/quotations/quotations.component';
+import { ContpaqiProductsComponent } from './components/contpaqi-products/contpaqi-products.component';
+import { ContpaqiLicensesComponent } from './components/contpaqi-licenses/contpaqi-licenses.component';
 import { AuthGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -36,5 +38,7 @@ export const routes: Routes = [
     { path: 'settings', component: SettingsComponent, canActivate: [AuthGuard] },
     { path: 'utility-report', component: UtilityReportComponent, canActivate: [AuthGuard] },
     { path: 'service-policies', component: ServicePoliciesComponent, canActivate: [AuthGuard] },
+    { path: 'contpaqi-products', component: ContpaqiProductsComponent, canActivate: [AuthGuard] },
+    { path: 'contpaqi-licenses', component: ContpaqiLicensesComponent, canActivate: [AuthGuard] },
     { path: 'database-management', component: DatabaseManagementComponent, canActivate: [AuthGuard] }
 ];

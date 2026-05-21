@@ -214,6 +214,40 @@ export class ApiService {
     return this.http.delete<any>(`${this.baseUrl}/quotations/${id}`);
   }
 
+  // Contpaqi Products
+  getContpaqiProducts(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/contpaqi-products`);
+  }
+
+  createContpaqiProduct(product: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/contpaqi-products`, product);
+  }
+
+  updateContpaqiProduct(product: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/contpaqi-products`, product);
+  }
+
+  deleteContpaqiProduct(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/contpaqi-products`, { params: { id: id.toString() } });
+  }
+
+  // Contpaqi Licenses
+  getContpaqiLicenses(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/contpaqi-licenses`);
+  }
+
+  createContpaqiLicense(license: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/contpaqi-licenses`, license);
+  }
+
+  updateContpaqiLicense(license: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/contpaqi-licenses`, license);
+  }
+
+  deleteContpaqiLicense(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/contpaqi-licenses`, { params: { id: id.toString() } });
+  }
+
   // Database Management
   backupDatabase(): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/database/backup`, { responseType: 'blob' });

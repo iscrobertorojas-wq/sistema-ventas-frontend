@@ -1,0 +1,355 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ApiService } from '../../services/api.service';
+import { FormsModule, NgForm } from '@angular/forms';
+import { Router } from '@angular/router';
+import { MatTableModule } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatCardModule } from '@angular/material/card';
+import { MatSelectModule } from '@angular/material/select';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+
+@Component({
+  selector: 'app-contpaqi-licenses',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatCardModule,
+    MatSelectModule,
+    MatChipsModule,
+    MatSnackBarModule
+  ],
+  templateUrl: './contpaqi-licenses.component.html',
+  styleUrl: './contpaqi-licenses.component.css'
+})
+export class ContpaqiLicensesComponent implements OnInit {
+  licenses: any[] = [];
+  clients: any[] = [];
+  products: any[] = [];
+
+  displayedColumns: string[] = [
+    'serial_number',
+    'client_name',
+    'product_description',
+    'users_count',
+    'expiration_date',
+    'days_remaining',
+    'contact_name',
+    'contact_phone',
+    'status',
+    'renewal_date',
+    'actions'
+  ];
+
+  searchTerm: string = '';
+  selectedMonth: number | null = null;
+  selectedYear: number | null = null;
+  availableYears: number[] = [];
+  isEditing: boolean = false;
+  showForm: boolean = false;
+
+  months = [
+    { value: 0, name: 'Ene' },
+    { value: 1, name: 'Feb' },
+    { value: 2, name: 'Mar' },
+    { value: 3, name: 'Abr' },
+    { value: 4, name: 'May' },
+    { value: 5, name: 'Jun' },
+    { value: 6, name: 'Jul' },
+    { value: 7, name: 'Ago' },
+    { value: 8, name: 'Sep' },
+    { value: 9, name: 'Oct' },
+    { value: 10, name: 'Nov' },
+    { value: 11, name: 'Dic' }
+  ];
+
+  newLicense: any = {
+    id: null,
+    serial_number: '',
+    client_id: null,
+    product_id: null,
+    users_count: 1,
+    expiration_date: '',
+    contact_name: '',
+    contact_phone: '',
+    is_renewed_current_year: false,
+    renewal_date: ''
+  };
+
+  constructor(
+    private api: ApiService,
+    private snackBar: MatSnackBar,
+    private router: Router
+  ) { }
+
+  ngOnInit(): void {
+    this.loadLicenses();
+    this.loadClients();
+    this.loadProducts();
+    this.selectedYear = new Date().getFullYear(); // Default to current year filter
+  }
+
+  loadLicenses() {
+    this.api.getContpaqiLicenses().subscribe({
+      next: (data) => {
+        this.licenses = data;
+        this.updateAvailableYears();
+      },
+      error: (err) => console.error('Error loading licenses', err)
+    });
+  }
+
+  loadClients() {
+    this.api.getClients().subscribe({
+      next: (data) => this.clients = data,
+      error: (err) => console.error('Error loading clients', err)
+    });
+  }
+
+  loadProducts() {
+    this.api.getContpaqiProducts().subscribe({
+      next: (data) => this.products = data,
+      error: (err) => console.error('Error loading products', err)
+    });
+  }
+
+  updateAvailableYears() {
+    const currentYear = new Date().getFullYear();
+    const yearsSet = new Set<number>([currentYear, currentYear - 1, currentYear + 1, currentYear + 2]);
+    this.licenses.forEach(l => {
+      if (l.expiration_date) {
+        const y = new Date(l.expiration_date).getFullYear();
+        if (!isNaN(y)) {
+          yearsSet.add(y);
+        }
+      }
+    });
+    this.availableYears = Array.from(yearsSet).sort((a, b) => a - b);
+  }
+
+  // Parse a date string "YYYY-MM-DD" using local time to avoid UTC timezone shifts
+  private parseLocalDate(dateStr: string): Date {
+    if (!dateStr) return new Date(NaN);
+    // MySQL returns dates as ISO strings like "2026-05-15T00:00:00.000Z" or "2026-05-15"
+    const parts = dateStr.substring(0, 10).split('-');
+    return new Date(+parts[0], +parts[1] - 1, +parts[2]);
+  }
+
+  getDaysRemaining(license: any): number | null {
+    if (!license.expiration_date) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expDate = this.parseLocalDate(license.expiration_date);
+    if (isNaN(expDate.getTime())) return null;
+    const diffMs = expDate.getTime() - today.getTime();
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  }
+
+  get filteredLicenses() {
+    return this.licenses.filter(license => {
+      // Search filter
+      const searchLower = this.searchTerm.toLowerCase();
+      const matchesSearch = !this.searchTerm ||
+        license.serial_number?.toLowerCase().includes(searchLower) ||
+        license.client_name?.toLowerCase().includes(searchLower) ||
+        license.product_description?.toLowerCase().includes(searchLower) ||
+        license.contact_name?.toLowerCase().includes(searchLower);
+
+      // Month filter — applies only when a year is also selected to avoid cross-year matches
+      let matchesMonth = true;
+      if (this.selectedMonth !== null && this.selectedYear !== null && license.expiration_date) {
+        const expDate = this.parseLocalDate(license.expiration_date);
+        matchesMonth = expDate.getMonth() === this.selectedMonth && expDate.getFullYear() === this.selectedYear;
+      }
+
+      // Year filter — uses local date parsing to avoid UTC shifts
+      let matchesYear = true;
+      if (this.selectedYear !== null && license.expiration_date) {
+        const expDate = this.parseLocalDate(license.expiration_date);
+        matchesYear = expDate.getFullYear() === this.selectedYear;
+      }
+
+      return matchesSearch && matchesMonth && matchesYear;
+    });
+  }
+
+  selectMonth(monthVal: number) {
+    if (this.selectedMonth === monthVal) {
+      this.selectedMonth = null; // Toggle off
+    } else {
+      this.selectedMonth = monthVal;
+    }
+  }
+
+  clearFilters() {
+    this.selectedMonth = null;
+    this.selectedYear = null;
+    this.searchTerm = '';
+  }
+
+  toggleForm(form?: NgForm) {
+    this.showForm = !this.showForm;
+    if (!this.showForm) {
+      this.resetForm(form);
+    }
+  }
+
+  saveLicense(form?: NgForm) {
+    const lData = {
+      ...this.newLicense,
+      is_renewed_current_year: this.newLicense.is_renewed_current_year ? 1 : 0
+    };
+
+    const request = this.isEditing
+      ? this.api.updateContpaqiLicense(lData)
+      : this.api.createContpaqiLicense(lData);
+
+    request.subscribe({
+      next: () => {
+        this.loadLicenses();
+        this.snackBar.open(this.isEditing ? 'Licencia actualizada con éxito' : 'Licencia agregada con éxito', 'Cerrar', { duration: 3000 });
+        this.resetForm(form);
+      },
+      error: (err) => {
+        console.error('Error saving license', err);
+        const errorMsg = err.error?.error || 'Error al guardar la licencia';
+        this.snackBar.open(errorMsg, 'Cerrar', { duration: 4000 });
+      }
+    });
+  }
+
+  // Format a date field (ISO string or Date) to YYYY-MM-DD for input[type=date]
+  private formatDateForInput(dateVal: any): string {
+    if (!dateVal) return '';
+    return String(dateVal).substring(0, 10);
+  }
+
+  // Handle checkbox change to prompt for renewal date when checked
+  onRenewedChange(event: any) {
+    const isChecked = event.target?.checked;
+    if (isChecked && !this.newLicense.renewal_date) {
+      const today = new Date().toISOString().substring(0, 10);
+      const inputDate = prompt('Ingrese la fecha de renovación (YYYY-MM-DD):', today);
+      if (inputDate !== null) {
+        this.newLicense.renewal_date = inputDate;
+      } else {
+        // User cancelled, uncheck the box
+        this.newLicense.is_renewed_current_year = false;
+      }
+    }
+    if (!isChecked) {
+      this.newLicense.renewal_date = '';
+    }
+  }
+
+  editLicense(license: any) {
+    this.newLicense = {
+      id: license.id,
+      serial_number: license.serial_number,
+      client_id: license.client_id,
+      product_id: license.product_id,
+      users_count: license.users_count,
+      expiration_date: this.formatDateForInput(license.expiration_date),
+      contact_name: license.contact_name,
+      contact_phone: license.contact_phone,
+      is_renewed_current_year: license.is_renewed_current_year === 1,
+      renewal_date: this.formatDateForInput(license.renewal_date)
+    };
+
+    this.isEditing = true;
+    this.showForm = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  toggleQuickRenewal(license: any) {
+    const isCurrentlyRenewed = license.is_renewed_current_year === 1;
+    const actionText = isCurrentlyRenewed ? 'desmarcar como renovada' : 'marcar como renovada';
+
+    if (!confirm(`¿Estás seguro de que deseas ${actionText} la licencia ${license.serial_number}?`)) return;
+
+    let renewalDate: string | undefined = undefined;
+
+    // If marking as renewed, ask for the renewal date
+    if (!isCurrentlyRenewed) {
+      const today = new Date().toISOString().substring(0, 10);
+      const inputDate = prompt(
+        `Ingresa la fecha en que se renovó la licencia ${license.serial_number} (YYYY-MM-DD):`,
+        today
+      );
+      if (inputDate === null) return; // User cancelled the prompt
+      renewalDate = inputDate || today;
+    }
+
+    this.api.updateContpaqiLicense({ id: license.id, toggleRenewal: true, renewalDate }).subscribe({
+      next: (res: any) => {
+        this.loadLicenses();
+        this.snackBar.open(res.message, 'Cerrar', { duration: 3000 });
+      },
+      error: (err) => {
+        console.error('Error toggling renewal', err);
+        this.snackBar.open('Error al actualizar el estado de renovación', 'Cerrar', { duration: 3000 });
+      }
+    });
+  }
+
+  quoteRenewal(license: any) {
+    // Navigate to quotations with prefill query params
+    const renewDesc = `Renovación de Licencia ${license.product_description} (Serie: ${license.serial_number})`;
+    this.router.navigate(['/quotations'], {
+      queryParams: {
+        clientId: license.client_id,
+        productName: renewDesc,
+        price: license.product_price
+      }
+    });
+  }
+
+  deleteLicense(license: any) {
+    if (confirm(`¿Estás seguro de que deseas eliminar la licencia con número de serie "${license.serial_number}"?`)) {
+      this.api.deleteContpaqiLicense(license.id).subscribe({
+        next: () => {
+          this.loadLicenses();
+          this.snackBar.open('Licencia eliminada', 'Cerrar', { duration: 3000 });
+        },
+        error: (err) => {
+          console.error('Error deleting license', err);
+          this.snackBar.open('Error al eliminar la licencia', 'Cerrar', { duration: 3000 });
+        }
+      });
+    }
+  }
+
+  cancelEdit(form?: NgForm) {
+    this.resetForm(form);
+  }
+
+  resetForm(form?: NgForm) {
+    if (form) {
+      form.resetForm();
+    }
+    this.newLicense = {
+      id: null,
+      serial_number: '',
+      client_id: null,
+      product_id: null,
+      users_count: 1,
+      expiration_date: '',
+      contact_name: '',
+      contact_phone: '',
+      is_renewed_current_year: false,
+      renewal_date: ''
+    };
+    this.isEditing = false;
+    this.showForm = false;
+  }
+}
