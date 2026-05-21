@@ -247,21 +247,19 @@ export class ContpaqiLicensesComponent implements OnInit {
         license.product_description?.toLowerCase().includes(searchLower) ||
         license.contact_name?.toLowerCase().includes(searchLower);
 
-      // Month filter — applies only when a year is also selected to avoid cross-year matches
-      let matchesMonth = true;
-      if (this.selectedMonth !== null && this.selectedYear !== null && license.expiration_date) {
+      let matchesDate = true;
+      if (license.expiration_date) {
         const expDate = this.parseLocalDate(license.expiration_date);
-        matchesMonth = expDate.getMonth() === this.selectedMonth && expDate.getFullYear() === this.selectedYear;
+        const monthMatches = this.selectedMonth === null || expDate.getMonth() === this.selectedMonth;
+        const yearMatches = this.selectedYear === null || expDate.getFullYear() === this.selectedYear;
+        matchesDate = monthMatches && yearMatches;
+      } else {
+        if (this.selectedMonth !== null || this.selectedYear !== null) {
+          matchesDate = false;
+        }
       }
 
-      // Year filter — uses local date parsing to avoid UTC shifts
-      let matchesYear = true;
-      if (this.selectedYear !== null && license.expiration_date) {
-        const expDate = this.parseLocalDate(license.expiration_date);
-        matchesYear = expDate.getFullYear() === this.selectedYear;
-      }
-
-      return matchesSearch && matchesMonth && matchesYear;
+      return matchesSearch && matchesDate;
     });
   }
 
