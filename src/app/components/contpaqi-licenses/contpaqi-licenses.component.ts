@@ -290,6 +290,21 @@ export class ContpaqiLicensesComponent implements OnInit {
       return;
     }
 
+    // Validar serie duplicada en el frontend antes de enviar
+    const serialUpper = this.newLicense.serial_number.toUpperCase();
+    const existing = this.licenses.find(l => l.serial_number.toUpperCase() === serialUpper);
+    if (this.isEditing) {
+      if (existing && existing.id !== this.newLicense.id) {
+        this.snackBar.open('El número de serie ya está registrado en otra licencia.', 'Cerrar', { duration: 4000 });
+        return;
+      }
+    } else {
+      if (existing) {
+        this.snackBar.open('Error: El número de serie ya está registrado.', 'Cerrar', { duration: 4000 });
+        return;
+      }
+    }
+
     const lData = {
       ...this.newLicense,
       is_renewed_current_year: this.newLicense.is_renewed_current_year ? 1 : 0
