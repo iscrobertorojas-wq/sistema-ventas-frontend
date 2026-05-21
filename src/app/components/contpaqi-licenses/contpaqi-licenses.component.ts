@@ -13,6 +13,59 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { Inject } from '@angular/core';
+
+@Component({
+  selector: 'app-confirm-dialog',
+  standalone: true,
+  imports: [MatDialogModule, MatButtonModule],
+  template: `
+    <h2 mat-dialog-title>Confirmación</h2>
+    <mat-dialog-content>
+      <p>{{ data.message }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button (click)="dialogRef.close(false)">Cancelar</button>
+      <button mat-raised-button color="primary" (click)="dialogRef.close(true)">Aceptar</button>
+    </mat-dialog-actions>
+  `
+})
+export class ConfirmDialogComponent {
+  constructor(
+    public dialogRef: MatDialogRef<ConfirmDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { message: string }
+  ) {}
+}
+
+@Component({
+  selector: 'app-date-prompt-dialog',
+  standalone: true,
+  imports: [MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, FormsModule, CommonModule],
+  template: `
+    <h2 mat-dialog-title>{{ data.title }}</h2>
+    <mat-dialog-content>
+      <p *ngIf="data.message">{{ data.message }}</p>
+      <mat-form-field appearance="outline" style="width: 100%; margin-top: 10px;">
+        <mat-label>Fecha</mat-label>
+        <input matInput type="date" [(ngModel)]="dateValue" required>
+      </mat-form-field>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button (click)="dialogRef.close(null)">Cancelar</button>
+      <button mat-raised-button color="primary" [disabled]="!dateValue" (click)="dialogRef.close(dateValue)">Aceptar</button>
+    </mat-dialog-actions>
+  `
+})
+export class DatePromptDialogComponent {
+  dateValue: string;
+  constructor(
+    public dialogRef: MatDialogRef<DatePromptDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { title: string, message?: string, defaultDate: string }
+  ) {
+    this.dateValue = data.defaultDate;
+  }
+}
 
 @Component({
   selector: 'app-contpaqi-licenses',
@@ -29,7 +82,8 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
     MatSelectModule,
     MatChipsModule,
     MatSnackBarModule,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    MatDialogModule
   ],
   templateUrl: './contpaqi-licenses.component.html',
   styleUrl: './contpaqi-licenses.component.css'
@@ -94,7 +148,8 @@ export class ContpaqiLicensesComponent implements OnInit {
   constructor(
     private api: ApiService,
     private snackBar: MatSnackBar,
-    private router: Router
+    private router: Router,
+    private dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
@@ -271,13 +326,20 @@ export class ContpaqiLicensesComponent implements OnInit {
     const isChecked = event.target?.checked;
     if (isChecked && !this.newLicense.renewal_date) {
       const today = new Date().toISOString().substring(0, 10);
-      const inputDate = prompt('Ingrese la fecha de renovación (YYYY-MM-DD):', today);
-      if (inputDate !== null) {
-        this.newLicense.renewal_date = inputDate;
-      } else {
-        // User cancelled, uncheck the box
-        this.newLicense.is_renewed_current_year = false;
-      }
+      
+      const dialogRef = this.dialog.open(DatePromptDialogComponent, {
+        width: '350px',
+        data: { title: 'Fecha de Renovación', defaultDate: today }
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result !== null && result !== undefined) {
+          this.newLicense.renewal_date = result;
+        } else {
+          // User cancelled, uncheck the box
+          this.newLicense.is_renewed_current_year = false;
+        }
+      });
     }
     if (!isChecked) {
       this.newLicense.renewal_date = '';
@@ -310,21 +372,35 @@ export class ContpaqiLicensesComponent implements OnInit {
     const isCurrentlyRenewed = license.is_renewed_current_year === 1;
     const actionText = isCurrentlyRenewed ? 'desmarcar como renovada' : 'marcar como renovada';
 
-    if (!confirm(`¿Estás seguro de que deseas ${actionText} la licencia ${license.serial_number}?`)) return;
+    const confirmDialog = this.dialog.open(ConfirmDialogComponent, {
+      data: { message: `¿Estás seguro de que deseas ${actionText} la licencia ${license.serial_number}?` }
+    });
 
-    let renewalDate: string | undefined = undefined;
+    confirmDialog.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
 
-    // If marking as renewed, ask for the renewal date
-    if (!isCurrentlyRenewed) {
-      const today = new Date().toISOString().substring(0, 10);
-      const inputDate = prompt(
-        `Ingresa la fecha en que se renovó la licencia ${license.serial_number} (YYYY-MM-DD):`,
-        today
-      );
-      if (inputDate === null) return; // User cancelled the prompt
-      renewalDate = inputDate || today;
-    }
+      if (!isCurrentlyRenewed) {
+        const today = new Date().toISOString().substring(0, 10);
+        const dateDialog = this.dialog.open(DatePromptDialogComponent, {
+          width: '350px',
+          data: { 
+            title: 'Fecha de Renovación',
+            message: `Ingresa la fecha en que se renovó la licencia ${license.serial_number}:`,
+            defaultDate: today 
+          }
+        });
 
+        dateDialog.afterClosed().subscribe(result => {
+          if (result === null || result === undefined) return;
+          this.executeToggleRenewal(license, result);
+        });
+      } else {
+        this.executeToggleRenewal(license, undefined);
+      }
+    });
+  }
+
+  private executeToggleRenewal(license: any, renewalDate: string | undefined) {
     this.api.updateContpaqiLicense({ id: license.id, toggleRenewal: true, renewalDate }).subscribe({
       next: (res: any) => {
         this.loadLicenses();
@@ -350,18 +426,24 @@ export class ContpaqiLicensesComponent implements OnInit {
   }
 
   deleteLicense(license: any) {
-    if (confirm(`¿Estás seguro de que deseas eliminar la licencia con número de serie "${license.serial_number}"?`)) {
-      this.api.deleteContpaqiLicense(license.id).subscribe({
-        next: () => {
-          this.loadLicenses();
-          this.snackBar.open('Licencia eliminada', 'Cerrar', { duration: 3000 });
-        },
-        error: (err) => {
-          console.error('Error deleting license', err);
-          this.snackBar.open('Error al eliminar la licencia', 'Cerrar', { duration: 3000 });
-        }
-      });
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: { message: `¿Estás seguro de que deseas eliminar la licencia con número de serie "${license.serial_number}"?` }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.api.deleteContpaqiLicense(license.id).subscribe({
+          next: () => {
+            this.loadLicenses();
+            this.snackBar.open('Licencia eliminada', 'Cerrar', { duration: 3000 });
+          },
+          error: (err) => {
+            console.error('Error deleting license', err);
+            this.snackBar.open('Error al eliminar la licencia', 'Cerrar', { duration: 3000 });
+          }
+        });
+      }
+    });
   }
 
   cancelEdit(form?: NgForm) {
