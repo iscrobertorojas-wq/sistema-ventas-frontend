@@ -30,11 +30,13 @@
                     <!-- Client Select -->
                     <mat-form-field appearance="outline">
                         <mat-label>Cliente</mat-label>
-                        <mat-select [(ngModel)]="newLicense.client_id" name="client_id" required>
-                            <mat-option *ngFor="let client of clients" [value]="client.id">
-                                {{ client.name }}
+                        <input type="text" matInput [(ngModel)]="clientSearchTerm" name="clientSearchTerm" (ngModelChange)="onClientSearch()"
+                            [matAutocomplete]="auto" required placeholder="Buscar cliente...">
+                        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectClient($event)">
+                            <mat-option *ngFor="let client of filteredClients" [value]="client">
+                                {{client.name}}
                             </mat-option>
-                        </mat-select>
+                        </mat-autocomplete>
                         <mat-icon matPrefix>people</mat-icon>
                     </mat-form-field>
 

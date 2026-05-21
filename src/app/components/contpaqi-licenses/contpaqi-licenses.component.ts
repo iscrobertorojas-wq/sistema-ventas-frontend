@@ -12,6 +12,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 @Component({
   selector: 'app-contpaqi-licenses',
@@ -27,7 +28,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatCardModule,
     MatSelectModule,
     MatChipsModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatAutocompleteModule
   ],
   templateUrl: './contpaqi-licenses.component.html',
   styleUrl: './contpaqi-licenses.component.css'
@@ -57,6 +59,9 @@ export class ContpaqiLicensesComponent implements OnInit {
   availableYears: number[] = [];
   isEditing: boolean = false;
   showForm: boolean = false;
+
+  clientSearchTerm: string = '';
+  filteredClients: any[] = [];
 
   months = [
     { value: 0, name: 'Ene' },
@@ -111,9 +116,31 @@ export class ContpaqiLicensesComponent implements OnInit {
 
   loadClients() {
     this.api.getClients().subscribe({
-      next: (data) => this.clients = data,
+      next: (data) => {
+        this.clients = data;
+        this.filteredClients = data;
+      },
       error: (err) => console.error('Error loading clients', err)
     });
+  }
+
+  onClientSearch() {
+    const searchTerm = typeof this.clientSearchTerm === 'string' ? this.clientSearchTerm : '';
+    const filterValue = searchTerm.toLowerCase();
+
+    this.filteredClients = this.clients.filter(client =>
+      client.name.toLowerCase().includes(filterValue)
+    );
+    
+    if (!searchTerm) {
+      this.newLicense.client_id = null;
+    }
+  }
+
+  selectClient(event: any) {
+    const selectedClient = event.option.value;
+    this.newLicense.client_id = selectedClient.id;
+    this.clientSearchTerm = selectedClient.name;
   }
 
   loadProducts() {
@@ -205,6 +232,11 @@ export class ContpaqiLicensesComponent implements OnInit {
   }
 
   saveLicense(form?: NgForm) {
+    if (!this.newLicense.client_id) {
+      this.snackBar.open('Por favor, selecciona un cliente válido de la lista.', 'Cerrar', { duration: 4000 });
+      return;
+    }
+
     const lData = {
       ...this.newLicense,
       is_renewed_current_year: this.newLicense.is_renewed_current_year ? 1 : 0
@@ -265,6 +297,9 @@ export class ContpaqiLicensesComponent implements OnInit {
       is_renewed_current_year: license.is_renewed_current_year === 1,
       renewal_date: this.formatDateForInput(license.renewal_date)
     };
+
+    const client = this.clients.find(c => c.id === license.client_id);
+    this.clientSearchTerm = client ? client.name : license.client_name;
 
     this.isEditing = true;
     this.showForm = true;
@@ -349,6 +384,7 @@ export class ContpaqiLicensesComponent implements OnInit {
       is_renewed_current_year: false,
       renewal_date: ''
     };
+    this.clientSearchTerm = '';
     this.isEditing = false;
     this.showForm = false;
   }
