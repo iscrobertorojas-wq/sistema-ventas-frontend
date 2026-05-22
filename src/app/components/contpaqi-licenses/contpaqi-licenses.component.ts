@@ -111,6 +111,7 @@ export class ContpaqiLicensesComponent implements OnInit {
   selectedMonth: number | null = null;
   selectedYear: number | null = null;
   availableYears: number[] = [];
+  currentYear: number = new Date().getFullYear();
   isEditing: boolean = false;
   showForm: boolean = false;
 
@@ -235,6 +236,13 @@ export class ContpaqiLicensesComponent implements OnInit {
     if (isNaN(expDate.getTime())) return null;
     const diffMs = expDate.getTime() - today.getTime();
     return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  }
+
+  // Determines if a license was renewed in the CURRENT year (year-aware, works annually)
+  isRenewedThisYear(license: any): boolean {
+    if (!license.renewal_date) return false;
+    const renewalYear = new Date(license.renewal_date).getFullYear();
+    return renewalYear === new Date().getFullYear();
   }
 
   get filteredLicenses() {
@@ -382,8 +390,8 @@ export class ContpaqiLicensesComponent implements OnInit {
   }
 
   toggleQuickRenewal(license: any) {
-    const isCurrentlyRenewed = license.is_renewed_current_year === 1;
-    const actionText = isCurrentlyRenewed ? 'desmarcar como renovada' : 'marcar como renovada';
+    const isCurrentlyRenewed = this.isRenewedThisYear(license);
+    const actionText = isCurrentlyRenewed ? 'desmarcar como renovada este año' : 'marcar como renovada este año';
 
     const confirmDialog = this.dialog.open(ConfirmDialogComponent, {
       data: { message: `¿Estás seguro de que deseas ${actionText} la licencia ${license.serial_number}?` }

@@ -255,10 +255,10 @@
                         <td mat-cell *matCellDef="let license" class="actions-cell">
                             <!-- Toggle Quick Renewal -->
                             <button mat-icon-button 
-                                    [color]="license.is_renewed_current_year === 1 ? 'accent' : 'default'" 
+                                    [color]="isRenewedThisYear(license) ? 'accent' : 'default'" 
                                     (click)="toggleQuickRenewal(license)" 
-                                    [title]="license.is_renewed_current_year === 1 ? 'Desmarcar Renovación' : 'Marcar como Renovado'">
-                                <mat-icon>{{ license.is_renewed_current_year === 1 ? 'check_circle' : 'published_with_changes' }}</mat-icon>
+                                    [title]="isRenewedThisYear(license) ? 'Desmarcar Renovación ' + currentYear : 'Marcar como Renovado ' + currentYear">
+                                <mat-icon>{{ isRenewedThisYear(license) ? 'check_circle' : 'published_with_changes' }}</mat-icon>
                             </button>
 
                             <!-- Pre-fill Quote -->
