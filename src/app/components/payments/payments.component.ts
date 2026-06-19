@@ -16,6 +16,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-payments',
@@ -35,7 +37,8 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
     MatSnackBarModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatButtonToggleModule
+    MatButtonToggleModule,
+    MatDialogModule
   ],
   templateUrl: './payments.component.html',
   styleUrl: './payments.component.css'
@@ -43,7 +46,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 export class PaymentsComponent implements OnInit {
   sales: any[] = [];
   filteredSales: any[] = [];
-  displayedColumns: string[] = ['folio', 'date', 'client', 'total', 'status', 'actions'];
+  displayedColumns: string[] = ['folio', 'date', 'client', 'total', 'balance', 'status', 'actions'];
 
   statusFilter: 'all' | 'pending' | 'paid' = 'all';
   searchFolio: string = '';
@@ -65,7 +68,8 @@ export class PaymentsComponent implements OnInit {
   constructor(
     private api: ApiService,
     private snackBar: MatSnackBar,
-    private router: Router
+    private router: Router,
+    private dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
@@ -81,20 +85,23 @@ export class PaymentsComponent implements OnInit {
 
   applyFilters() {
     this.filteredSales = this.sales.filter(sale => {
-      // Status Filter
-      const totalPaid = sale.paid_amount || 0; // Assuming API returns paid_amount or we calculate it? 
-      // API currently returns payments separately. getSales returns sales join status.
-      // Wait, getSales result has 'status'. 
-      // 'Paid' -> status === 'Paid'
-      // 'Pending' -> status === 'Pending' || status === 'Partial'
+      // Calculate balance and specific status
+      const totalPaid = sale.paid_amount || 0;
+      sale.balance = Math.max(0, sale.total - totalPaid);
 
-      // Let's rely on the sale.status field, but normalize it for our "Simplified" view
-      // ALSO, trust the calculated paid_amount from backend more than the status string if they differ
-      const isConfiguredPaid = sale.paid_amount >= sale.total - 0.01;
+      if (sale.balance <= 0.01) {
+        sale.status_label = 'Pagada';
+        sale.status_class = 'paid';
+      } else if (totalPaid > 0) {
+        sale.status_label = 'Pagada Parcialmente';
+        sale.status_class = 'partial';
+      } else {
+        sale.status_label = 'Pendiente';
+        sale.status_class = 'pending';
+      }
+
+      const isConfiguredPaid = sale.balance <= 0.01;
       let simplifiedStatus = isConfiguredPaid ? 'paid' : 'pending';
-
-      // Override the visual status for the table if needed (optional, but good for consistency)
-      if (isConfiguredPaid) sale.status = 'Paid';
 
       const matchesStatus = this.statusFilter === 'all' || simplifiedStatus === this.statusFilter;
 
@@ -201,15 +208,32 @@ export class PaymentsComponent implements OnInit {
     });
   }
 
-  deletePayment(id: number) {
-    if (!confirm('¿Estás seguro de eliminar este pago?')) return;
+  deletePayment(payment: any) {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Eliminar pago',
+        message: `¿Estás seguro de eliminar el pago por $${payment.amount} del ${new Date(payment.date).toLocaleDateString('es-MX')}?`,
+        warning: 'Esta acción es permanente y afectará el saldo de la venta.',
+        icon: 'delete_forever',
+        type: 'warn',
+        confirmText: 'Eliminar',
+        confirmIcon: 'delete'
+      }
+    });
 
-    this.api.deletePayment(id).subscribe({
-      next: () => {
-        this.snackBar.open('Pago eliminado', 'Cerrar', { duration: 3000 });
-        this.refreshData();
-      },
-      error: (err) => console.error('Error deleting payment', err)
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+      this.api.deletePayment(payment.id).subscribe({
+        next: () => {
+          this.snackBar.open('Pago eliminado', 'Cerrar', { duration: 3000 });
+          this.refreshData();
+        },
+        error: (err) => {
+          console.error('Error deleting payment', err);
+          this.snackBar.open('Error al eliminar el pago', 'Cerrar', { duration: 3000 });
+        }
+      });
     });
   }
 

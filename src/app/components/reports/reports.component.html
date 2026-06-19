@@ -150,6 +150,11 @@
                                 title="Reimprimir Orden">
                                 <mat-icon>print</mat-icon>
                             </button>
+                            <button mat-icon-button color="warn" (click)="deleteSale(sale)"
+                                [disabled]="sale.paid_amount > 0"
+                                [title]="sale.paid_amount > 0 ? 'No se puede eliminar con pagos asociados' : 'Eliminar Venta'">
+                                <mat-icon>delete</mat-icon>
+                            </button>
                         </td>
                     </ng-container>
 

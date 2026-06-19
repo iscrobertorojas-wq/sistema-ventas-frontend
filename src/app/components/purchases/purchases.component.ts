@@ -14,6 +14,8 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-purchases',
@@ -32,7 +34,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatNativeDateModule,
     MatDividerModule,
     MatSnackBarModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatDialogModule
   ],
   templateUrl: './purchases.component.html',
   styleUrl: './purchases.component.css'
@@ -60,7 +63,8 @@ export class PurchasesComponent implements OnInit {
 
   constructor(
     private api: ApiService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
@@ -174,4 +178,35 @@ export class PurchasesComponent implements OnInit {
     this.isEditing = false;
     this.editPurchaseId = null;
   }
+
+  deletePurchase(purchase: any) {
+    const dateStr = new Date(purchase.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Eliminar compra',
+        message: `¿Estás seguro de eliminar la compra de ${purchase.supplier_name} del ${dateStr}?`,
+        warning: 'Esta acción es permanente y no se puede deshacer.',
+        icon: 'delete_forever',
+        type: 'warn',
+        confirmText: 'Eliminar',
+        confirmIcon: 'delete'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+      this.api.deletePurchase(purchase.id).subscribe({
+        next: () => {
+          this.snackBar.open('Compra eliminada correctamente', 'Cerrar', { duration: 3000 });
+          this.loadPurchases();
+        },
+        error: (err) => {
+          this.snackBar.open(err.error?.error || 'Error al eliminar la compra', 'Cerrar', { duration: 3000 });
+        }
+      });
+    });
+  }
 }
+

@@ -20,6 +20,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -43,9 +45,8 @@ import * as XLSX from 'xlsx';
     MatCheckboxModule,
     MatSelectModule,
     MatDividerModule,
-    MatSortModule
-    // Note: If you want to use MatSelect for status/method, add it here. 
-    // For now I'll use inputs for simplicity as per common request, but MatSelect is better.
+    MatSortModule,
+    MatDialogModule
   ],
   templateUrl: './reports.component.html',
   styleUrl: './reports.component.css'
@@ -103,7 +104,8 @@ export class ReportsComponent implements OnInit {
     private api: ApiService,
     private pdfService: PdfService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
@@ -399,6 +401,52 @@ export class ReportsComponent implements OnInit {
         console.error('Error fetching sale for reprint:', err);
         this.snackBar.open('Error al conectar con el servidor', 'Cerrar', { duration: 3000 });
       }
+    });
+  }
+
+  deleteSale(sale: any) {
+    if (sale.paid_amount > 0) {
+      this.dialog.open(ConfirmDialogComponent, {
+        width: '420px',
+        data: {
+          title: 'No se puede eliminar',
+          message: `La venta ${sale.folio || '#' + sale.id} de ${sale.client_name} tiene pagos registrados y no puede eliminarse.`,
+          icon: 'block',
+          type: 'primary',
+          confirmText: 'Entendido',
+          confirmIcon: 'check'
+        }
+      });
+      return;
+    }
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Eliminar venta',
+        message: `¿Estás seguro de eliminar la venta ${sale.folio || '#' + sale.id} de ${sale.client_name}?`,
+        warning: 'Esta acción es permanente y no se puede deshacer.',
+        icon: 'delete_forever',
+        type: 'warn',
+        confirmText: 'Eliminar',
+        confirmIcon: 'delete'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+      this.api.deleteSale(sale.id).subscribe({
+        next: () => {
+          this.snackBar.open('Venta eliminada correctamente', 'Cerrar', { duration: 3000 });
+          this.loadSales(
+            this.startDate ? this.formatDateForAPI(this.startDate) : undefined,
+            this.endDate ? this.formatDateForAPI(this.endDate) : undefined
+          );
+        },
+        error: (err) => {
+          this.snackBar.open(err.error?.error || 'Error al eliminar la venta', 'Cerrar', { duration: 3000 });
+        }
+      });
     });
   }
 }

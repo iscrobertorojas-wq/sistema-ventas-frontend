@@ -61,6 +61,10 @@ export class ApiService {
     return this.http.put<any>(`${this.baseUrl}/sales`, sale);
   }
 
+  deleteSale(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/sales`, { params: { id: id.toString() } });
+  }
+
   getSaleById(id: number): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/sales/${id}`);
   }
@@ -186,6 +190,10 @@ export class ApiService {
 
   updatePurchase(purchase: any): Observable<any> {
     return this.http.put<any>(`${this.baseUrl}/purchases`, purchase);
+  }
+
+  deletePurchase(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/purchases`, { params: { id: id.toString() } });
   }
 
   getPurchaseById(id: number): Observable<any> {

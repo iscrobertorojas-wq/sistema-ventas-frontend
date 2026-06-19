@@ -19,6 +19,11 @@
     font-weight: bold;
 }
 
+.partial {
+    color: #ff9800;
+    font-weight: bold;
+}
+
 .payment-form {
     display: flex;
     flex-direction: column;
