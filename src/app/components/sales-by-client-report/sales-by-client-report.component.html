@@ -29,6 +29,18 @@
                     <button mat-stroked-button (click)="filterThisYear()">Este Año</button>
                 </div>
 
+                <mat-form-field appearance="outline" class="compact-form-field"
+                    style="width: 250px; margin-left: 15px;">
+                    <mat-label>Buscar Cliente</mat-label>
+                    <mat-icon matPrefix>search</mat-icon>
+                    <input matInput [(ngModel)]="clientFilter" (ngModelChange)="applyInternalFilters()"
+                        placeholder="Nombre del cliente">
+                    <button *ngIf="clientFilter" matSuffix mat-icon-button aria-label="Limpiar"
+                        (click)="clientFilter=''; applyInternalFilters()">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </mat-form-field>
+
                 <div class="spacer"></div>
 
                 <button mat-flat-button color="warn" (click)="clearFilters()">
@@ -41,7 +53,22 @@
     <mat-card class="table-card">
         <div class="table-card-header">
             <div class="table-header-group">
-                <h3 class="table-title">Resumen de ventas por cliente {{activeFilterLabel !== 'de todas' ? activeFilterLabel : ''}}</h3>
+                <h3 class="table-title">Ventas {{activeFilterLabel !== 'de todas' ? activeFilterLabel : 'de todos los
+                    tiempos'}}</h3>
+
+                <div class="view-toggles-container">
+                    <mat-button-toggle-group [(ngModel)]="viewMode" class="view-toggles" appearance="legacy">
+                        <mat-button-toggle value="list"><mat-icon>list</mat-icon> Lista Plana</mat-button-toggle>
+                        <mat-button-toggle value="grouped"><mat-icon>folder_shared</mat-icon>
+                            Agrupado</mat-button-toggle>
+                    </mat-button-toggle-group>
+
+                    <mat-button-toggle-group *ngIf="viewMode === 'grouped'" [(ngModel)]="detailMode"
+                        class="view-toggles" appearance="legacy">
+                        <mat-button-toggle value="summary">Resumido</mat-button-toggle>
+                        <mat-button-toggle value="detailed">Detallado</mat-button-toggle>
+                    </mat-button-toggle-group>
+                </div>
             </div>
 
             <div class="header-actions">
@@ -57,47 +84,113 @@
         </div>
 
         <mat-card-content>
-            <div class="table-container">
-                <table mat-table [dataSource]="filteredData" matSort (matSortChange)="sortData($event)"
-                    class="mat-elevation-z2">
-
+            <div class="table-container" *ngIf="viewMode === 'list'">
+                <table mat-table [dataSource]="filteredData" class="mat-elevation-z2" matSort
+                    (matSortChange)="sortData($event)">
                     <ng-container matColumnDef="client_name">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header> Cliente </th>
                         <td mat-cell *matCellDef="let item"> {{item.client_name}} </td>
                     </ng-container>
 
+                    <!-- En lista plana mostramos No. Venta y Fecha ya que trajimos todos los registros -->
                     <ng-container matColumnDef="sales_count">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Cantidad de Ventas </th>
-                        <td mat-cell *matCellDef="let item"> {{item.sales_count}} </td>
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> No. Venta </th>
+                        <td mat-cell *matCellDef="let item"> #{{item.id}} </td>
                     </ng-container>
 
                     <ng-container matColumnDef="total_amount">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Monto Total </th>
-                        <td mat-cell *matCellDef="let item"> <strong>{{item.total_amount | currency}}</strong> </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="filter-client">
-                        <th mat-header-cell *matHeaderCellDef>
-                            <input matInput class="header-filter" [(ngModel)]="clientFilter"
-                                (ngModelChange)="applyInternalFilters()" placeholder="Filtrar Cliente...">
-                        </th>
-                    </ng-container>
-                    <ng-container matColumnDef="filter-count">
-                        <th mat-header-cell *matHeaderCellDef></th>
-                    </ng-container>
-                    <ng-container matColumnDef="filter-total">
-                        <th mat-header-cell *matHeaderCellDef></th>
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Monto </th>
+                        <td mat-cell *matCellDef="let item"> {{item.total | currency}} </td>
                     </ng-container>
 
                     <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-                    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true" class="filter-header-row"></tr>
                     <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-
                 </table>
-                <div class="no-data" *ngIf="filteredData.length === 0">
-                    No se encontraron datos para los filtros seleccionados
+            </div>
+
+            <!-- VISTA AGRUPADA (COLAPSABLE) -->
+            <div class="grouped-container" *ngIf="viewMode === 'grouped'">
+                <mat-accordion multi="true">
+
+                    <!-- MES COLAPSABLE -->
+                    <mat-expansion-panel *ngFor="let month of groupedSales" [expanded]="month.expanded"
+                        class="month-panel">
+                        <mat-expansion-panel-header class="month-header">
+                            <mat-panel-title class="month-title">
+                                <mat-icon>calendar_month</mat-icon> {{month.monthYear}}
+                            </mat-panel-title>
+                            <mat-panel-description class="month-desc">
+                                <span class="stat-badge count-badge">{{month.totalSales}} ventas</span>
+                                <span class="stat-badge total-badge">{{month.totalAmount | currency}}</span>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+
+                        <!-- LISTA DE CLIENTES -->
+                        <div class="client-list">
+
+                            <!-- Si es resumido, mostramos simples tarjetas o lista. Si es detallado, usamos acordeón interno -->
+                            <ng-container *ngIf="detailMode === 'summary'">
+                                <mat-card *ngFor="let client of month.clients" class="client-summary-card">
+                                    <mat-card-content class="client-summary-content">
+                                        <div class="client-name"><mat-icon>person</mat-icon> {{client.clientName}}</div>
+                                        <div class="client-stats">
+                                            <span class="stat-badge count-badge">{{client.totalSales}} v.</span>
+                                            <span class="stat-badge total-badge-client">{{client.totalAmount |
+                                                currency}}</span>
+                                        </div>
+                                    </mat-card-content>
+                                </mat-card>
+                            </ng-container>
+
+                            <mat-accordion multi="true" *ngIf="detailMode === 'detailed'">
+                                <!-- CLIENTE COLAPSABLE (DETALLADO) -->
+                                <mat-expansion-panel *ngFor="let client of month.clients" [expanded]="client.expanded"
+                                    class="client-panel mat-elevation-z1">
+                                    <mat-expansion-panel-header class="client-header">
+                                        <mat-panel-title class="client-title">
+                                            <mat-icon>person</mat-icon> {{client.clientName}}
+                                        </mat-panel-title>
+                                        <mat-panel-description class="client-desc">
+                                            <span class="stat-badge count-badge">{{client.totalSales}} v.</span>
+                                            <span class="stat-badge total-badge-client">{{client.totalAmount |
+                                                currency}}</span>
+                                        </mat-panel-description>
+                                    </mat-expansion-panel-header>
+
+                                    <!-- VENTAS DEL CLIENTE -->
+                                    <table class="mini-table">
+                                        <thead>
+                                            <tr>
+                                                <th>No. Venta</th>
+                                                <th>Fecha</th>
+                                                <th>Servicios</th>
+                                                <th class="amount-cell">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let sale of client.sales">
+                                                <td>#{{sale.id}}</td>
+                                                <td>{{sale.formatted_date}}</td>
+                                                <td class="truncate-cell" [title]="sale.services">{{sale.services ||
+                                                    '-'}}</td>
+                                                <td class="amount-cell">{{sale.total | currency}}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </mat-expansion-panel>
+                            </mat-accordion>
+
+                        </div>
+                    </mat-expansion-panel>
+
+                </mat-accordion>
+
+                <div class="no-data-msg" *ngIf="groupedSales.length === 0">
+                    <mat-icon>search_off</mat-icon>
+                    <p>No se encontraron ventas para los filtros seleccionados.</p>
                 </div>
             </div>
+
         </mat-card-content>
     </mat-card>
 </div>

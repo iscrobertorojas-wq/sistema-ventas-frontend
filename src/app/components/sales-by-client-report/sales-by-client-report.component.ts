@@ -11,6 +11,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { ApiService } from '../../services/api.service';
 import * as XLSX from 'xlsx';
 
@@ -29,7 +31,9 @@ import * as XLSX from 'xlsx';
         MatDatepickerModule,
         MatNativeDateModule,
         MatSnackBarModule,
-        MatSortModule
+        MatSortModule,
+        MatButtonToggleModule,
+        MatExpansionModule
     ],
     templateUrl: './sales-by-client-report.component.html',
     styleUrl: './sales-by-client-report.component.css'
@@ -40,12 +44,15 @@ export class SalesByClientReportComponent implements OnInit {
     filteredTotal: number = 0;
 
     displayedColumns: string[] = ['client_name', 'sales_count', 'total_amount'];
-    filterColumns: string[] = ['filter-client', 'filter-count', 'filter-total'];
 
     startDate: Date | null = null;
     endDate: Date | null = null;
     activeFilterLabel: string = 'de todas';
     clientFilter: string = '';
+
+    viewMode: 'list' | 'grouped' = 'grouped';
+    detailMode: 'summary' | 'detailed' = 'summary';
+    groupedSales: any[] = [];
 
     currentSort: Sort = { active: 'total_amount', direction: 'desc' };
 
@@ -58,10 +65,14 @@ export class SalesByClientReportComponent implements OnInit {
         this.loadReport();
     }
 
+
     loadReport(startDate?: string, endDate?: string) {
-        this.api.getSalesByClientReport(startDate, endDate).subscribe({
+        this.api.getSales(startDate, endDate).subscribe({
             next: (data) => {
-                this.reportData = data;
+                this.reportData = data.map(sale => ({
+                    ...sale,
+                    formatted_date: this.formatDateForDisplay(new Date(sale.date))
+                }));
                 this.applyInternalFilters();
             },
             error: (err) => {
@@ -109,7 +120,62 @@ export class SalesByClientReportComponent implements OnInit {
     }
 
     calculateTotal() {
-        this.filteredTotal = this.filteredData.reduce((sum, item) => sum + (parseFloat(item.total_amount) || 0), 0);
+        this.filteredTotal = this.filteredData.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+        this.groupSales();
+    }
+
+    groupSales() {
+        const groups = new Map<string, any>();
+
+        this.filteredData.forEach(sale => {
+            const date = new Date(sale.date);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const monthKey = `${year}-${month}`;
+
+            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const monthYear = `${monthNames[date.getMonth()]} ${year}`;
+
+            if (!groups.has(monthKey)) {
+                groups.set(monthKey, {
+                    monthYear: monthYear,
+                    monthKey: monthKey,
+                    totalSales: 0,
+                    totalAmount: 0,
+                    clients: [],
+                    expanded: true // Default expanded for months
+                });
+            }
+
+            const monthGroup = groups.get(monthKey)!;
+            monthGroup.totalSales++;
+            monthGroup.totalAmount += parseFloat(sale.total) || 0;
+
+            let clientGroup = monthGroup.clients.find((c: any) => c.clientName === sale.client_name);
+            if (!clientGroup) {
+                clientGroup = {
+                    clientName: sale.client_name || 'Desconocido',
+                    totalSales: 0,
+                    totalAmount: 0,
+                    sales: [],
+                    expanded: false // Default collapsed for clients inside detailed view
+                };
+                monthGroup.clients.push(clientGroup);
+            }
+
+            clientGroup.totalSales++;
+            clientGroup.totalAmount += parseFloat(sale.total) || 0;
+            clientGroup.sales.push(sale);
+        });
+
+        this.groupedSales = Array.from(groups.values()).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+
+        this.groupedSales.forEach(g => {
+            g.clients.sort((a: any, b: any) => a.clientName.localeCompare(b.clientName));
+            g.clients.forEach((c: any) => {
+                c.sales.sort((sa: any, sb: any) => sb.date.localeCompare(sa.date));
+            });
+        });
     }
 
     applyDateFilters() {
@@ -174,20 +240,76 @@ export class SalesByClientReportComponent implements OnInit {
     }
 
     exportToExcel() {
-        const exportData = this.filteredData.map(item => ({
-            'Cliente': item.client_name,
-            'Cantidad de Ventas': item.sales_count,
-            'Monto Total': item.total_amount
-        }));
+        let ws: XLSX.WorkSheet;
 
-        const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(exportData);
+        if (this.viewMode === 'list') {
+            const exportData = this.filteredData.map(item => ({
+                'Cliente': item.client_name,
+                'No. Venta': item.id,
+                'Fecha': item.formatted_date,
+                'Monto Total': item.total
+            }));
 
-        const totalRow = {
-            'Cliente': 'TOTAL',
-            'Cantidad de Ventas': '',
-            'Monto Total': this.filteredTotal
-        };
-        XLSX.utils.sheet_add_json(ws, [totalRow], { skipHeader: true, origin: -1 });
+            ws = XLSX.utils.json_to_sheet(exportData);
+
+            const totalRow = {
+                'Cliente': 'TOTAL GENERAL',
+                'No. Venta': '',
+                'Fecha': '',
+                'Monto Total': this.filteredTotal
+            };
+            XLSX.utils.sheet_add_json(ws, [totalRow], { skipHeader: true, origin: -1 });
+
+        } else {
+            // Grouped Export
+            const exportData: any[] = [];
+
+            this.groupedSales.forEach(month => {
+                exportData.push({
+                    'Agrupación': `[ MES ] ${month.monthYear}`,
+                    'Ventas': month.totalSales,
+                    'Total': month.totalAmount,
+                    'Fecha': '',
+                    'Servicios': ''
+                });
+
+                month.clients.forEach((client: any) => {
+                    exportData.push({
+                        'Agrupación': `  • Cliente: ${client.clientName}`,
+                        'Ventas': client.totalSales,
+                        'Total': client.totalAmount,
+                        'Fecha': '',
+                        'Servicios': ''
+                    });
+
+                    if (this.detailMode === 'detailed') {
+                        client.sales.forEach((sale: any) => {
+                            exportData.push({
+                                'Agrupación': `      Venta #${sale.id}`,
+                                'Ventas': '',
+                                'Total': parseFloat(sale.total) || 0,
+                                'Fecha': sale.formatted_date,
+                                'Servicios': sale.services || '-'
+                            });
+                        });
+                    }
+                });
+
+                // Blank row
+                exportData.push({});
+            });
+
+            // Grand Total
+            exportData.push({
+                'Agrupación': 'TOTAL GENERAL',
+                'Ventas': this.filteredData.length,
+                'Total': this.filteredTotal,
+                'Fecha': '',
+                'Servicios': ''
+            });
+
+            ws = XLSX.utils.json_to_sheet(exportData);
+        }
 
         const wb: XLSX.WorkBook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Ventas_por_Cliente');

@@ -125,7 +125,8 @@ export class PaymentsComponent implements OnInit {
   calculateMaxAmount() {
     if (!this.selectedSale) return;
     const totalPaid = this.payments.reduce((acc, p) => acc + parseFloat(p.amount), 0);
-    const balance = this.selectedSale.total - totalPaid;
+    const saleTotal = parseFloat(this.selectedSale.total) || 0;
+    const balance = saleTotal - totalPaid;
 
     // If editing, we add back the current payment amount to the balance
     let currentEditingAmount = 0;
@@ -145,9 +146,10 @@ export class PaymentsComponent implements OnInit {
   }
 
   registerPayment() {
-    if (!this.selectedSale || this.newPayment.amount <= 0) return;
+    const paymentAmount = parseFloat(this.newPayment.amount as any);
+    if (!this.selectedSale || isNaN(paymentAmount) || paymentAmount <= 0) return;
 
-    if (this.newPayment.amount > this.maxPaymentAmount + 0.01) {
+    if (paymentAmount > this.maxPaymentAmount + 0.01) {
       this.snackBar.open('La cantidad ingresada excede el saldo pendiente', 'Cerrar', { duration: 3000 });
       return;
     }
@@ -159,7 +161,7 @@ export class PaymentsComponent implements OnInit {
 
     const paymentData = {
       sale_id: this.selectedSale.id,
-      amount: this.newPayment.amount,
+      amount: paymentAmount,
       method: this.newPayment.method,
       bank_account: this.newPayment.bank_account,
       date: this.newPayment.date // Send date
