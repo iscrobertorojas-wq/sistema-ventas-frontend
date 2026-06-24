@@ -36,6 +36,14 @@
                                 <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
                                 <mat-datepicker #picker></mat-datepicker>
                             </mat-form-field>
+
+                            <mat-form-field appearance="outline">
+                                <mat-label>Moneda</mat-label>
+                                <mat-select [(ngModel)]="currency">
+                                    <mat-option value="MXN">Pesos (MXN)</mat-option>
+                                    <mat-option value="USD">Dólares (USD)</mat-option>
+                                </mat-select>
+                            </mat-form-field>
                         </mat-card-content>
                     </mat-card>
 

@@ -10,13 +10,16 @@ export class PdfService {
     constructor() { }
 
     // Custom number to text converter for Spanish
-    private numeroALetras(num: number): string {
+    private numeroALetras(num: number, currency: string = 'MXN'): string {
+        const currencyName = currency === 'USD' ? 'DÓLARES' : 'PESOS';
+        const currencySuffix = currency === 'USD' ? 'USD' : 'M.N.';
+
         const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
         const decenas = ['', '', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
         const especiales = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
         const centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
 
-        if (num === 0) return 'CERO PESOS 00/100 M.N.';
+        if (num === 0) return `CERO ${currencyName} 00/100 ${currencySuffix}`;
 
         const entero = Math.floor(num);
         const centavos = Math.round((num - entero) * 100);
@@ -37,7 +40,7 @@ export class PdfService {
             resultado += this.convertirGrupo(resto);
         }
 
-        return resultado.trim() + ` PESOS ${centavos.toString().padStart(2, '0')}/100 M.N.`;
+        return resultado.trim() + ` ${currencyName} ${centavos.toString().padStart(2, '0')}/100 ${currencySuffix}`;
     }
 
     private convertirGrupo(num: number): string {
@@ -673,7 +676,7 @@ export class PdfService {
         const lettersY = currentY + 20;
         doc.text('CANTIDAD CON LETRA:', 10, lettersY);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${this.numeroALetras(totalDisplay)}`, 45, lettersY);
+        doc.text(`${this.numeroALetras(totalDisplay, quotation.currency)}`, 45, lettersY);
 
         const bankY = Math.max(lettersY + 12, (doc as any).lastAutoTable.finalY + 45);
         doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);

@@ -66,6 +66,9 @@ export class QuotationsComponent implements OnInit {
     // IVA mode: 'none' | 'add' | 'breakdown'
     ivaMode: string = 'none';
 
+    // Currency
+    currency: string = 'MXN';
+
     observations: string = '';
     today: Date = new Date();
     nextFolio: string = '';
@@ -109,6 +112,7 @@ export class QuotationsComponent implements OnInit {
                 this.today = new Date(quotation.date);
                 this.nextFolio = quotation.folio;
                 this.ivaMode = quotation.iva_mode || 'none';
+                this.currency = quotation.currency || 'MXN';
                 this.observations = quotation.observations || '';
 
                 this.quotationItems = quotation.items.map((item: any) => ({
@@ -275,6 +279,7 @@ export class QuotationsComponent implements OnInit {
             })),
             date: this.today,
             iva_mode: this.ivaMode,
+            currency: this.currency,
             observations: this.observations
         };
 
@@ -298,6 +303,7 @@ export class QuotationsComponent implements OnInit {
                         folio: folio,
                         date: this.today,
                         iva_mode: this.ivaMode,
+                        currency: this.currency,
                         observations: this.observations
                     },
                     this.quotationItems,
@@ -329,6 +335,7 @@ export class QuotationsComponent implements OnInit {
         this.currentQuantity = 1;
         this.currentDiscount = 0;
         this.ivaMode = 'none';
+        this.currency = 'MXN';
         this.observations = '';
         this.isEditing = false;
         this.quotationId = null;
@@ -361,6 +368,7 @@ export class QuotationsComponent implements OnInit {
                         folio: quotation.folio,
                         date: quotation.date,
                         iva_mode: quotation.iva_mode,
+                        currency: quotation.currency,
                         observations: quotation.observations
                     },
                     items,
