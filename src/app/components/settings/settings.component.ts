@@ -38,7 +38,7 @@ export class SettingsComponent implements OnInit {
     companyName: string = 'ROBERTO ROJAS SALDAÑA';
     companyProfession: string = 'Ingeniero en Sistemas Computacionales';
     bankName: string = 'BBVA';
-    bankCard: string = '4152 3141 8750 3829';
+    bankCard: string = '4152 3146 4227 0287';
     footerText: string = 'Esta orden de servicio se emite para describir los servicios prestados. El pago deberá efectuarse dentro de un plazo de 15 días a partir de la fecha de emisión.';
     companyLogo: string | null = null;
     brandColor: string = '#1a73e8';

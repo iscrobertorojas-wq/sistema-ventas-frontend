@@ -81,7 +81,7 @@ export class PdfService {
         const profession = settings.company_profession || 'Ingeniero en Sistemas Computacionales';
         const logo = settings.company_logo;
         const bankName = settings.bank_name || 'BBVA';
-        const bankCard = settings.bank_card || '4152 3141 8750 3829';
+        const bankCard = settings.bank_card || '4152 3146 4227 0287';
         const footerText = settings.footer_text || 'Esta orden de servicio se emite para describir los servicios prestados.';
 
         const primaryColor = [30, 78, 140];
@@ -399,7 +399,7 @@ export class PdfService {
         const profession = settings.company_profession || 'Ingeniero en Sistemas Computacionales';
         const logo = settings.company_logo;
         const bankName = settings.bank_name || 'BBVA';
-        const bankCard = settings.bank_card || '4152 3141 8750 3829';
+        const bankCard = settings.bank_card || '4152 3146 4227 0287';
         const footerText = settings.footer_text || 'Esta cotización se emite para describir los servicios y/o productos ofrecidos.';
         
         const primaryColor = [30, 78, 140];
