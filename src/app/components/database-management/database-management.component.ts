@@ -5,7 +5,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ApiService } from '../../services/api.service';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-database-management',
@@ -16,7 +18,8 @@ import { ApiService } from '../../services/api.service';
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatDialogModule
   ],
   template: `
     <div class="container animate-in">
@@ -150,7 +153,7 @@ import { ApiService } from '../../services/api.service';
 export class DatabaseManagementComponent {
   isLoading = false;
 
-  constructor(private api: ApiService, private snackBar: MatSnackBar) { }
+  constructor(private api: ApiService, private snackBar: MatSnackBar, private dialog: MatDialog) { }
 
   onBackup() {
     this.isLoading = true;
@@ -178,25 +181,39 @@ export class DatabaseManagementComponent {
     const file: File = event.target.files[0];
     if (!file) return;
 
-    if (confirm('¿Está seguro de que desea restaurar la base de datos? Se perderán todos los datos actuales.')) {
-      this.isLoading = true;
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Restaurar Base de Datos',
+        message: `¿Estás seguro de que deseas restaurar la base de datos usando el archivo "${file.name}"?`,
+        warning: 'Esta acción sobrescribirá todos los datos actuales y no se puede deshacer.',
+        icon: 'warning',
+        type: 'warn',
+        confirmText: 'Sí, restaurar',
+        confirmIcon: 'settings_backup_restore'
+      }
+    });
 
-      this.api.restoreDatabase(file).subscribe({
-        next: (res: any) => {
-          this.isLoading = false;
-          this.snackBar.open(res.message || 'Información restaurada con éxito', 'Cerrar', { duration: 5000 });
-          // Reset input
-          event.target.value = '';
-        },
-        error: (err) => {
-          console.error('Error during restore:', err);
-          this.isLoading = false;
-          this.snackBar.open(err.error?.error || 'Error al restaurar información. Verifique el archivo y la conexión.', 'Cerrar', { duration: 5000 });
-          event.target.value = '';
-        }
-      });
-    } else {
-      event.target.value = '';
-    }
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.isLoading = true;
+        this.api.restoreDatabase(file).subscribe({
+          next: (res: any) => {
+            this.isLoading = false;
+            this.snackBar.open(res.message || 'Información restaurada con éxito', 'Cerrar', { duration: 5000 });
+            // Reset input
+            event.target.value = '';
+          },
+          error: (err) => {
+            console.error('Error during restore:', err);
+            this.isLoading = false;
+            this.snackBar.open(err.error?.error || 'Error al restaurar información. Verifique el archivo y la conexión.', 'Cerrar', { duration: 5000 });
+            event.target.value = '';
+          }
+        });
+      } else {
+        event.target.value = '';
+      }
+    });
   }
 }

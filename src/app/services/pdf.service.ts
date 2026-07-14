@@ -313,10 +313,10 @@ export class PdfService {
         doc.text(String(policy.client_name), 30, 56);
         doc.line(10, 60, 200, 60);
 
-        const cardWidth = 44;
+        const cardWidth = 46;
         const cardHeight = 22;
         const startY = 65;
-        const gap = 4;
+        const gap = 2;
         const formatMinutes = (m: number) => {
             const h = Math.floor(m / 60);
             const min = Math.round(m % 60);
@@ -330,7 +330,7 @@ export class PdfService {
         ];
 
         cards.forEach((card, i) => {
-            const x = 15 + (cardWidth + gap) * i;
+            const x = 10 + (cardWidth + gap) * i;
             doc.setDrawColor(230, 230, 230);
             doc.setFillColor(255, 255, 255);
             doc.rect(x, startY, cardWidth, cardHeight, 'FD');
@@ -346,24 +346,26 @@ export class PdfService {
             doc.text(card.value, x + 8, startY + 16);
         });
 
-        const tableColumn = ["Fecha", "Descripción", "Inicio", "Fin", "Duración", "Tipo"];
+        const tableColumn = ["Fecha", "Descripción", "Inicio", "Fin", "Duración", "Tipo", "Solicitado por"];
         const tableRows = records.map(r => [
             new Date(r.service_date).toLocaleDateString('es-MX'),
             r.description,
             r.start_time.substring(0, 5),
             r.end_time.substring(0, 5),
             formatMinutes(r.duration_minutes),
-            r.service_type
+            r.service_type,
+            r.requested_by || 'N/A'
         ]);
 
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: startY + cardHeight + 10,
+            margin: { left: 10, right: 10 },
             theme: 'grid',
             headStyles: { fillColor: [30, 78, 140], fontStyle: 'bold', halign: 'center' },
-            styles: { fontSize: 9, cellPadding: 3 },
-            columnStyles: { 1: { cellWidth: 'auto' }, 2: { halign: 'center' }, 3: { halign: 'center' }, 4: { halign: 'right' }, 5: { halign: 'center' } }
+            styles: { fontSize: 8, cellPadding: 3 },
+            columnStyles: { 1: { cellWidth: 'auto' }, 2: { halign: 'center' }, 3: { halign: 'center' }, 4: { halign: 'right' }, 5: { halign: 'center' }, 6: { halign: 'center' } }
         });
 
         const finalY = (doc as any).lastAutoTable.finalY + 10;

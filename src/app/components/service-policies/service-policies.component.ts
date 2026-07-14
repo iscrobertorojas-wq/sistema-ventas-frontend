@@ -80,10 +80,11 @@ export class ServicePoliciesComponent implements OnInit {
         end_hour: null as number | null,
         end_minute: null as number | null,
         duration_minutes: 0,
-        service_type: 'Remoto'
+        service_type: 'Remoto',
+        requested_by: ''
     };
 
-    recordColumns: string[] = ['service_date', 'description', 'start_time', 'end_time', 'duration', 'service_type', 'actions'];
+    recordColumns: string[] = ['service_date', 'description', 'start_time', 'end_time', 'duration', 'service_type', 'requested_by', 'actions'];
 
     hours: number[] = Array.from({ length: 24 }, (_, i) => i);
     minutes: number[] = Array.from({ length: 60 }, (_, i) => i);
@@ -265,7 +266,8 @@ export class ServicePoliciesComponent implements OnInit {
             end_hour: eh,
             end_minute: em,
             duration_minutes: record.duration_minutes,
-            service_type: record.service_type
+            service_type: record.service_type,
+            requested_by: record.requested_by || ''
         };
         this.showRecordForm = true;
     }
@@ -306,7 +308,8 @@ export class ServicePoliciesComponent implements OnInit {
             start_time: `${pad(start_hour!)}:${pad(start_minute!)}:00`,
             end_time: `${pad(end_hour!)}:${pad(end_minute!)}:00`,
             duration_minutes: this.recordForm.duration_minutes,
-            service_type: this.recordForm.service_type
+            service_type: this.recordForm.service_type,
+            requested_by: this.recordForm.requested_by
         };
 
         const request = this.isEditingRecord
@@ -352,7 +355,8 @@ export class ServicePoliciesComponent implements OnInit {
             end_hour: null,
             end_minute: null,
             duration_minutes: 0,
-            service_type: 'Remoto'
+            service_type: 'Remoto',
+            requested_by: ''
         };
         this.isEditingRecord = false;
     }
@@ -445,7 +449,7 @@ export class ServicePoliciesComponent implements OnInit {
             ['Estado:', this.isCompleted() ? 'COMPLETADA' : 'ACTIVA'],
             [],
             ['LISTADO DE SERVICIOS'],
-            ['Fecha', 'Descripción', 'Hora Inicio', 'Hora Fin', 'Duración', 'Tipo']
+            ['Fecha', 'Descripción', 'Hora Inicio', 'Hora Fin', 'Duración', 'Tipo', 'Solicitado Por']
         ];
 
         // Add records
@@ -456,7 +460,8 @@ export class ServicePoliciesComponent implements OnInit {
                 this.formatTime(r.start_time),
                 this.formatTime(r.end_time),
                 this.formatMinutes(r.duration_minutes),
-                r.service_type
+                r.service_type,
+                r.requested_by || ''
             ]);
         });
 
@@ -474,7 +479,8 @@ export class ServicePoliciesComponent implements OnInit {
             { wch: 12 }, // Hora Inicio
             { wch: 12 }, // Hora Fin
             { wch: 15 }, // Duración
-            { wch: 12 }  // Tipo
+            { wch: 12 }, // Tipo
+            { wch: 20 }  // Solicitado Por
         ];
         ws['!cols'] = wscols;
 
