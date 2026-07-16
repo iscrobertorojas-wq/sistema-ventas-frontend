@@ -390,6 +390,158 @@ export class PdfService {
         return doc;
     }
 
+    generateServiceRecordPdf(record: any, policy: any, settings: any): jsPDF {
+        const doc = new jsPDF();
+
+        // Settings / Brand Data
+        const companyName = settings.company_name || 'ROBERTO ROJAS SALDAÑA';
+        const profession = settings.company_profession || 'Ingeniero en Sistemas Computacionales';
+        const logo = settings.company_logo;
+        const footerText = settings.footer_text || 'Esta orden de servicio se emite para describir los servicios prestados.';
+
+        const primaryColor = [30, 78, 140];
+        const textColor = [31, 45, 61];
+
+        // -- HEADER (same as sales PDF) --
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(10, 10, 190, 25, 'F');
+
+        // Logo
+        if (logo) {
+            try {
+                const format = logo.split(';')[0].split('/')[1].toUpperCase();
+                doc.addImage(logo, format, 15, 12, 21, 21, undefined, 'FAST');
+            } catch (e) {
+                console.error("Error adding logo to PDF:", e);
+                doc.setFillColor(255, 255, 255);
+                doc.circle(25, 22.5, 9, 'F');
+            }
+        } else {
+            doc.setFillColor(255, 255, 255);
+            doc.circle(25, 22.5, 9, 'F');
+        }
+
+        // Company Text
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(companyName.toUpperCase(), 40, 18);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text(profession, 40, 23);
+
+        const whatsappIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAADgklEQVRYhaWXT4jVVRTHv/fHQwZ5yFOkxeBCRERCJGQIMxEZXEmkyCxcBJpEiDtFslUbCRciEiHiokBikhbhwj8guNFoKBUMTUpLZNBFNamVf94MM+OnxT0/3vF233u/+XU2v3fvOed7vvfce8+5L6iiAJK0RtJmSW9IWiGpJamQNCnpgaQbki5JOh9CeFQVu1/gBrALuEl1aQOjwKp++KFP8PWSTkh6NVE9lfSj4qoLSU1JSyUtt3EpM5I+l3QghPBX1UULEPAhMO1W9QQ4BqwDGl38FgM7gW+SjNwFVs8l+DHnPAucAF6pvIKIMwz85HAeA69XcTyUOG2eS+AEawA46fAeAit7OYwkxq/VDe4wBRx1uLeB+TnDRcCEGU0DGzJA2b2vQKIAvnIkjuSMjjiDjxLdctvPaeBoTRJN4J7hTwHLvLJFPOWY0byE/XVH7hnQqklim8M57hXvOcWexGmY/8r7NQkUwC3DeAwMlEVji30nJX2Z+OUO4o46BEIILySdtGFL0oaCWOPX2eRYpmJN1gnWQ866328WkgYlLbKJKxmHsWT8p2pmwORnSf/Y75WFpCVOOZ5x+EHSd258MYTwa93otg2/2XCwkOSLwouMgyQdcLoRYG1dAibP7Tu/UOxYpczLGCuEcFmxq0lSQ9IosPh/ECgL2kyhTjqkzlnIyV7F/ZOkZZIukDQou2ZvAwu6gdihH7ThH+WDo21380wv2sAKYo8oZRzY5PQHbf4h8AEwkMFY6vwPl5Nl/36Sc0oA1loR8XIO+DRTsMZJXkXAbqffVk7ud5MjvQiY/Srgl0zAnGxKfL+1+TblVgFL6Lx+vifuUz8STWIDa6cRnUwATeez3ulOpYBfOOXOvgw6foPEvb+fBL8FDDm7BnDVdLPAmhRotXPueRi7EGkQz8dW+xaJ/mOHP5oD2F4nAxXJ7bJVA/xO7n0JfG0GbWr2+wxmecDL4FPAcM6wSXxovJR+2989xKszp+cY8b6fc1mdBrZ3M/bpPwjsI16XWTd/24h0rZa24iHiM97fjr+Bt3I+wRxPS9pacXEzih3yhmIZn5K0ULE8D6lTZksZk/RuCOFON9YLyN/lCeAz4qn+xFYxF7lpmS2ygR0Bn/77xJK6kWTPjeg7wCniw3WWl+UZsYgdJv59q5TOAByy36clXbMHQ18h9oyWYmudlPSoqq+XfwGSWyAUtQxUyQAAAABJRU5ErkJggg==';
+
+        try {
+            doc.addImage(whatsappIcon, 'PNG', 39.5, 25.8, 3.2, 3.2);
+        } catch (e) { }
+
+        doc.setFontSize(7);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`476-135-7354`, 44.5, 28.5);
+
+        doc.setFillColor(255, 255, 255);
+        doc.rect(73, 26, 3, 2, 'F');
+        doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setLineWidth(0.1);
+        doc.line(73, 26, 74.5, 27);
+        doc.line(76, 26, 74.5, 27);
+        doc.text(`iscroberto.rojas@gmail.com`, 77, 28);
+
+        // Title: "ORDEN DE SERVICIO"
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text('ORDEN DE SERVICIO', 195, 20, { align: 'right' });
+
+        // Subtitle: "Póliza # <number>"
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Póliza # ${policy.policy_number}`, 195, 27, { align: 'right' });
+
+        // -- Info section below header --
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.setDrawColor(204, 204, 204);
+        doc.line(10, 40, 200, 40);
+
+        // Time info instead of "Orden No."
+        const startTime = record.start_time ? record.start_time.substring(0, 5) : '';
+        const endTime = record.end_time ? record.end_time.substring(0, 5) : '';
+        const formatMinutes = (m: number) => {
+            const h = Math.floor(m / 60);
+            const min = Math.round(m % 60);
+            return `${h}h ${min}min`;
+        };
+        const durationStr = formatMinutes(record.duration_minutes || 0);
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Hora Inicio:', 15, 46);
+        doc.setFont('helvetica', 'normal');
+        doc.text(startTime, 38, 46);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('Hora Fin:', 55, 46);
+        doc.setFont('helvetica', 'normal');
+        doc.text(endTime, 73, 46);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('Duración:', 95, 46);
+        doc.setFont('helvetica', 'normal');
+        doc.text(durationStr, 115, 46);
+
+        // Date (same position as sales PDF)
+        const dateStr = record.service_date
+            ? new Date(record.service_date).toLocaleDateString('es-MX')
+            : new Date().toLocaleDateString('es-MX');
+        doc.setFont('helvetica', 'bold');
+        doc.text('Fecha:', 160, 46);
+        doc.setFont('helvetica', 'normal');
+        doc.text(dateStr, 175, 46);
+        doc.line(10, 50, 200, 50);
+
+        // Client (same position as sales PDF)
+        doc.setFont('helvetica', 'bold');
+        doc.text('Cliente:', 15, 56);
+        doc.setFont('helvetica', 'normal');
+        doc.text(String(policy.client_name || ''), 31, 56);
+        doc.line(10, 60, 200, 60);
+
+        // Table with only "Descripción de Servicio"
+        const tableColumn = ["Descripción de Servicio"];
+        const tableRows = [[record.description || 'Servicio']];
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 65,
+            margin: { left: 10, right: 10 },
+            theme: 'grid',
+            headStyles: { fillColor: [30, 78, 140], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+            styles: { fontSize: 9, cellPadding: 3, textColor: [31, 45, 61] },
+            columnStyles: { 0: { cellWidth: 'auto' } }
+        });
+
+        // Footer
+        doc.setDrawColor(204, 204, 204);
+        doc.line(10, 275, 200, 275);
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.text(footerText, 10, 280, { maxWidth: 190 });
+
+        // Open the PDF
+        const fileName = `Orden Servicio - ${policy.policy_number} - ${policy.client_name}.pdf`;
+        doc.setProperties({ title: fileName });
+        const pdfBlob = doc.output('blob');
+        const url = URL.createObjectURL(pdfBlob);
+        const pdfWindow = window.open("", "_blank");
+        if (pdfWindow) {
+            pdfWindow.document.write(`<html><head><title>${fileName}</title><style>body { margin: 0; padding: 0; overflow: hidden; }</style></head><body><embed src="${url}" type="application/pdf" width="100%" height="100%"></body></html>`);
+            pdfWindow.document.close();
+        }
+        return doc;
+    }
+
     generateQuotationPdf(quotation: any, items: any[], client: any, settings: any, autoOpen: boolean = true): jsPDF {
         const doc = new jsPDF();
         

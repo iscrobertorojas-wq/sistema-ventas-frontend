@@ -496,4 +496,12 @@ export class ServicePoliciesComponent implements OnInit {
         }
         this.pdfService.generatePolicyPdf(this.selectedPolicy, this.selectedPolicy.records || [], this.settings);
     }
+
+    printRecord(record: any) {
+        if (!this.selectedPolicy || !this.settings) {
+            this.snackBar.open('Espere a que carguen los datos de configuración', 'Cerrar', { duration: 3000 });
+            return;
+        }
+        this.pdfService.generateServiceRecordPdf(record, this.selectedPolicy, this.settings);
+    }
 }

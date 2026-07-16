@@ -404,6 +404,9 @@
                         <ng-container matColumnDef="actions">
                             <th mat-header-cell *matHeaderCellDef>Acciones</th>
                             <td mat-cell *matCellDef="let r">
+                                <button mat-icon-button color="accent" (click)="printRecord(r)" matTooltip="Imprimir Orden de Servicio">
+                                    <mat-icon>print</mat-icon>
+                                </button>
                                 <button mat-icon-button color="primary" (click)="editRecord(r)" matTooltip="Editar">
                                     <mat-icon>edit</mat-icon>
                                 </button>
