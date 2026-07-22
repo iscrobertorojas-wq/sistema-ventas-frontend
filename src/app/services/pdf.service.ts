@@ -300,7 +300,18 @@ export class PdfService {
         doc.setFont('helvetica', 'bold');
         doc.text('Póliza No.:', 15, 46);
         doc.setFont('helvetica', 'normal');
-        doc.text(String(policy.policy_number), 35, 46);
+        const policyNumStr = String(policy.policy_number || '');
+        doc.text(policyNumStr, 35, 46);
+
+        if (policy.invoice_number && String(policy.invoice_number).trim() !== '') {
+            const policyNumWidth = doc.getTextWidth(policyNumStr);
+            const invoiceX = 35 + policyNumWidth + 8;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Factura No.:', invoiceX, 46);
+            doc.setFont('helvetica', 'normal');
+            doc.text(String(policy.invoice_number).trim(), invoiceX + 24, 46);
+        }
+
         const dateStr = policy.date ? new Date(policy.date).toLocaleDateString('es-MX') : new Date().toLocaleDateString('es-MX');
         doc.setFont('helvetica', 'bold');
         doc.text('Fecha:', 160, 46);
@@ -457,7 +468,10 @@ export class PdfService {
         // Subtitle: "Póliza # <number>"
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Póliza # ${policy.policy_number}`, 195, 27, { align: 'right' });
+        const policySub = policy.invoice_number && String(policy.invoice_number).trim() !== ''
+            ? `Póliza # ${policy.policy_number}  |  Factura # ${policy.invoice_number}`
+            : `Póliza # ${policy.policy_number}`;
+        doc.text(policySub, 195, 27, { align: 'right' });
 
         // -- Info section below header --
         doc.setTextColor(textColor[0], textColor[1], textColor[2]);

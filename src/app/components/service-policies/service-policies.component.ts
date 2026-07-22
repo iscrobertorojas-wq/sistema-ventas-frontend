@@ -59,6 +59,7 @@ export class ServicePoliciesComponent implements OnInit {
         id: null as number | null,
         client_id: null as number | null,
         policy_number: '',
+        invoice_number: '',
         date: new Date(),
         total_hours: null as number | null
     };
@@ -123,6 +124,7 @@ export class ServicePoliciesComponent implements OnInit {
         const term = this.searchTerm.toLowerCase();
         this.filteredPolicies = this.policies.filter(p =>
             p.policy_number.toLowerCase().includes(term) ||
+            (p.invoice_number && p.invoice_number.toLowerCase().includes(term)) ||
             p.client_name.toLowerCase().includes(term)
         );
     }
@@ -131,7 +133,7 @@ export class ServicePoliciesComponent implements OnInit {
 
     showNewPolicyForm() {
         this.isEditingPolicy = false;
-        this.policyForm = { id: null, client_id: null, policy_number: '', date: new Date(), total_hours: null };
+        this.policyForm = { id: null, client_id: null, policy_number: '', invoice_number: '', date: new Date(), total_hours: null };
         this.currentView = 'new-policy';
     }
 
@@ -142,6 +144,7 @@ export class ServicePoliciesComponent implements OnInit {
             id: policy.id,
             client_id: policy.client_id,
             policy_number: policy.policy_number,
+            invoice_number: policy.invoice_number || '',
             date: new Date(policy.date),
             total_hours: policy.total_hours
         };
@@ -441,6 +444,7 @@ export class ServicePoliciesComponent implements OnInit {
             [],
             ['DETALLES DE LA PÓLIZA'],
             ['Número de Póliza:', p.policy_number],
+            ['Número de Factura:', p.invoice_number || 'N/A'],
             ['Cliente:', p.client_name],
             ['Fecha de Inicio:', this.formatDisplayDate(p.date)],
             ['Total de Horas Contratadas:', `${p.total_hours}h`],
