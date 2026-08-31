@@ -81,7 +81,11 @@ export class PurchasesComponent implements OnInit {
 
   loadPurchases() {
     this.api.getPurchases().subscribe({
-      next: (data) => this.purchases = data,
+      next: (data) => this.purchases = data.map((p: any) => ({
+        ...p,
+        // Añadir T00:00:00 para que el date pipe de Angular lo interprete en hora local (no UTC)
+        date: p.date ? String(p.date).split('T')[0] + 'T00:00:00' : p.date
+      })),
       error: (err) => console.error('Error loading purchases', err)
     });
   }
@@ -93,7 +97,7 @@ export class PurchasesComponent implements OnInit {
         this.editPurchaseId = id;
         this.newPurchase = {
           supplier_id: purchase.supplier_id,
-          date: new Date(purchase.date).toISOString().split('T')[0],
+          date: String(purchase.date).split('T')[0],
           notes: purchase.notes || ''
         };
         this.purchaseItems = purchase.items.map((item: any) => ({
@@ -180,7 +184,9 @@ export class PurchasesComponent implements OnInit {
   }
 
   deletePurchase(purchase: any) {
-    const dateStr = new Date(purchase.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+    const rawDate = String(purchase.date).split('T')[0];
+    const [y, m, d] = rawDate.split('-').map(Number);
+    const dateStr = new Date(y, m - 1, d).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
 
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
