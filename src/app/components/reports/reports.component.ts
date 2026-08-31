@@ -259,6 +259,7 @@ export class ReportsComponent implements OnInit {
 
   translateStatus(status: string, total: number, paidAmount: number): string {
     if (paidAmount >= total - 0.01) return 'Pagado';
+    if (paidAmount > 0) return 'Parcial';
     return 'Pendiente';
   }
 
