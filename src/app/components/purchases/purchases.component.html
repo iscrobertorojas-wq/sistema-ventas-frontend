@@ -15,11 +15,13 @@
                 <mat-card-content class="header-content">
                     <mat-form-field appearance="outline" class="supplier-select">
                         <mat-label>Proveedor</mat-label>
-                        <mat-select [(ngModel)]="newPurchase.supplier_id">
-                            <mat-option *ngFor="let s of suppliers" [value]="s.id">
+                        <input type="text" matInput [(ngModel)]="supplierSearchTerm" (ngModelChange)="onSupplierSearch()"
+                            [matAutocomplete]="autoSupplier" placeholder="Escribe para buscar proveedor">
+                        <mat-autocomplete #autoSupplier="matAutocomplete" (optionSelected)="selectSupplier($event)">
+                            <mat-option *ngFor="let s of filteredSuppliers" [value]="s">
                                 {{s.name}}
                             </mat-option>
-                        </mat-select>
+                        </mat-autocomplete>
                     </mat-form-field>
 
                     <mat-form-field appearance="outline">

@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDividerModule } from '@angular/material/divider';
@@ -30,6 +31,7 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
     MatFormFieldModule,
     MatCardModule,
     MatSelectModule,
+    MatAutocompleteModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatDividerModule,
@@ -42,6 +44,8 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
 })
 export class PurchasesComponent implements OnInit {
   suppliers: any[] = [];
+  filteredSuppliers: any[] = [];
+  supplierSearchTerm: string = '';
   purchases: any[] = [];
 
   displayedColumns: string[] = ['date', 'supplier_name', 'items_description', 'total', 'actions'];
@@ -49,7 +53,7 @@ export class PurchasesComponent implements OnInit {
   // New purchase form
   newPurchase: any = {
     supplier_id: null,
-    date: new Date().toISOString().split('T')[0],
+    date: new Date(),
     notes: ''
   };
   
@@ -74,9 +78,30 @@ export class PurchasesComponent implements OnInit {
 
   loadSuppliers() {
     this.api.getSuppliers().subscribe({
-      next: (data) => this.suppliers = data,
+      next: (data) => {
+        this.suppliers = data;
+        this.filteredSuppliers = data;
+      },
       error: (err) => console.error('Error loading suppliers', err)
     });
+  }
+
+  onSupplierSearch() {
+    const term = (typeof this.supplierSearchTerm === 'string' ? this.supplierSearchTerm : '').toLowerCase().trim();
+    this.filteredSuppliers = this.suppliers.filter(s =>
+      s.name.toLowerCase().includes(term)
+    );
+
+    const current = this.suppliers.find(s => s.id === this.newPurchase.supplier_id);
+    if (!current || current.name.toLowerCase() !== term) {
+      this.newPurchase.supplier_id = null;
+    }
+  }
+
+  selectSupplier(event: any) {
+    const supplier = event.option.value;
+    this.newPurchase.supplier_id = supplier.id;
+    this.supplierSearchTerm = supplier.name;
   }
 
   loadPurchases() {
@@ -95,11 +120,28 @@ export class PurchasesComponent implements OnInit {
       next: (purchase) => {
         this.isEditing = true;
         this.editPurchaseId = id;
+
+        let editDate = new Date();
+        if (purchase.date) {
+          const raw = String(purchase.date).split('T')[0];
+          const parts = raw.split('-');
+          if (parts.length === 3) {
+            editDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          } else {
+            editDate = new Date(purchase.date);
+          }
+        }
+
         this.newPurchase = {
           supplier_id: purchase.supplier_id,
-          date: String(purchase.date).split('T')[0],
+          date: editDate,
           notes: purchase.notes || ''
         };
+
+        const supplier = this.suppliers.find(s => s.id === purchase.supplier_id);
+        this.supplierSearchTerm = supplier ? supplier.name : (purchase.supplier_name || '');
+        this.filteredSuppliers = this.suppliers;
+
         this.purchaseItems = purchase.items.map((item: any) => ({
           description: item.description,
           cost: item.cost
@@ -111,6 +153,22 @@ export class PurchasesComponent implements OnInit {
         this.snackBar.open('Error al cargar la compra para editar', 'Cerrar', { duration: 3000 });
       }
     });
+  }
+
+  formatDateForApi(date: any): string {
+    if (!date) return '';
+    if (typeof date === 'string') {
+      const parts = date.split('T')[0].split('-');
+      if (parts.length === 3) {
+        return `${parts[0]}-${parts[1]}-${parts[2]}`;
+      }
+    }
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   addItem() {
@@ -148,7 +206,7 @@ export class PurchasesComponent implements OnInit {
     const payload = {
       id: this.editPurchaseId,
       supplier_id: this.newPurchase.supplier_id,
-      date: this.newPurchase.date,
+      date: this.formatDateForApi(this.newPurchase.date),
       notes: this.newPurchase.notes,
       items: this.purchaseItems
     };
@@ -172,9 +230,11 @@ export class PurchasesComponent implements OnInit {
   resetForm() {
     this.newPurchase = {
       supplier_id: null,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date(),
       notes: ''
     };
+    this.supplierSearchTerm = '';
+    this.filteredSuppliers = this.suppliers;
     this.purchaseItems = [];
     this.currentDescription = '';
     this.currentCost = null;

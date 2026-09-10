@@ -44,6 +44,14 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/services`, service);
   }
 
+  updateService(service: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/services`, service);
+  }
+
+  deleteService(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/services`, { params: { id: id.toString() } });
+  }
+
   // Sales
   getSales(startDate?: string, endDate?: string, clientId?: number): Observable<any[]> {
     let params = new HttpParams();
