@@ -15,6 +15,35 @@
     padding-top: 16px;
 }
 
+.table-card-header {
+    margin-bottom: 12px;
+}
+
+.count-badge {
+    font-size: 0.85rem;
+    font-weight: normal;
+    color: var(--text-secondary);
+    margin-left: 8px;
+}
+
+.table-toolbar {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.search-field {
+    flex: 2;
+    min-width: 250px;
+}
+
+.sort-field {
+    flex: 1;
+    min-width: 220px;
+}
+
 .table-container {
     max-height: 60vh;
     overflow-y: auto;
@@ -31,6 +60,51 @@ table {
 .table-container th {
     background: var(--bg-card);
     z-index: 100;
+}
+
+.id-cell {
+    font-weight: 600;
+    color: var(--text-secondary);
+    width: 90px;
+}
+
+.desc-cell {
+    font-weight: 500;
+}
+
+.price-cell {
+    font-weight: 600;
+    color: #4caf50;
+    width: 140px;
+}
+
+.empty-state {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.empty-state mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    opacity: 0.4;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    .table-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }
 
 @media (max-width: 600px) {

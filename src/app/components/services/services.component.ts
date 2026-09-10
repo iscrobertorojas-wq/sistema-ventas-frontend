@@ -8,6 +8,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCardModule } from '@angular/material/card';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -25,6 +27,8 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
     MatInputModule,
     MatFormFieldModule,
     MatCardModule,
+    MatSelectModule,
+    MatSortModule,
     MatSnackBarModule,
     MatDialogModule,
     MatTooltipModule
@@ -35,6 +39,10 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
 export class ServicesComponent implements OnInit {
   services: any[] = [];
   displayedColumns: string[] = ['id', 'description', 'price', 'actions'];
+
+  searchTerm: string = '';
+  sortBy: string = 'id-asc';
+  currentSort: Sort = { active: 'id', direction: 'asc' };
 
   newService: any = {
     id: null,
@@ -63,6 +71,42 @@ export class ServicesComponent implements OnInit {
         this.snackBar.open('Error al cargar los servicios', 'Cerrar', { duration: 3000 });
       }
     });
+  }
+
+  get filteredServices(): any[] {
+    const term = (this.searchTerm || '').toLowerCase().trim();
+    let result = this.services.filter(s =>
+      !term || (s.description && s.description.toLowerCase().includes(term))
+    );
+
+    const activeSort = this.currentSort.active || (this.sortBy.split('-')[0]);
+    const direction = this.currentSort.direction || (this.sortBy.split('-')[1] || 'asc');
+    const isAsc = direction === 'asc';
+
+    return result.sort((a, b) => {
+      switch (activeSort) {
+        case 'id':
+          return (Number(a.id) - Number(b.id)) * (isAsc ? 1 : -1);
+        case 'description':
+          return (a.description || '').localeCompare(b.description || '', 'es', { sensitivity: 'base' }) * (isAsc ? 1 : -1);
+        case 'price':
+          return (parseFloat(a.price || 0) - parseFloat(b.price || 0)) * (isAsc ? 1 : -1);
+        default:
+          return (Number(a.id) - Number(b.id)) * (isAsc ? 1 : -1);
+      }
+    });
+  }
+
+  onSortSelectChange() {
+    const [active, direction] = this.sortBy.split('-');
+    this.currentSort = { active, direction: direction as 'asc' | 'desc' };
+  }
+
+  sortData(sort: Sort) {
+    this.currentSort = sort;
+    if (sort.active && sort.direction) {
+      this.sortBy = `${sort.active}-${sort.direction}`;
+    }
   }
 
   saveService() {
