@@ -110,6 +110,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         'uuid',
         'tipo',
         'rfc_emisor',
+        'rfc_receptor',
         'fecha_emision',
         'tipo_cfdi',
         'subtotal',

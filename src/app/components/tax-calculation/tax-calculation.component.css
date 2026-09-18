@@ -487,7 +487,7 @@
 .filter-actions {
     display: flex;
     gap: 8px;
-    margin-bottom: 22px;
+    align-items: center;
 }
 
 /* ─── Totales Resumen ─── */
@@ -1394,13 +1394,18 @@ th.num-col {
     overflow: hidden;
     border: 1px solid #cbd5e1;
     background: #f8fafc;
-    height: 48px;
+    height: 56px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .tipo-toggle-group mat-button-toggle {
     font-size: 0.85rem;
     font-weight: 500;
     color: #475569;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
 }
 
 .tipo-toggle-group mat-button-toggle mat-icon {

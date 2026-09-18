@@ -471,14 +471,14 @@
                                 </mat-button-toggle-group>
                             </div>
 
-                            <mat-form-field appearance="outline">
+                            <mat-form-field appearance="outline" subscriptSizing="dynamic">
                                 <mat-label>Desde</mat-label>
                                 <input matInput [matDatepicker]="pickerFiltroInicio" [(ngModel)]="filtroCfdiFechaInicio" (click)="pickerFiltroInicio.open()" placeholder="dd/mm/aaaa">
                                 <mat-datepicker-toggle matIconSuffix [for]="pickerFiltroInicio"></mat-datepicker-toggle>
                                 <mat-datepicker #pickerFiltroInicio></mat-datepicker>
                             </mat-form-field>
 
-                            <mat-form-field appearance="outline">
+                            <mat-form-field appearance="outline" subscriptSizing="dynamic">
                                 <mat-label>Hasta</mat-label>
                                 <input matInput [matDatepicker]="pickerFiltroFin" [(ngModel)]="filtroCfdiFechaFin" (click)="pickerFiltroFin.open()" placeholder="dd/mm/aaaa">
                                 <mat-datepicker-toggle matIconSuffix [for]="pickerFiltroFin"></mat-datepicker-toggle>
@@ -562,6 +562,17 @@
                                             <div class="rfc-cell">
                                                 <strong>{{ row.rfc_emisor }}</strong>
                                                 <small *ngIf="row.nombre_emisor">{{ row.nombre_emisor }}</small>
+                                            </div>
+                                        </td>
+                                        <td mat-footer-cell *matFooterCellDef></td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="rfc_receptor">
+                                        <th mat-header-cell *matHeaderCellDef>Receptor</th>
+                                        <td mat-cell *matCellDef="let row">
+                                            <div class="rfc-cell">
+                                                <strong>{{ row.rfc_receptor || '—' }}</strong>
+                                                <small *ngIf="row.nombre_receptor">{{ row.nombre_receptor }}</small>
                                             </div>
                                         </td>
                                         <td mat-footer-cell *matFooterCellDef></td>
