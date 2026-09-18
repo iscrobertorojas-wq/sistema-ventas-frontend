@@ -18,6 +18,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { RouterModule } from '@angular/router';
 
 @Component({
@@ -43,6 +44,7 @@ import { RouterModule } from '@angular/router';
         MatDatepickerModule,
         MatNativeDateModule,
         MatSlideToggleModule,
+        MatPaginatorModule,
     ],
     templateUrl: './tax-calculation.component.html',
     styleUrl: './tax-calculation.component.css'
@@ -92,6 +94,11 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     filtroCfdiTipo: string = '';
     filtroCfdiFechaInicio: Date | null = null;
     filtroCfdiFechaFin: Date | null = null;
+
+    // Paginación de CFDIs
+    pageSize: number = 50;
+    pageSizeOptions: number[] = [50, 100, 1000];
+    pageIndex: number = 0;
 
     // Columnas tabla historial
     historialColumns = ['tipo', 'periodo', 'total_cfdis', 'estado', 'fecha', 'acciones'];
@@ -481,6 +488,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
 
     loadCfdis() {
         this.cfdisLoading = true;
+        this.pageIndex = 0; // reset al filtrar
         const params: any = {};
         if (this.filtroCfdiTipo) params.tipo = this.filtroCfdiTipo;
         const fi = this.dateToString(this.filtroCfdiFechaInicio);
@@ -505,8 +513,35 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         this.loadCfdis();
     }
 
-    // Resumen totales de CFDIs mostrados
+    onPageChange(event: PageEvent) {
+        this.pageSize = event.pageSize;
+        this.pageIndex = event.pageIndex;
+    }
+
+    minVal(a: number, b: number): number {
+        return Math.min(a, b);
+    }
+
+    // CFDIs de la página actual
+    get cfdisPage(): any[] {
+        const start = this.pageIndex * this.pageSize;
+        return this.cfdis.slice(start, start + this.pageSize);
+    }
+
+    // ─── Totales generales ───
     get totalSubtotal(): number { return this.cfdis.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0); }
     get totalIva(): number { return this.cfdis.reduce((s, c) => s + parseFloat(c.iva || 0), 0); }
     get totalMonto(): number { return this.cfdis.reduce((s, c) => s + parseFloat(c.total || 0), 0); }
+
+    // ─── Totales por tipo ───
+    get emitidos(): any[] { return this.cfdis.filter(c => c.tipo === 'emitido'); }
+    get recibidos(): any[] { return this.cfdis.filter(c => c.tipo === 'recibido'); }
+
+    get totalSubtotalEmitidos(): number { return this.emitidos.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0); }
+    get totalIvaEmitidos(): number      { return this.emitidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0); }
+    get totalMontoEmitidos(): number    { return this.emitidos.reduce((s, c) => s + parseFloat(c.total || 0), 0); }
+
+    get totalSubtotalRecibidos(): number { return this.recibidos.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0); }
+    get totalIvaRecibidos(): number      { return this.recibidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0); }
+    get totalMontoRecibidos(): number    { return this.recibidos.reduce((s, c) => s + parseFloat(c.total || 0), 0); }
 }

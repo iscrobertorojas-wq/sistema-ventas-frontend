@@ -1,0 +1,660 @@
+<div class="tax-container">
+
+    <!-- Header -->
+    <div class="tax-header">
+        <div class="tax-title">
+            <mat-icon class="header-icon">calculate</mat-icon>
+            <div>
+                <h1>Cálculo de Impuestos</h1>
+                <p>Descarga y administra tus CFDIs del SAT para el cálculo fiscal</p>
+            </div>
+        </div>
+
+        <!-- Estado FIEL -->
+        <div class="fiel-status-chip">
+            <div *ngIf="fielLoading" class="fiel-chip-loading">
+                <mat-spinner diameter="16"></mat-spinner>
+                <span>Verificando FIEL...</span>
+            </div>
+            <div *ngIf="!fielLoading && fielStatus?.vigente" class="fiel-chip fiel-chip-ok">
+                <mat-icon>verified_user</mat-icon>
+                <span>FIEL vigente · {{ fielStatus?.rfc }}</span>
+            </div>
+            <div *ngIf="!fielLoading && fielStatus?.configurada && !fielStatus?.vigente" class="fiel-chip fiel-chip-warn">
+                <mat-icon>warning</mat-icon>
+                <span>FIEL caducada</span>
+            </div>
+            <div *ngIf="!fielLoading && !fielStatus?.configurada" class="fiel-chip fiel-chip-error">
+                <mat-icon>lock</mat-icon>
+                <span>Sin FIEL configurada</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerta si no hay FIEL -->
+    <div *ngIf="!fielLoading && !fielStatus?.vigente" class="alert-no-fiel">
+        <mat-icon>info</mat-icon>
+        <div>
+            <strong>e.firma no configurada o caducada</strong>
+            <p>Para descargar XMLs del SAT necesitas subir tu e.firma vigente en
+                <a routerLink="/settings">Configuración → sección FIEL</a>.
+            </p>
+        </div>
+    </div>
+
+    <!-- Tabs principales -->
+    <mat-tab-group class="tax-tabs" animationDuration="200ms">
+
+        <!-- TAB 1: Descargar XML -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">cloud_download</mat-icon>
+                Descargar XML del SAT
+            </ng-template>
+
+            <div class="tab-content">
+                <!-- Barra de acción principal con botón de Descarga -->
+                <mat-card class="download-action-card">
+                    <div class="download-action-content">
+                        <div class="download-action-info">
+                            <div class="action-icon-circle">
+                                <mat-icon>cloud_download</mat-icon>
+                            </div>
+                            <div>
+                                <h3>Descarga Masiva de XMLs del SAT</h3>
+                                <p>Descarga tus paquetes de facturas electrónicas (Emitidos y Recibidos) directamente desde los servicios del SAT.</p>
+                            </div>
+                        </div>
+                        <div class="download-action-buttons">
+                            <button mat-raised-button color="accent" class="btn-open-upload-modal"
+                                    (click)="openUploadModal()"
+                                    id="btn-abrir-modal-subida">
+                                <mat-icon>upload_file</mat-icon>
+                                Subir XMLs o ZIP
+                            </button>
+                            <button mat-raised-button color="primary" class="btn-open-download-modal"
+                                    (click)="openDownloadModal()"
+                                    [disabled]="!fielStatus?.vigente"
+                                    id="btn-abrir-modal-descarga">
+                                <mat-icon>cloud_download</mat-icon>
+                                Solicitar al SAT
+                            </button>
+                        </div>
+                    </div>
+                </mat-card>
+
+                <!-- Modal de Parámetros de Descarga -->
+                <div class="modal-backdrop" *ngIf="showDownloadModal" (click)="closeDownloadModal()">
+                    <div class="modal-dialog mat-elevation-z8" (click)="$event.stopPropagation()">
+                        <div class="modal-header">
+                            <div class="modal-title-wrap">
+                                <mat-icon class="modal-header-icon">cloud_sync</mat-icon>
+                                <div>
+                                    <h2>Descargar XMLs desde el SAT</h2>
+                                    <p class="modal-subtitle">Configura los parámetros de la solicitud al SAT</p>
+                                </div>
+                            </div>
+                            <button mat-icon-button (click)="closeDownloadModal()" [disabled]="solicitando">
+                                <mat-icon>close</mat-icon>
+                            </button>
+                        </div>
+
+                        <div class="modal-body">
+                            <!-- Selector de Tipo -->
+                            <div class="modal-section">
+                                <label class="modal-section-label">¿Qué comprobantes deseas descargar?</label>
+                                <div class="tipo-selector-grid">
+                                    <div class="tipo-card" [class.selected]="tipoDescarga === 'ambos'" (click)="tipoDescarga = 'ambos'">
+                                        <div class="tipo-card-top">
+                                            <mat-icon class="tipo-icon ambos-icon">swap_vert</mat-icon>
+                                            <span class="badge-recomendado">Recomendado</span>
+                                        </div>
+                                        <span class="tipo-title">Ambos</span>
+                                        <span class="tipo-desc">Emitidos y Recibidos</span>
+                                    </div>
+
+                                    <div class="tipo-card" [class.selected]="tipoDescarga === 'emitidos'" (click)="tipoDescarga = 'emitidos'">
+                                        <div class="tipo-card-top">
+                                            <mat-icon class="tipo-icon emitido-icon">upload</mat-icon>
+                                        </div>
+                                        <span class="tipo-title">Sólo Emitidos</span>
+                                        <span class="tipo-desc">Facturas de ingreso</span>
+                                    </div>
+
+                                    <div class="tipo-card" [class.selected]="tipoDescarga === 'recibidos'" (click)="tipoDescarga = 'recibidos'">
+                                        <div class="tipo-card-top">
+                                            <mat-icon class="tipo-icon recibido-icon">download</mat-icon>
+                                        </div>
+                                        <span class="tipo-title">Sólo Recibidos</span>
+                                        <span class="tipo-desc">Gastos y proveedores</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Selector de Rango de Fechas -->
+                            <div class="modal-section">
+                                <div class="modal-section-header">
+                                    <label class="modal-section-label">Rango de Fechas</label>
+                                    <div class="date-presets">
+                                        <button type="button" class="btn-preset" (click)="setPeriodoMesActual()">Mes actual</button>
+                                        <button type="button" class="btn-preset" (click)="setPeriodoMesAnterior()">Mes anterior</button>
+                                        <button type="button" class="btn-preset" (click)="setPeriodoAnioActual()">Año actual</button>
+                                    </div>
+                                </div>
+
+                                <div class="date-inputs-row">
+                                    <mat-form-field appearance="outline" class="modal-date-field">
+                                        <mat-label>Fecha Inicio</mat-label>
+                                        <input matInput [matDatepicker]="pickerInicio" [(ngModel)]="fechaInicio" placeholder="dd/mm/aaaa" (click)="pickerInicio.open()">
+                                        <mat-datepicker-toggle matIconSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+                                        <mat-datepicker #pickerInicio></mat-datepicker>
+                                    </mat-form-field>
+                                    <span class="date-separator">—</span>
+                                    <mat-form-field appearance="outline" class="modal-date-field">
+                                        <mat-label>Fecha Fin</mat-label>
+                                        <input matInput [matDatepicker]="pickerFin" [(ngModel)]="fechaFin" placeholder="dd/mm/aaaa" (click)="pickerFin.open()">
+                                        <mat-datepicker-toggle matIconSuffix [for]="pickerFin"></mat-datepicker-toggle>
+                                        <mat-datepicker #pickerFin></mat-datepicker>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+
+                            <!-- Mensaje Explicativo Dinámico -->
+                            <div class="modal-info-box">
+                                <mat-icon>info</mat-icon>
+                                <div *ngIf="tipoDescarga === 'ambos'">
+                                    Se enviarán dos solicitudes al SAT: una para <strong>Emitidos</strong> y otra para <strong>Recibidos</strong>
+                                    <ng-container *ngIf="fechaInicio && fechaFin">
+                                        del <strong>{{ fechaInicio | date:'dd/MM/yyyy' }}</strong> al <strong>{{ fechaFin | date:'dd/MM/yyyy' }}</strong>.
+                                    </ng-container>
+                                </div>
+                                <div *ngIf="tipoDescarga === 'emitidos'">
+                                    Se solicitarán los comprobantes <strong>Emitidos</strong>
+                                    <ng-container *ngIf="fechaInicio && fechaFin">
+                                        del <strong>{{ fechaInicio | date:'dd/MM/yyyy' }}</strong> al <strong>{{ fechaFin | date:'dd/MM/yyyy' }}</strong>.
+                                    </ng-container>
+                                </div>
+                                <div *ngIf="tipoDescarga === 'recibidos'">
+                                    Se solicitarán los comprobantes <strong>Recibidos</strong>
+                                    <ng-container *ngIf="fechaInicio && fechaFin">
+                                        del <strong>{{ fechaInicio | date:'dd/MM/yyyy' }}</strong> al <strong>{{ fechaFin | date:'dd/MM/yyyy' }}</strong>.
+                                    </ng-container>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button mat-button (click)="closeDownloadModal()" [disabled]="solicitando">
+                                Cancelar
+                            </button>
+                            <button mat-raised-button color="primary"
+                                    (click)="solicitarDescarga()"
+                                    [disabled]="solicitando || !fielStatus?.vigente || !fechaInicio || !fechaFin"
+                                    id="btn-confirmar-descarga">
+                                <mat-spinner *ngIf="solicitando" diameter="18" style="margin-right: 8px;"></mat-spinner>
+                                <mat-icon *ngIf="!solicitando">send</mat-icon>
+                                {{ solicitando ? 'Solicitando al SAT...' : 'Iniciar Descarga' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal de Carga Manual de XMLs / ZIP -->
+                <div class="modal-backdrop" *ngIf="showUploadModal" (click)="closeUploadModal()">
+                    <div class="modal-dialog mat-elevation-z8" (click)="$event.stopPropagation()">
+                        <div class="modal-header">
+                            <div class="modal-title-wrap">
+                                <mat-icon class="modal-header-icon upload-dialog-icon">drive_folder_upload</mat-icon>
+                                <div>
+                                    <h2>Cargar Comprobantes (XML o ZIP)</h2>
+                                    <p class="modal-subtitle">Sube facturas directamente sin esperar autorización del SAT</p>
+                                </div>
+                            </div>
+                            <button mat-icon-button (click)="closeUploadModal()" [disabled]="subiendoArchivos">
+                                <mat-icon>close</mat-icon>
+                            </button>
+                        </div>
+
+                        <div class="modal-body">
+                            <!-- Zona de Arrastrar y Soltar (Dropzone) -->
+                            <div class="dropzone" 
+                                 [class.dragging]="isDragging"
+                                 (dragover)="onDragOver($event)"
+                                 (dragleave)="onDragLeave($event)"
+                                 (drop)="onDrop($event)"
+                                 (click)="fileInput.click()">
+                                <input #fileInput type="file" multiple accept=".xml,.zip" style="display: none;" (change)="onFileSelected($event)">
+                                <mat-icon class="dropzone-icon">cloud_upload</mat-icon>
+                                <div class="dropzone-text">
+                                    <strong>Arrastra aquí tus archivos .XML o .ZIP</strong>
+                                    <span>o haz clic para explorar en tu equipo</span>
+                                </div>
+                                <div class="dropzone-hint">
+                                    Puedes seleccionar múltiples archivos XML individuales o un archivo ZIP comprimido.
+                                </div>
+                            </div>
+
+                            <!-- Lista de Archivos Seleccionados -->
+                            <div *ngIf="archivosParaSubir.length > 0 && !resultadoSubida" class="file-list-wrap">
+                                <div class="file-list-header">
+                                    <span>Archivos seleccionados ({{ archivosParaSubir.length }})</span>
+                                    <button mat-button color="warn" (click)="archivosParaSubir = []" [disabled]="subiendoArchivos" class="btn-clear-files">
+                                        Limpiar lista
+                                    </button>
+                                </div>
+                                <div class="file-list">
+                                    <div *ngFor="let file of archivosParaSubir; let i = index" class="file-item">
+                                        <mat-icon class="file-item-icon">{{ file.name.toLowerCase().endsWith('.zip') ? 'folder_zip' : 'description' }}</mat-icon>
+                                        <div class="file-item-info">
+                                            <span class="file-item-name">{{ file.name }}</span>
+                                            <span class="file-item-size">{{ formatFileSize(file.size) }}</span>
+                                        </div>
+                                        <button mat-icon-button (click)="removerArchivo(i)" [disabled]="subiendoArchivos" matTooltip="Quitar">
+                                            <mat-icon>close</mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Resumen de Resultados de Subida -->
+                            <div *ngIf="resultadoSubida" class="upload-result-card mat-elevation-z1">
+                                <div class="result-header">
+                                    <mat-icon class="result-icon-success">check_circle</mat-icon>
+                                    <h3>Resultado del Procesamiento</h3>
+                                </div>
+                                <div class="result-stats-grid">
+                                    <div class="result-stat-box stat-nuevos">
+                                        <span class="stat-num">{{ resultadoSubida.guardados }}</span>
+                                        <span class="stat-lbl">Nuevos Guardados</span>
+                                    </div>
+                                    <div class="result-stat-box stat-duplicados">
+                                        <span class="stat-num">{{ resultadoSubida.duplicados }}</span>
+                                        <span class="stat-lbl">Omitidos (Ya existían)</span>
+                                    </div>
+                                    <div class="result-stat-box stat-total">
+                                        <span class="stat-num">{{ resultadoSubida.total_procesados }}</span>
+                                        <span class="stat-lbl">Total Procesados</span>
+                                    </div>
+                                </div>
+                                <div *ngIf="resultadoSubida.errores && resultadoSubida.errores.length > 0" class="result-errors">
+                                    <div *ngFor="let err of resultadoSubida.errores" class="error-line">
+                                        <mat-icon>warning</mat-icon> {{ err }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mensaje de Información -->
+                            <div class="modal-info-box" *ngIf="!resultadoSubida">
+                                <mat-icon>verified</mat-icon>
+                                <div>
+                                    <strong>Validación automática contra duplicados:</strong> Si un comprobante ya fue registrado previamente en la base de datos (por su UUID), será detectado y omitido automáticamente sin duplicar registros.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button mat-button (click)="closeUploadModal()" [disabled]="subiendoArchivos">
+                                {{ resultadoSubida ? 'Cerrar' : 'Cancelar' }}
+                            </button>
+                            <button mat-raised-button color="accent"
+                                    (click)="subirArchivos()"
+                                    [disabled]="archivosParaSubir.length === 0 || subiendoArchivos"
+                                    *ngIf="!resultadoSubida">
+                                <mat-spinner *ngIf="subiendoArchivos" diameter="18" style="margin-right: 8px;"></mat-spinner>
+                                <mat-icon *ngIf="!subiendoArchivos">upload</mat-icon>
+                                {{ subiendoArchivos ? 'Procesando comprobantes...' : 'Importar a Base de Datos (' + archivosParaSubir.length + ')' }}
+                            </button>
+                            <button mat-raised-button color="primary" (click)="closeUploadModal()" *ngIf="resultadoSubida">
+                                Aceptar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historial de solicitudes -->
+                <mat-card class="historial-card">
+                    <mat-card-header>
+                        <mat-card-title>Historial de Solicitudes</mat-card-title>
+                        <mat-card-subtitle>Sigue el estado de tus solicitudes al SAT</mat-card-subtitle>
+                        <div class="card-actions-header">
+                            <div class="autosync-badge" matTooltip="El sistema verifica y descarga automáticamente cada 5 minutos">
+                                <mat-icon class="pulse-icon">update</mat-icon>
+                                <span>Auto-verificación activa (5 min)</span>
+                            </div>
+                            <button mat-icon-button (click)="loadHistorial()" matTooltip="Actualizar historial ahora">
+                                <mat-icon>refresh</mat-icon>
+                            </button>
+                        </div>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <div *ngIf="historialLoading" class="loading-center">
+                            <mat-spinner diameter="40"></mat-spinner>
+                        </div>
+
+                        <div *ngIf="!historialLoading && historial.length === 0" class="empty-state">
+                            <mat-icon>inbox</mat-icon>
+                            <p>No hay solicitudes aún. Inicia una descarga arriba.</p>
+                        </div>
+
+                        <div *ngIf="!historialLoading && historial.length > 0" class="table-wrapper">
+                            <table mat-table [dataSource]="historial" class="historial-table">
+
+                                <!-- Tipo -->
+                                <ng-container matColumnDef="tipo">
+                                    <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                                    <td mat-cell *matCellDef="let row">
+                                        <span class="tipo-badge" [ngClass]="row.tipo === 'emitidos' ? 'badge-emitido' : 'badge-recibido'">
+                                            <mat-icon>{{ row.tipo === 'emitidos' ? 'upload' : 'download' }}</mat-icon>
+                                            {{ row.tipo | titlecase }}
+                                        </span>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Período -->
+                                <ng-container matColumnDef="periodo">
+                                    <th mat-header-cell *matHeaderCellDef>Período</th>
+                                    <td mat-cell *matCellDef="let row">
+                                        {{ row.fecha_inicio }} — {{ row.fecha_fin }}
+                                    </td>
+                                </ng-container>
+
+                                <!-- Total CFDIs -->
+                                <ng-container matColumnDef="total_cfdis">
+                                    <th mat-header-cell *matHeaderCellDef>CFDIs</th>
+                                    <td mat-cell *matCellDef="let row">
+                                        <strong>{{ row.total_cfdis ?? '—' }}</strong>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Estado -->
+                                <ng-container matColumnDef="estado">
+                                    <th mat-header-cell *matHeaderCellDef>Estado</th>
+                                    <td mat-cell *matCellDef="let row">
+                                        <span class="estado-chip" [ngClass]="'estado-' + row.estado">
+                                            <mat-icon>{{ getEstadoIcon(row.estado) }}</mat-icon>
+                                            {{ row.estado | titlecase }}
+                                        </span>
+                                        <p *ngIf="row.mensaje_error" class="error-msg">{{ row.mensaje_error }}</p>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Fecha solicitud -->
+                                <ng-container matColumnDef="fecha">
+                                    <th mat-header-cell *matHeaderCellDef>Solicitado</th>
+                                    <td mat-cell *matCellDef="let row">
+                                        {{ row.created_at | date:'dd/MM/yyyy HH:mm' }}
+                                    </td>
+                                </ng-container>
+
+                                <!-- Acciones -->
+                                <ng-container matColumnDef="acciones">
+                                    <th mat-header-cell *matHeaderCellDef>Acciones</th>
+                                    <td mat-cell *matCellDef="let row">
+                                        <div class="action-btns">
+                                            <!-- Verificar (para pendiente/verificando) -->
+                                            <button mat-stroked-button color="primary"
+                                                    *ngIf="row.estado === 'pendiente' || row.estado === 'verificando'"
+                                                    (click)="verificarSolicitud(row)"
+                                                    [disabled]="isVerificando(row.id) || isEliminando(row.id)"
+                                                    matTooltip="Consultar estado en el SAT">
+                                                <mat-spinner *ngIf="isVerificando(row.id)" diameter="16"></mat-spinner>
+                                                <mat-icon *ngIf="!isVerificando(row.id)">sync</mat-icon>
+                                                {{ isVerificando(row.id) ? 'Verificando...' : 'Verificar' }}
+                                            </button>
+
+                                            <!-- Descargar (para listo) -->
+                                            <button mat-raised-button color="accent"
+                                                    *ngIf="row.estado === 'listo'"
+                                                    (click)="descargarPaquetes(row)"
+                                                    [disabled]="isDescargando(row.id) || isEliminando(row.id)"
+                                                    matTooltip="Descargar XMLs y guardar en BD">
+                                                <mat-spinner *ngIf="isDescargando(row.id)" diameter="16"></mat-spinner>
+                                                <mat-icon *ngIf="!isDescargando(row.id)">download</mat-icon>
+                                                {{ isDescargando(row.id) ? 'Descargando...' : 'Guardar XMLs' }}
+                                            </button>
+
+                                            <!-- Descargado -->
+                                            <span *ngIf="row.estado === 'descargado'" class="badge-descargado">
+                                                <mat-icon>check_circle</mat-icon> Guardado en BD
+                                            </span>
+
+                                            <!-- Eliminar (siempre disponible salvo cuando está siendo procesado) -->
+                                            <button mat-icon-button
+                                                    class="btn-eliminar"
+                                                    (click)="eliminarSolicitud(row)"
+                                                    [disabled]="isEliminando(row.id) || isVerificando(row.id) || isDescargando(row.id) || row.estado === 'verificando'"
+                                                    matTooltip="Eliminar del historial"
+                                                    id="btn-eliminar-solicitud-{{ row.id }}">
+                                                <mat-spinner *ngIf="isEliminando(row.id)" diameter="16"></mat-spinner>
+                                                <mat-icon *ngIf="!isEliminando(row.id)">delete_outline</mat-icon>
+                                            </button>
+                                        </div>
+
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="historialColumns"></tr>
+                                <tr mat-row *matRowDef="let row; columns: historialColumns;"
+                                    [ngClass]="'row-estado-' + row.estado"></tr>
+                            </table>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+            </div>
+        </mat-tab>
+
+        <!-- TAB 2: CFDIs almacenados -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">receipt_long</mat-icon>
+                CFDIs en Base de Datos
+                <span *ngIf="cfdis.length > 0" class="tab-count">{{ cfdis.length }}</span>
+            </ng-template>
+
+            <div class="tab-content">
+                <!-- Filtros -->
+                <mat-card class="filter-card">
+                    <mat-card-content>
+                        <div class="filter-row">
+                            <mat-form-field appearance="outline">
+                                <mat-label>Tipo</mat-label>
+                                <mat-select [(ngModel)]="filtroCfdiTipo">
+                                    <mat-option value="">Todos</mat-option>
+                                    <mat-option value="emitido">Emitidos</mat-option>
+                                    <mat-option value="recibido">Recibidos</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+
+                            <mat-form-field appearance="outline">
+                                <mat-label>Desde</mat-label>
+                                <input matInput [matDatepicker]="pickerFiltroInicio" [(ngModel)]="filtroCfdiFechaInicio" (click)="pickerFiltroInicio.open()" placeholder="dd/mm/aaaa">
+                                <mat-datepicker-toggle matIconSuffix [for]="pickerFiltroInicio"></mat-datepicker-toggle>
+                                <mat-datepicker #pickerFiltroInicio></mat-datepicker>
+                            </mat-form-field>
+
+                            <mat-form-field appearance="outline">
+                                <mat-label>Hasta</mat-label>
+                                <input matInput [matDatepicker]="pickerFiltroFin" [(ngModel)]="filtroCfdiFechaFin" (click)="pickerFiltroFin.open()" placeholder="dd/mm/aaaa">
+                                <mat-datepicker-toggle matIconSuffix [for]="pickerFiltroFin"></mat-datepicker-toggle>
+                                <mat-datepicker #pickerFiltroFin></mat-datepicker>
+                            </mat-form-field>
+
+                            <div class="filter-actions">
+                                <button mat-raised-button color="primary" (click)="aplicarFiltrosCfdis()">
+                                    <mat-icon>filter_list</mat-icon>
+                                    Filtrar
+                                </button>
+                                <button mat-stroked-button (click)="limpiarFiltrosCfdis()">
+                                    <mat-icon>clear</mat-icon>
+                                    Limpiar
+                                </button>
+                                <button mat-raised-button color="accent" (click)="openUploadModal()" class="btn-subir-tab">
+                                    <mat-icon>upload_file</mat-icon>
+                                    Subir XMLs o ZIP
+                                </button>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Totales desglosados por tipo -->
+                <div *ngIf="cfdis.length > 0" class="totales-section">
+
+                    <!-- Fila de encabezados de columnas -->
+                    <div class="totales-header-row">
+                        <div class="totales-col-label"></div>
+                        <div class="totales-col-header">
+                            <span class="tipo-badge badge-emitido">
+                                <mat-icon>upload</mat-icon> Emitidos ({{ emitidos.length }})
+                            </span>
+                        </div>
+                        <div class="totales-col-header">
+                            <span class="tipo-badge badge-recibido">
+                                <mat-icon>download</mat-icon> Recibidos ({{ recibidos.length }})
+                            </span>
+                        </div>
+                        <div class="totales-col-header totales-col-total">
+                            <span class="tipo-badge badge-total">Total ({{ cfdis.length }})</span>
+                        </div>
+                    </div>
+
+                    <!-- Fila Subtotal -->
+                    <div class="totales-data-row">
+                        <div class="totales-col-label">Subtotal</div>
+                        <div class="totales-col-value emitido-val">{{ formatCurrency(totalSubtotalEmitidos) }}</div>
+                        <div class="totales-col-value recibido-val">{{ formatCurrency(totalSubtotalRecibidos) }}</div>
+                        <div class="totales-col-value total-val">{{ formatCurrency(totalSubtotal) }}</div>
+                    </div>
+
+                    <!-- Fila IVA -->
+                    <div class="totales-data-row totales-row-iva">
+                        <div class="totales-col-label">IVA</div>
+                        <div class="totales-col-value emitido-val">{{ formatCurrency(totalIvaEmitidos) }}</div>
+                        <div class="totales-col-value recibido-val">{{ formatCurrency(totalIvaRecibidos) }}</div>
+                        <div class="totales-col-value total-val">{{ formatCurrency(totalIva) }}</div>
+                    </div>
+
+                    <!-- Fila Total -->
+                    <div class="totales-data-row totales-row-monto">
+                        <div class="totales-col-label">Total</div>
+                        <div class="totales-col-value emitido-val">{{ formatCurrency(totalMontoEmitidos) }}</div>
+                        <div class="totales-col-value recibido-val">{{ formatCurrency(totalMontoRecibidos) }}</div>
+                        <div class="totales-col-value total-val">{{ formatCurrency(totalMonto) }}</div>
+                    </div>
+
+                </div>
+
+                <!-- Tabla de CFDIs -->
+                <mat-card class="cfdis-table-card">
+                    <mat-card-content>
+                        <div *ngIf="cfdisLoading" class="loading-center">
+                            <mat-spinner diameter="40"></mat-spinner>
+                        </div>
+
+                        <div *ngIf="!cfdisLoading && cfdis.length === 0" class="empty-state">
+                            <mat-icon>receipt_long</mat-icon>
+                            <p>No hay CFDIs almacenados. Descarga XMLs del SAT en la pestaña anterior.</p>
+                        </div>
+
+                        <div *ngIf="!cfdisLoading && cfdis.length > 0">
+                            <!-- Paginador superior + info -->
+                            <div class="paginator-bar">
+                                <span class="paginator-info">
+                                    Mostrando {{ pageIndex * pageSize + 1 }}&ndash;{{ minVal((pageIndex + 1) * pageSize, cfdis.length) }} de {{ cfdis.length }} CFDIs
+                                </span>
+                                <mat-paginator
+                                    [length]="cfdis.length"
+                                    [pageSize]="pageSize"
+                                    [pageIndex]="pageIndex"
+                                    [pageSizeOptions]="pageSizeOptions"
+                                    (page)="onPageChange($event)"
+                                    showFirstLastButtons
+                                    aria-label="Paginación de CFDIs">
+                                </mat-paginator>
+                            </div>
+
+                            <!-- Tabla con scroll fijo -->
+                            <div class="table-scroll-container">
+                                <table mat-table [dataSource]="cfdisPage" class="cfdis-table">
+
+                                    <ng-container matColumnDef="uuid">
+                                        <th mat-header-cell *matHeaderCellDef>Folio Fiscal (UUID)</th>
+                                        <td mat-cell *matCellDef="let row" class="uuid-cell">
+                                            <span matTooltip="{{ row.uuid }}">{{ row.uuid | slice:0:18 }}...</span>
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="tipo">
+                                        <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                                        <td mat-cell *matCellDef="let row">
+                                            <span class="tipo-badge" [ngClass]="row.tipo === 'emitido' ? 'badge-emitido' : 'badge-recibido'">
+                                                {{ row.tipo | titlecase }}
+                                            </span>
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="rfc_emisor">
+                                        <th mat-header-cell *matHeaderCellDef>Emisor</th>
+                                        <td mat-cell *matCellDef="let row">
+                                            <div class="rfc-cell">
+                                                <strong>{{ row.rfc_emisor }}</strong>
+                                                <small *ngIf="row.nombre_emisor">{{ row.nombre_emisor }}</small>
+                                            </div>
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="fecha_emision">
+                                        <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                                        <td mat-cell *matCellDef="let row">{{ row.fecha_emision | date:'dd/MM/yyyy' }}</td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="tipo_cfdi">
+                                        <th mat-header-cell *matHeaderCellDef>Comprobante</th>
+                                        <td mat-cell *matCellDef="let row">{{ row.tipo_cfdi || '—' }}</td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="subtotal">
+                                        <th mat-header-cell *matHeaderCellDef class="num-col">Subtotal</th>
+                                        <td mat-cell *matCellDef="let row" class="num-col">{{ formatCurrency(row.subtotal) }}</td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="iva">
+                                        <th mat-header-cell *matHeaderCellDef class="num-col">IVA</th>
+                                        <td mat-cell *matCellDef="let row" class="num-col">{{ formatCurrency(row.iva) }}</td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="total">
+                                        <th mat-header-cell *matHeaderCellDef class="num-col">Total</th>
+                                        <td mat-cell *matCellDef="let row" class="num-col">
+                                            <strong>{{ formatCurrency(row.total) }}</strong>
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="moneda">
+                                        <th mat-header-cell *matHeaderCellDef>Moneda</th>
+                                        <td mat-cell *matCellDef="let row">{{ row.moneda || 'MXN' }}</td>
+                                    </ng-container>
+
+                                    <tr mat-header-row *matHeaderRowDef="cfdisColumns; sticky: true"></tr>
+                                    <tr mat-row *matRowDef="let row; columns: cfdisColumns;"></tr>
+                                </table>
+                            </div>
+
+                            <!-- Paginador inferior -->
+                            <mat-paginator
+                                [length]="cfdis.length"
+                                [pageSize]="pageSize"
+                                [pageIndex]="pageIndex"
+                                [pageSizeOptions]="pageSizeOptions"
+                                (page)="onPageChange($event)"
+                                showFirstLastButtons
+                                aria-label="Paginación inferior de CFDIs">
+                            </mat-paginator>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+            </div>
+        </mat-tab>
+
+    </mat-tab-group>
+</div>
