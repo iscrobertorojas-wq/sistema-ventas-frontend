@@ -680,5 +680,296 @@
             </div>
         </mat-tab>
 
+        <!-- TAB 3: Cálculo de Impuestos -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">calculate</mat-icon>
+                Cálculo de Impuestos
+            </ng-template>
+
+            <div class="tab-content">
+                <!-- Barra de Periodo Mensual + Exportar Excel -->
+                <mat-card class="calc-period-card">
+                    <mat-card-content>
+                        <div class="calc-period-bar">
+                            <div class="period-selectors">
+                                <button mat-icon-button (click)="mesAnterior()" matTooltip="Mes anterior">
+                                    <mat-icon>chevron_left</mat-icon>
+                                </button>
+
+                                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="select-mes">
+                                    <mat-label>Mes</mat-label>
+                                    <mat-select [(ngModel)]="calcMes" (selectionChange)="loadCalculoImpuestos()">
+                                        <mat-option *ngFor="let m of meses" [value]="m.id">{{ m.nombre }}</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="select-anio">
+                                    <mat-label>Año</mat-label>
+                                    <mat-select [(ngModel)]="calcAnio" (selectionChange)="loadCalculoImpuestos()">
+                                        <mat-option *ngFor="let a of anios" [value]="a">{{ a }}</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <button mat-icon-button (click)="mesSiguiente()" matTooltip="Mes siguiente">
+                                    <mat-icon>chevron_right</mat-icon>
+                                </button>
+
+                                <button mat-stroked-button (click)="loadCalculoImpuestos()" [disabled]="calcLoading" class="btn-refresh-calc">
+                                    <mat-icon [class.pulse-icon]="calcLoading">refresh</mat-icon>
+                                    Recalcular
+                                </button>
+                            </div>
+
+                            <div class="calc-actions-right">
+                                <span class="calc-period-badge">
+                                    <mat-icon>event</mat-icon> {{ nombreMesSeleccionado }} {{ calcAnio }}
+                                    <small>({{ calcCfdis.length }} CFDIs)</small>
+                                </span>
+
+                                <button mat-raised-button color="primary" class="btn-export-excel" (click)="exportarCalculoExcel()" [disabled]="calcLoading">
+                                    <mat-icon>description</mat-icon>
+                                    Exportar a Excel (.xlsx)
+                                </button>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Loading spinner -->
+                <div *ngIf="calcLoading" class="loading-center" style="padding: 40px 0;">
+                    <mat-spinner diameter="45"></mat-spinner>
+                    <p style="margin-top: 14px; color: #64748b; font-weight: 500;">Calculando impuestos del periodo...</p>
+                </div>
+
+                <div *ngIf="!calcLoading">
+                    <!-- Tarjetas KPI de Resumen -->
+                    <div class="calc-kpi-grid">
+                        <!-- KPI 1: ISR Federal -->
+                        <div class="kpi-card kpi-isr">
+                            <div class="kpi-header">
+                                <span class="kpi-title">ISR Federal a Pagar</span>
+                                <mat-icon class="kpi-icon">account_balance</mat-icon>
+                            </div>
+                            <div class="kpi-value">{{ formatCurrency(isrFederalAPagar) }}</div>
+                            <div class="kpi-sub">
+                                Tasa aplicable: <strong>{{ tasaIsrInfo.porcentaje }}</strong> | Retenido PM: {{ formatCurrency(isrRetenido) }}
+                            </div>
+                        </div>
+
+                        <!-- KPI 2: Impuesto Estatal Cedular -->
+                        <div class="kpi-card kpi-estatal">
+                            <div class="kpi-header">
+                                <span class="kpi-title">Impuesto Estatal (Cedular)</span>
+                                <mat-icon class="kpi-icon">location_city</mat-icon>
+                            </div>
+                            <div class="kpi-value">{{ formatCurrency(impuestoEstatalAPagar) }}</div>
+                            <div class="kpi-sub">
+                                Tasa estatal: <strong>{{ tasaCedularInfo.porcentaje }}</strong> | Retenido XML: {{ formatCurrency(cedularRetenido) }}
+                            </div>
+                        </div>
+
+                        <!-- KPI 3: IVA a Pagar -->
+                        <div class="kpi-card kpi-iva">
+                            <div class="kpi-header">
+                                <span class="kpi-title">IVA a Pagar</span>
+                                <mat-icon class="kpi-icon">receipt</mat-icon>
+                            </div>
+                            <div class="kpi-value" [class.text-favor]="ivaAPagar < 0">
+                                {{ formatCurrency(ivaAPagar >= 0 ? ivaAPagar : Math.abs(ivaAPagar)) }}
+                                <small *ngIf="ivaAPagar < 0" style="font-size: 0.8rem; font-weight: 600;">(A Favor)</small>
+                            </div>
+                            <div class="kpi-sub">
+                                Emitido: {{ formatCurrency(ivaEmitidos) }} &minus; Acreditable: {{ formatCurrency(ivaRecibidos) }}
+                            </div>
+                        </div>
+
+                        <!-- KPI 4: Total a Pagar -->
+                        <div class="kpi-card kpi-total">
+                            <div class="kpi-header">
+                                <span class="kpi-title">Gran Total a Pagar</span>
+                                <mat-icon class="kpi-icon">payments</mat-icon>
+                            </div>
+                            <div class="kpi-value total-val-kpi">{{ formatCurrency(granTotalImpuestos) }}</div>
+                            <div class="kpi-sub">
+                                Federal: {{ formatCurrency(impuestoFederalTotal) }} + Estatal: {{ formatCurrency(impuestoEstatalAPagar) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3 Secciones Desglosadas -->
+                    <div class="calc-detail-grid">
+
+                        <!-- Sección 1: ISR Federal -->
+                        <mat-card class="calc-section-card">
+                            <mat-card-header>
+                                <div class="calc-section-header">
+                                    <div class="header-icon-box isr-box">
+                                        <mat-icon>account_balance</mat-icon>
+                                    </div>
+                                    <div>
+                                        <mat-card-title>ISR Federal (RESICO)</mat-card-title>
+                                        <mat-card-subtitle>Ingresos cobrados por tipo de receptor</mat-card-subtitle>
+                                    </div>
+                                </div>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <div class="calc-table-breakdown">
+                                    <div class="calc-row">
+                                        <span class="row-label">Ingresos Personas Físicas (RFC 13 car.)</span>
+                                        <span class="row-amount">{{ formatCurrency(ingresosCobradosPF) }}</span>
+                                    </div>
+                                    <div class="calc-row">
+                                        <span class="row-label">Ingresos Personas Morales (RFC 12 car.)</span>
+                                        <span class="row-amount">{{ formatCurrency(ingresosCobradosPM) }}</span>
+                                    </div>
+                                    <div class="calc-row row-subtotal">
+                                        <span class="row-label"><strong>Ingresos Cobrados Totales</strong></span>
+                                        <span class="row-amount"><strong>{{ formatCurrency(ingresosCobradosTotales) }}</strong></span>
+                                    </div>
+                                    <div class="calc-row">
+                                        <span class="row-label">Tasa Aplicable mensual (Tope {{ formatCurrency(tasaIsrInfo.tope) }})</span>
+                                        <span class="row-badge badge-isr">{{ tasaIsrInfo.porcentaje }}</span>
+                                    </div>
+                                    <div class="calc-row">
+                                        <span class="row-label">ISR Calculado (Ingresos Totales &times; Tasa)</span>
+                                        <span class="row-amount">{{ formatCurrency(isrCalculado) }}</span>
+                                    </div>
+                                    <div class="calc-row text-subtraction">
+                                        <span class="row-label">(&minus;) ISR Retenido por Personas Morales (1.25%)</span>
+                                        <span class="row-amount">&minus; {{ formatCurrency(isrRetenido) }}</span>
+                                    </div>
+                                    <div class="calc-row row-final row-final-isr">
+                                        <span class="row-label">(=) ISR FEDERAL A PAGAR</span>
+                                        <span class="row-amount font-bold">{{ formatCurrency(isrFederalAPagar) }}</span>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+
+                        <!-- Sección 2: Impuesto Estatal Cedular -->
+                        <mat-card class="calc-section-card">
+                            <mat-card-header>
+                                <div class="calc-section-header">
+                                    <div class="header-icon-box estatal-box">
+                                        <mat-icon>location_city</mat-icon>
+                                    </div>
+                                    <div>
+                                        <mat-card-title>Impuesto Estatal (Cedular)</mat-card-title>
+                                        <mat-card-subtitle>Determinación sobre ingresos y retenciones</mat-card-subtitle>
+                                    </div>
+                                </div>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <div class="calc-table-breakdown">
+                                    <div class="calc-row">
+                                        <span class="row-label">Ingresos Personas Físicas (RFC 13 car.)</span>
+                                        <span class="row-amount">{{ formatCurrency(ingresosCobradosPF) }}</span>
+                                    </div>
+                                    <div class="calc-row">
+                                        <span class="row-label">Ingresos Personas Morales (RFC 12 car.)</span>
+                                        <span class="row-amount">{{ formatCurrency(ingresosCobradosPM) }}</span>
+                                    </div>
+                                    <div class="calc-row row-subtotal">
+                                        <span class="row-label"><strong>Ingresos Cobrados Totales</strong></span>
+                                        <span class="row-amount"><strong>{{ formatCurrency(ingresosCobradosTotales) }}</strong></span>
+                                    </div>
+                                    <div class="calc-row">
+                                        <span class="row-label">Tasa Aplicable Estatal (Tope {{ formatCurrency(tasaCedularInfo.tope) }})</span>
+                                        <span class="row-badge badge-estatal">{{ tasaCedularInfo.porcentaje }}</span>
+                                    </div>
+                                    <div class="calc-row">
+                                        <span class="row-label">Impuesto Cedular Calculado</span>
+                                        <span class="row-amount">{{ formatCurrency(cedularCalculado) }}</span>
+                                    </div>
+                                    <div class="calc-row text-subtraction">
+                                        <span class="row-label">(&minus;) Impuesto Cedular Retenido en XMLs</span>
+                                        <span class="row-amount">&minus; {{ formatCurrency(cedularRetenido) }}</span>
+                                    </div>
+                                    <div class="calc-row row-final row-final-estatal">
+                                        <span class="row-label">(=) IMPUESTO ESTATAL A PAGAR</span>
+                                        <span class="row-amount font-bold">{{ formatCurrency(impuestoEstatalAPagar) }}</span>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+
+                        <!-- Sección 3: IVA -->
+                        <mat-card class="calc-section-card">
+                            <mat-card-header>
+                                <div class="calc-section-header">
+                                    <div class="header-icon-box iva-box">
+                                        <mat-icon>receipt</mat-icon>
+                                    </div>
+                                    <div>
+                                        <mat-card-title>Impuesto al Valor Agregado (IVA)</mat-card-title>
+                                        <mat-card-subtitle>IVA Trasladado vs IVA Acreditable</mat-card-subtitle>
+                                    </div>
+                                </div>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <div class="calc-table-breakdown">
+                                    <div class="calc-row">
+                                        <span class="row-label">IVA Trasladado (Facturas Emitidas / Ingresos)</span>
+                                        <span class="row-amount">{{ formatCurrency(ivaEmitidos) }}</span>
+                                    </div>
+                                    <div class="calc-row text-subtraction">
+                                        <span class="row-label">(&minus;) IVA Acreditable (Facturas Recibidas / Gastos)</span>
+                                        <span class="row-amount">&minus; {{ formatCurrency(ivaRecibidos) }}</span>
+                                    </div>
+                                    <div class="calc-row row-subtotal">
+                                        <span class="row-label"><strong>{{ ivaAPagar >= 0 ? 'IVA a Pagar del Periodo' : 'Saldo a Favor de IVA' }}</strong></span>
+                                        <span class="row-amount font-bold" [class.text-favor]="ivaAPagar < 0">{{ formatCurrency(ivaAPagar) }}</span>
+                                    </div>
+                                    <div class="calc-row" style="margin-top: 12px; border-top: 1px dashed #e2e8f0; padding-top: 12px;">
+                                        <span class="row-label">(+) ISR Federal a Pagar</span>
+                                        <span class="row-amount">{{ formatCurrency(isrFederalAPagar) }}</span>
+                                    </div>
+                                    <div class="calc-row row-final row-final-iva">
+                                        <span class="row-label">(=) TOTAL IMPUESTO FEDERAL (IVA + ISR)</span>
+                                        <span class="row-amount font-bold">{{ formatCurrency(impuestoFederalTotal) }}</span>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+
+                    </div>
+
+                    <!-- Tabla Resumen Ejecutivo Final -->
+                    <mat-card class="calc-resumen-card">
+                        <mat-card-header>
+                            <mat-card-title style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">
+                                Resumen Ejecutivo de Obligaciones a Pagar &mdash; {{ nombreMesSeleccionado }} {{ calcAnio }}
+                            </mat-card-title>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <div class="resumen-final-table">
+                                <div class="resumen-final-row">
+                                    <span class="resumen-concept">1. ISR Federal (RESICO)</span>
+                                    <span class="resumen-amount">{{ formatCurrency(isrFederalAPagar) }}</span>
+                                </div>
+                                <div class="resumen-final-row">
+                                    <span class="resumen-concept">2. IVA Federal {{ ivaAPagar < 0 ? '(Saldo a favor $0 a pagar)' : '' }}</span>
+                                    <span class="resumen-amount">{{ formatCurrency(Math.max(0, ivaAPagar)) }}</span>
+                                </div>
+                                <div class="resumen-final-row row-sub-federal">
+                                    <span class="resumen-concept"><strong>Total Impuestos Federales (IVA + ISR)</strong></span>
+                                    <span class="resumen-amount"><strong>{{ formatCurrency(impuestoFederalTotal) }}</strong></span>
+                                </div>
+                                <div class="resumen-final-row">
+                                    <span class="resumen-concept">3. Impuesto Estatal (Cedular)</span>
+                                    <span class="resumen-amount">{{ formatCurrency(impuestoEstatalAPagar) }}</span>
+                                </div>
+                                <div class="resumen-final-row row-total-general">
+                                    <span class="resumen-concept"><strong>GRAN TOTAL A PAGAR</strong></span>
+                                    <span class="resumen-amount grand-total-amount">{{ formatCurrency(granTotalImpuestos) }}</span>
+                                </div>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </div>
+        </mat-tab>
+
     </mat-tab-group>
 </div>

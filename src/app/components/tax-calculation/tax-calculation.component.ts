@@ -21,6 +21,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { RouterModule } from '@angular/router';
+import * as XLSX from 'xlsx';
 
 @Component({
     selector: 'app-tax-calculation',
@@ -130,6 +131,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         this.loadFielStatus();
         this.loadHistorial();
         this.loadCfdis();
+        this.loadCalculoImpuestos();
         this.startAutoSyncTimer();
     }
 
@@ -568,4 +570,267 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     get totalSubtotalRecibidos(): number { return this.recibidos.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0); }
     get totalIvaRecibidos(): number      { return this.recibidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0); }
     get totalMontoRecibidos(): number    { return this.recibidos.reduce((s, c) => s + parseFloat(c.total || 0), 0); }
+
+    // ═════════════════════════════════════════════════════════════
+    // ─── PESTAÑA 3: CÁLCULO DE IMPUESTOS MENSUAL (DETERMINACIÓN) ───
+    // ═════════════════════════════════════════════════════════════
+
+    readonly Math = Math;
+
+    calcAnio: number = new Date().getFullYear();
+    calcMes: number = new Date().getMonth() + 1; // 1..12
+    calcLoading: boolean = false;
+    calcCfdis: any[] = [];
+
+    meses = [
+        { id: 1, nombre: 'Enero' },
+        { id: 2, nombre: 'Febrero' },
+        { id: 3, nombre: 'Marzo' },
+        { id: 4, nombre: 'Abril' },
+        { id: 5, nombre: 'Mayo' },
+        { id: 6, nombre: 'Junio' },
+        { id: 7, nombre: 'Julio' },
+        { id: 8, nombre: 'Agosto' },
+        { id: 9, nombre: 'Septiembre' },
+        { id: 10, nombre: 'Octubre' },
+        { id: 11, nombre: 'Noviembre' },
+        { id: 12, nombre: 'Diciembre' }
+    ];
+
+    anios: number[] = [2024, 2025, 2026, 2027, 2028];
+
+    loadCalculoImpuestos() {
+        this.calcLoading = true;
+        const mesStr = String(this.calcMes).padStart(2, '0');
+        const lastDay = new Date(this.calcAnio, this.calcMes, 0).getDate();
+        const fecha_inicio = `${this.calcAnio}-${mesStr}-01`;
+        const fecha_fin = `${this.calcAnio}-${mesStr}-${String(lastDay).padStart(2, '0')}`;
+
+        this.api.satGetCfdis({ fecha_inicio, fecha_fin }).subscribe({
+            next: (data) => {
+                this.calcCfdis = data || [];
+                this.calcLoading = false;
+            },
+            error: (err) => {
+                console.error('[Cálculo Impuestos] Error cargando CFDIs del mes:', err);
+                this.calcLoading = false;
+                this.snackBar.open('Error al cargar CFDIs para el cálculo mensual', 'Cerrar', { duration: 4000 });
+            }
+        });
+    }
+
+    mesAnterior() {
+        if (this.calcMes === 1) {
+            this.calcMes = 12;
+            this.calcAnio--;
+        } else {
+            this.calcMes--;
+        }
+        this.loadCalculoImpuestos();
+    }
+
+    mesSiguiente() {
+        if (this.calcMes === 12) {
+            this.calcMes = 1;
+            this.calcAnio++;
+        } else {
+            this.calcMes++;
+        }
+        this.loadCalculoImpuestos();
+    }
+
+    get nombreMesSeleccionado(): string {
+        const m = this.meses.find(item => item.id === this.calcMes);
+        return m ? m.nombre : '';
+    }
+
+    // CFDIs del mes
+    get calcEmitidos(): any[] {
+        return this.calcCfdis.filter(c => c.tipo === 'emitido');
+    }
+
+    get calcRecibidos(): any[] {
+        return this.calcCfdis.filter(c => c.tipo === 'recibido');
+    }
+
+    // Separación de emitidos por tipo de receptor (Física = 13 caracteres, Moral = 12 caracteres)
+    get calcEmitidosPF(): any[] {
+        return this.calcEmitidos.filter(c => ((c.rfc_receptor || '').trim().length === 13));
+    }
+
+    get calcEmitidosPM(): any[] {
+        return this.calcEmitidos.filter(c => ((c.rfc_receptor || '').trim().length === 12));
+    }
+
+    // Subtotales cobrados
+    get ingresosCobradosPF(): number {
+        return this.calcEmitidosPF.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0);
+    }
+
+    get ingresosCobradosPM(): number {
+        return this.calcEmitidosPM.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0);
+    }
+
+    get ingresosCobradosTotales(): number {
+        return this.ingresosCobradosPF + this.ingresosCobradosPM;
+    }
+
+    // ─── 1. ISR Federal (RESICO) ───
+    get tasaIsrInfo(): { tasa: number; porcentaje: string; tope: number } {
+        const ing = this.ingresosCobradosTotales;
+        if (ing <= 25000) return { tasa: 0.01, porcentaje: '1.00%', tope: 25000 };
+        if (ing <= 50000) return { tasa: 0.011, porcentaje: '1.10%', tope: 50000 };
+        if (ing <= 83333.33) return { tasa: 0.015, porcentaje: '1.50%', tope: 83333.33 };
+        if (ing <= 208333.33) return { tasa: 0.02, porcentaje: '2.00%', tope: 208333.33 };
+        return { tasa: 0.025, porcentaje: '2.50%', tope: 3500000 };
+    }
+
+    get isrCalculado(): number {
+        return Math.round(this.ingresosCobradosTotales * this.tasaIsrInfo.tasa * 100) / 100;
+    }
+
+    get isrRetenido(): number {
+        return Math.round(this.ingresosCobradosPM * 0.0125 * 100) / 100;
+    }
+
+    get isrFederalAPagar(): number {
+        return Math.max(0, Math.round((this.isrCalculado - this.isrRetenido) * 100) / 100);
+    }
+
+    // ─── 2. Impuesto Estatal (Cedular) ───
+    get tasaCedularInfo(): { tasa: number; porcentaje: string; tope: number } {
+        const ing = this.ingresosCobradosTotales;
+        if (ing <= 25000) return { tasa: 0.02, porcentaje: '2.00%', tope: 25000 };
+        if (ing <= 50000) return { tasa: 0.021, porcentaje: '2.10%', tope: 50000 };
+        if (ing <= 83333.33) return { tasa: 0.022, porcentaje: '2.20%', tope: 83333.33 };
+        if (ing <= 208333.33) return { tasa: 0.023, porcentaje: '2.30%', tope: 208333.33 };
+        return { tasa: 0.025, porcentaje: '2.50%', tope: 3500000 };
+    }
+
+    get cedularCalculado(): number {
+        return Math.round(this.ingresosCobradosTotales * this.tasaCedularInfo.tasa * 100) / 100;
+    }
+
+    get cedularRetenido(): number {
+        return this.calcEmitidos.reduce((s, c) => s + parseFloat(c.ret_cedular || 0), 0);
+    }
+
+    get impuestoEstatalAPagar(): number {
+        return Math.max(0, Math.round((this.cedularCalculado - this.cedularRetenido) * 100) / 100);
+    }
+
+    // ─── 3. IVA ───
+    get ivaEmitidos(): number {
+        return this.calcEmitidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0);
+    }
+
+    get ivaRecibidos(): number {
+        return this.calcRecibidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0);
+    }
+
+    get ivaAPagar(): number {
+        return Math.round((this.ivaEmitidos - this.ivaRecibidos) * 100) / 100;
+    }
+
+    // ─── 4. Totales Generales ───
+    get impuestoFederalTotal(): number {
+        return Math.max(0, this.ivaAPagar) + this.isrFederalAPagar;
+    }
+
+    get granTotalImpuestos(): number {
+        return this.impuestoFederalTotal + this.impuestoEstatalAPagar;
+    }
+
+    // ─── Exportación a Excel (.xlsx) ───
+    exportarCalculoExcel() {
+        const wb = XLSX.utils.book_new();
+
+        // Hoja 1: Resumen de Determinación de Impuestos
+        const resumenData = [
+            ['DETERMINACIÓN MENSUAL DE IMPUESTOS'],
+            ['Periodo:', `${this.nombreMesSeleccionado} ${this.calcAnio}`],
+            ['Fecha de Cálculo:', new Date().toLocaleDateString('es-MX')],
+            ['Contribuyente (RFC):', this.fielStatus?.rfc || '—'],
+            [],
+            ['1. IMPUESTO SOBRE LA RENTA (ISR FEDERAL - RESICO)'],
+            ['Concepto', 'Importe / Detalle'],
+            ['Ingresos cobrados a Personas Físicas (RFC 13 caracteres)', this.ingresosCobradosPF],
+            ['Ingresos cobrados a Personas Morales (RFC 12 caracteres)', this.ingresosCobradosPM],
+            ['Total Ingresos Cobrados', this.ingresosCobradosTotales],
+            ['Tasa Aplicable según escala mensual', this.tasaIsrInfo.porcentaje],
+            ['ISR Calculado (Ingresos Totales × Tasa)', this.isrCalculado],
+            ['(-) ISR Retenido por Personas Morales (1.25%)', this.isrRetenido],
+            ['(=) ISR FEDERAL A PAGAR', this.isrFederalAPagar],
+            [],
+            ['2. IMPUESTO ESTATAL (CEDULAR)'],
+            ['Concepto', 'Importe / Detalle'],
+            ['Ingresos cobrados a Personas Físicas (RFC 13 caracteres)', this.ingresosCobradosPF],
+            ['Ingresos cobrados a Personas Morales (RFC 12 caracteres)', this.ingresosCobradosPM],
+            ['Total Ingresos Cobrados', this.ingresosCobradosTotales],
+            ['Tasa Aplicable Estatal según escala', this.tasaCedularInfo.porcentaje],
+            ['Impuesto Cedular Calculado (Ingresos Totales × Tasa)', this.cedularCalculado],
+            ['(-) Impuesto Cedular Retenido en XMLs', this.cedularRetenido],
+            ['(=) IMPUESTO ESTATAL A PAGAR', this.impuestoEstatalAPagar],
+            [],
+            ['3. IMPUESTO AL VALOR AGREGADO (IVA)'],
+            ['Concepto', 'Importe / Detalle'],
+            ['IVA Trasladado (Facturas Emitidas)', this.ivaEmitidos],
+            ['(-) IVA Acreditable (Facturas Recibidas / Gastos)', this.ivaRecibidos],
+            ['(=) IVA A PAGAR (o a Favor)', this.ivaAPagar],
+            [],
+            ['4. RESUMEN GENERAL DE OBLIGACIONES FISCALES'],
+            ['Obligación', 'Importe'],
+            ['ISR Federal a Pagar', this.isrFederalAPagar],
+            ['IVA a Pagar', Math.max(0, this.ivaAPagar)],
+            ['TOTAL IMPUESTO FEDERAL (IVA + ISR)', this.impuestoFederalTotal],
+            ['IMPUESTO ESTATAL (CEDULAR)', this.impuestoEstatalAPagar],
+            ['GRAN TOTAL A PAGAR (Federal + Estatal)', this.granTotalImpuestos],
+        ];
+
+        const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+        wsResumen['!cols'] = [{ wch: 55 }, { wch: 25 }];
+        XLSX.utils.book_append_sheet(wb, wsResumen, 'Cálculo de Impuestos');
+
+        // Hoja 2: CFDIs Emitidos del Mes
+        const emitidosData = this.calcEmitidos.map(c => ({
+            'Folio Fiscal (UUID)': c.uuid,
+            'Fecha Emisión': c.fecha_emision ? c.fecha_emision.substring(0, 10) : '',
+            'Tipo Receptor': (c.rfc_receptor || '').trim().length === 13 ? 'Persona Física' : ((c.rfc_receptor || '').trim().length === 12 ? 'Persona Moral' : 'Otro'),
+            'RFC Receptor': c.rfc_receptor || '',
+            'Nombre Receptor': c.nombre_receptor || '',
+            'Subtotal': parseFloat(c.subtotal || 0),
+            'IVA': parseFloat(c.iva || 0),
+            'Ret. ISR': parseFloat(c.ret_isr || 0),
+            'Ret. Cedular': parseFloat(c.ret_cedular || 0),
+            'Total': parseFloat(c.total || 0),
+            'Moneda': c.moneda || 'MXN'
+        }));
+        const wsEmitidos = XLSX.utils.json_to_sheet(emitidosData);
+        wsEmitidos['!cols'] = [
+            { wch: 38 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 35 },
+            { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 8 }
+        ];
+        XLSX.utils.book_append_sheet(wb, wsEmitidos, 'CFDIs Emitidos');
+
+        // Hoja 3: CFDIs Recibidos del Mes
+        const recibidosData = this.calcRecibidos.map(c => ({
+            'Folio Fiscal (UUID)': c.uuid,
+            'Fecha Emisión': c.fecha_emision ? c.fecha_emision.substring(0, 10) : '',
+            'RFC Emisor': c.rfc_emisor || '',
+            'Nombre Emisor': c.nombre_emisor || '',
+            'Subtotal': parseFloat(c.subtotal || 0),
+            'IVA (Acreditable)': parseFloat(c.iva || 0),
+            'Total': parseFloat(c.total || 0),
+            'Moneda': c.moneda || 'MXN'
+        }));
+        const wsRecibidos = XLSX.utils.json_to_sheet(recibidosData);
+        wsRecibidos['!cols'] = [
+            { wch: 38 }, { wch: 14 }, { wch: 16 }, { wch: 35 },
+            { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 8 }
+        ];
+        XLSX.utils.book_append_sheet(wb, wsRecibidos, 'CFDIs Recibidos');
+
+        XLSX.writeFile(wb, `Determinacion_Impuestos_${this.nombreMesSeleccionado}_${this.calcAnio}.xlsx`);
+        this.snackBar.open(`✓ Hoja de cálculo descargada: Determinacion_Impuestos_${this.nombreMesSeleccionado}_${this.calcAnio}.xlsx`, 'OK', { duration: 4000 });
+    }
 }
