@@ -1,0 +1,512 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ApiService } from '../../services/api.service';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTableModule } from '@angular/material/table';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { RouterModule } from '@angular/router';
+
+@Component({
+    selector: 'app-tax-calculation',
+    standalone: true,
+    imports: [
+        CommonModule,
+        FormsModule,
+        RouterModule,
+        MatCardModule,
+        MatButtonModule,
+        MatIconModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatSelectModule,
+        MatTableModule,
+        MatChipsModule,
+        MatProgressSpinnerModule,
+        MatSnackBarModule,
+        MatDividerModule,
+        MatTooltipModule,
+        MatTabsModule,
+        MatDatepickerModule,
+        MatNativeDateModule,
+        MatSlideToggleModule,
+    ],
+    templateUrl: './tax-calculation.component.html',
+    styleUrl: './tax-calculation.component.css'
+})
+export class TaxCalculationComponent implements OnInit, OnDestroy {
+
+    // Estado de la FIEL
+    fielStatus: { configurada: boolean; vigente: boolean; rfc: string | null } | null = null;
+    fielLoading: boolean = false;
+
+    // Formulario de solicitud (Modal)
+    showDownloadModal: boolean = false;
+    tipoDescarga: 'ambos' | 'emitidos' | 'recibidos' = 'ambos';
+    fechaInicio: Date | null = null;
+    fechaFin: Date | null = null;
+    solicitando: boolean = false;
+
+    // Carga manual de archivos (Modal & Drag & Drop)
+    showUploadModal: boolean = false;
+    archivosParaSubir: File[] = [];
+    subiendoArchivos: boolean = false;
+    isDragging: boolean = false;
+    resultadoSubida: {
+        total_procesados: number;
+        guardados: number;
+        duplicados: number;
+        invalidos?: number;
+        errores?: string[];
+    } | null = null;
+
+    // Historial de solicitudes
+    historial: any[] = [];
+    historialLoading: boolean = false;
+
+    // Sincronización automática de solicitudes al SAT
+    private autoSyncTimer: any = null;
+    private autoSyncRunning: boolean = false; // evita ciclos solapados
+
+    // Solicitudes en progreso (verificando/descargando/eliminando)
+    verificandoIds: Set<number> = new Set();
+    descargandoIds: Set<number> = new Set();
+    eliminandoIds: Set<number> = new Set();
+
+    // Tab de CFDIs almacenados
+    cfdis: any[] = [];
+    cfdisLoading: boolean = false;
+    filtroCfdiTipo: string = '';
+    filtroCfdiFechaInicio: Date | null = null;
+    filtroCfdiFechaFin: Date | null = null;
+
+    // Columnas tabla historial
+    historialColumns = ['tipo', 'periodo', 'total_cfdis', 'estado', 'fecha', 'acciones'];
+
+    // Columnas tabla CFDIs
+    cfdisColumns = ['uuid', 'tipo', 'rfc_emisor', 'fecha_emision', 'tipo_cfdi', 'subtotal', 'iva', 'total', 'moneda'];
+
+    constructor(private api: ApiService, private snackBar: MatSnackBar) {
+        this.setPeriodoMesActual();
+    }
+
+    ngOnInit(): void {
+        this.loadFielStatus();
+        this.loadHistorial();
+        this.loadCfdis();
+        this.startAutoSyncTimer();
+    }
+
+    ngOnDestroy(): void {
+        this.stopAutoSyncTimer();
+    }
+
+    private formatDate(d: Date): string {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    /** Convierte un Date|null a string 'yyyy-MM-dd' para el backend */
+    private dateToString(d: Date | null): string {
+        return d ? this.formatDate(d) : '';
+    }
+
+    setPeriodoMesActual() {
+        const now = new Date();
+        this.fechaInicio = new Date(now.getFullYear(), now.getMonth(), 1);
+        this.fechaFin = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    }
+
+    setPeriodoMesAnterior() {
+        const now = new Date();
+        this.fechaInicio = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        this.fechaFin = new Date(now.getFullYear(), now.getMonth(), 0);
+    }
+
+    setPeriodoAnioActual() {
+        const now = new Date();
+        this.fechaInicio = new Date(now.getFullYear(), 0, 1);
+        this.fechaFin = new Date(now.getFullYear(), 11, 31);
+    }
+
+    openDownloadModal() {
+        this.showDownloadModal = true;
+    }
+
+    closeDownloadModal() {
+        if (!this.solicitando) {
+            this.showDownloadModal = false;
+        }
+    }
+
+    formatCurrency(val: any): string {
+        const n = parseFloat(val) || 0;
+        return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+    }
+
+    // ─── FIEL ───
+
+    loadFielStatus() {
+        this.fielLoading = true;
+        this.api.getFielStatus().subscribe({
+            next: (s) => { this.fielStatus = s; this.fielLoading = false; },
+            error: () => { this.fielLoading = false; }
+        });
+    }
+
+    // ─── Solicitar descarga ───
+
+    solicitarDescarga() {
+        const inicio = this.dateToString(this.fechaInicio);
+        const fin = this.dateToString(this.fechaFin);
+
+        if (!inicio || !fin) {
+            this.snackBar.open('Selecciona un rango de fechas', 'Cerrar', { duration: 3000 });
+            return;
+        }
+        if (inicio > fin) {
+            this.snackBar.open('La fecha de inicio no puede ser mayor a la fecha fin', 'Cerrar', { duration: 3000 });
+            return;
+        }
+        if (!this.fielStatus?.vigente) {
+            this.snackBar.open('Configura tu FIEL vigente en Configuración antes de continuar', 'Cerrar', { duration: 4000 });
+            return;
+        }
+
+        this.solicitando = true;
+        this.api.satRequestDownload({
+            tipo: this.tipoDescarga,
+            fecha_inicio: inicio,
+            fecha_fin: fin
+        }).subscribe({
+            next: (res) => {
+                this.solicitando = false;
+                this.showDownloadModal = false;
+                const msg = res.message || 'Solicitud enviada al SAT exitosamente';
+                this.snackBar.open(`✓ ${msg}. Revisa el estado en el historial en unos momentos.`, 'Cerrar', { duration: 6000 });
+                this.loadHistorial();
+            },
+            error: (err) => {
+                this.solicitando = false;
+                const msg = err.error?.error || 'Error al enviar solicitud al SAT';
+                this.snackBar.open(`⚠ ${msg}`, 'Cerrar', { duration: 7000 });
+            }
+        });
+    }
+
+    // ─── Carga Manual (XMLs / ZIP) ───
+
+    openUploadModal() {
+        this.showUploadModal = true;
+        this.archivosParaSubir = [];
+        this.resultadoSubida = null;
+    }
+
+    closeUploadModal() {
+        if (!this.subiendoArchivos) {
+            this.showUploadModal = false;
+            this.archivosParaSubir = [];
+            this.resultadoSubida = null;
+        }
+    }
+
+    onDragOver(e: DragEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.isDragging = true;
+    }
+
+    onDragLeave(e: DragEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.isDragging = false;
+    }
+
+    onDrop(e: DragEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.isDragging = false;
+        if (e.dataTransfer && e.dataTransfer.files) {
+            this.agregarArchivos(Array.from(e.dataTransfer.files));
+        }
+    }
+
+    onFileSelected(e: any) {
+        if (e.target && e.target.files) {
+            this.agregarArchivos(Array.from(e.target.files));
+            e.target.value = '';
+        }
+    }
+
+    agregarArchivos(files: File[]) {
+        const permitidos = files.filter(f => {
+            const name = f.name.toLowerCase();
+            return name.endsWith('.xml') || name.endsWith('.zip');
+        });
+
+        if (permitidos.length < files.length) {
+            this.snackBar.open('Algunos archivos no son .xml ni .zip y fueron descartados', 'Cerrar', { duration: 3500 });
+        }
+
+        const nombresExistentes = new Set(this.archivosParaSubir.map(f => f.name));
+        for (const file of permitidos) {
+            if (!nombresExistentes.has(file.name)) {
+                this.archivosParaSubir.push(file);
+                nombresExistentes.add(file.name);
+            }
+        }
+    }
+
+    removerArchivo(index: number) {
+        this.archivosParaSubir.splice(index, 1);
+    }
+
+    formatFileSize(bytes: number): string {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    subirArchivos() {
+        if (this.archivosParaSubir.length === 0) return;
+
+        this.subiendoArchivos = true;
+        this.resultadoSubida = null;
+
+        const formData = new FormData();
+        for (const file of this.archivosParaSubir) {
+            formData.append('files', file, file.name);
+        }
+
+        this.api.satUploadCfdis(formData).subscribe({
+            next: (res) => {
+                this.subiendoArchivos = false;
+                this.resultadoSubida = res;
+                this.archivosParaSubir = [];
+                const msg = `✓ Importación finalizada: ${res.guardados} CFDIs nuevos guardados (${res.duplicados} omitidos por ya existir).`;
+                this.snackBar.open(msg, 'Cerrar', { duration: 6000 });
+                this.loadCfdis();
+            },
+            error: (err) => {
+                this.subiendoArchivos = false;
+                this.snackBar.open(err.error?.error || 'Error al procesar los archivos', 'Cerrar', { duration: 5000 });
+            }
+        });
+    }
+
+    // ─── Historial y Sincronización Automática Cada 5 Minutos ───
+
+    loadHistorial() {
+        this.historialLoading = true;
+        this.api.satGetHistory().subscribe({
+            next: (data) => {
+                this.historial = data;
+                this.historialLoading = false;
+                this.revisarPendientesAuto();
+            },
+            error: () => { this.historialLoading = false; }
+        });
+    }
+
+    startAutoSyncTimer() {
+        this.stopAutoSyncTimer();
+        // Verificar automáticamente cada 5 minutos (300,000 ms) en segundo plano
+        this.autoSyncTimer = setInterval(() => {
+            const hayPendientes = this.historial.some(h => h.estado === 'pendiente' || h.estado === 'listo');
+            if (hayPendientes) {
+                this.loadHistorial();
+            }
+        }, 5 * 60 * 1000);
+    }
+
+    stopAutoSyncTimer() {
+        if (this.autoSyncTimer) {
+            clearInterval(this.autoSyncTimer);
+            this.autoSyncTimer = null;
+        }
+    }
+
+    private revisarPendientesAuto() {
+        // Procesar en orden secuencial para no saturar el SAT con peticiones paralelas
+        const pendientes = this.historial.filter(
+            (h) => (h.estado === 'pendiente' && !this.isVerificando(h.id)) ||
+                   (h.estado === 'listo' && !this.isDescargando(h.id))
+        );
+
+        if (pendientes.length === 0) return;
+
+        // Encadenar secuencialmente con un delay de 3 s entre cada uno
+        let chain = Promise.resolve();
+        for (const item of pendientes) {
+            chain = chain.then(() => new Promise<void>((res) => {
+                setTimeout(() => {
+                    if (item.estado === 'listo' && !this.isDescargando(item.id)) {
+                        this.descargarPaquetes(item);
+                    } else if (item.estado === 'pendiente' && !this.isVerificando(item.id)) {
+                        this.verificarSolicitud(item, true);
+                    }
+                    res();
+                }, 3000);
+            }));
+        }
+    }
+
+    verificarSolicitud(item: any, isAuto: boolean = false) {
+        this.verificandoIds.add(item.id);
+        this.api.satVerifyRequest(item.id).subscribe({
+            next: (res) => {
+                this.verificandoIds.delete(item.id);
+                const estado = res.estado;
+                if (estado === 'listo' && res.paquetes && res.paquetes.length > 0) {
+                    this.snackBar.open(`✓ Solicitud autorizada por el SAT. Descargando ${res.total_cfdis ?? ''} CFDIs automáticamente...`, 'OK', { duration: 5000 });
+                    this.loadHistorial();
+                    // AUTO-DESCARGA INMEDIATA
+                    this.descargarPaquetes(item);
+                } else {
+                    const msg = estado === 'listo'
+                        ? `¡Listo! ${res.total_cfdis ?? '?'} CFDIs disponibles.`
+                        : estado === 'pendiente'
+                        ? 'El SAT aún está procesando la solicitud. Se verificará automáticamente en 5 min.'
+                        : `Estado: ${estado}`;
+                    // En modo automático en segundo plano no interrumpir al usuario con toasts repetitivos
+                    if (!isAuto) {
+                        this.snackBar.open(msg, 'Cerrar', { duration: 4000 });
+                    }
+                    this.loadHistorial();
+                }
+            },
+            error: (err) => {
+                this.verificandoIds.delete(item.id);
+                console.warn('[SAT Auto-Sync] Verificación en segundo plano no completada:', err.error?.error || err.message);
+                // Si fue manual, mostrar toast; si fue automático, no interrumpir la pantalla del usuario
+                if (!isAuto) {
+                    this.snackBar.open(err.error?.error || 'Error al verificar con el SAT', 'Cerrar', { duration: 4500 });
+                }
+            }
+        });
+    }
+
+    descargarPaquetes(item: any) {
+        this.descargandoIds.add(item.id);
+        this.api.satDownloadPackages(item.id).subscribe({
+            next: (res) => {
+                this.descargandoIds.delete(item.id);
+                const nuevos = res.cfdis_nuevos ?? 0;
+                const duplicados = res.cfdis_duplicados ?? 0;
+                let msg = `✓ Descarga completa: ${nuevos} CFDIs nuevos guardados.`;
+                if (duplicados > 0) {
+                    msg += ` (${duplicados} omitidos por ya existir previamente).`;
+                }
+                this.snackBar.open(msg, 'Cerrar', { duration: 6000 });
+                this.loadHistorial();
+                this.loadCfdis();
+            },
+            error: (err) => {
+                this.descargandoIds.delete(item.id);
+                this.snackBar.open(err.error?.error || 'Error al descargar paquetes del SAT', 'Cerrar', { duration: 5000 });
+            }
+        });
+    }
+
+    isVerificando(id: number): boolean { return this.verificandoIds.has(id); }
+    isDescargando(id: number): boolean { return this.descargandoIds.has(id); }
+    isEliminando(id: number): boolean { return this.eliminandoIds.has(id); }
+
+    eliminarSolicitud(item: any) {
+        const estado = item.estado;
+        const esPendiente = estado === 'pendiente' || estado === 'vacio' || estado === 'error';
+        const esDescargado = estado === 'descargado';
+        const esListo = estado === 'listo';
+
+        let msg = `¿Eliminar esta solicitud (${item.tipo}, ${item.fecha_inicio} — ${item.fecha_fin})?`;
+        if (esDescargado) {
+            msg += '\n\nNota: Los CFDIs ya guardados en la base de datos NO serán eliminados.';
+        } else if (esListo) {
+            msg += '\n\nNota: Los paquetes del SAT pendientes de descargar se perderán.';
+        } else if (esPendiente) {
+            msg += '\n\nSe eliminará el registro del historial.';
+        }
+
+        if (!confirm(msg)) return;
+
+        this.eliminandoIds.add(item.id);
+        this.api.satDeleteRequest(item.id).subscribe({
+            next: () => {
+                this.eliminandoIds.delete(item.id);
+                this.snackBar.open('Solicitud eliminada del historial', 'Cerrar', { duration: 3500 });
+                this.loadHistorial();
+            },
+            error: (err) => {
+                this.eliminandoIds.delete(item.id);
+                this.snackBar.open(err.error?.error || 'Error al eliminar la solicitud', 'Cerrar', { duration: 4000 });
+            }
+        });
+    }
+
+    getEstadoColor(estado: string): string {
+        const map: Record<string, string> = {
+            pendiente: 'accent',
+            verificando: 'primary',
+            listo: 'primary',
+            descargado: 'primary',
+            error: 'warn'
+        };
+        return map[estado] || 'default';
+    }
+
+    getEstadoIcon(estado: string): string {
+        const map: Record<string, string> = {
+            pendiente: 'hourglass_empty',
+            verificando: 'sync',
+            listo: 'download_for_offline',
+            descargado: 'check_circle',
+            error: 'error'
+        };
+        return map[estado] || 'help';
+    }
+
+    // ─── CFDIs almacenados ───
+
+    loadCfdis() {
+        this.cfdisLoading = true;
+        const params: any = {};
+        if (this.filtroCfdiTipo) params.tipo = this.filtroCfdiTipo;
+        const fi = this.dateToString(this.filtroCfdiFechaInicio);
+        const ff = this.dateToString(this.filtroCfdiFechaFin);
+        if (fi) params.fecha_inicio = fi;
+        if (ff) params.fecha_fin = ff;
+
+        this.api.satGetCfdis(params).subscribe({
+            next: (data) => { this.cfdis = data; this.cfdisLoading = false; },
+            error: () => { this.cfdisLoading = false; }
+        });
+    }
+
+    aplicarFiltrosCfdis() {
+        this.loadCfdis();
+    }
+
+    limpiarFiltrosCfdis() {
+        this.filtroCfdiTipo = '';
+        this.filtroCfdiFechaInicio = null;
+        this.filtroCfdiFechaFin = null;
+        this.loadCfdis();
+    }
+
+    // Resumen totales de CFDIs mostrados
+    get totalSubtotal(): number { return this.cfdis.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0); }
+    get totalIva(): number { return this.cfdis.reduce((s, c) => s + parseFloat(c.iva || 0), 0); }
+    get totalMonto(): number { return this.cfdis.reduce((s, c) => s + parseFloat(c.total || 0), 0); }
+}
