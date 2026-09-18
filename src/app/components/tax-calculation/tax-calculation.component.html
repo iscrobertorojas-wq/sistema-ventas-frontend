@@ -456,14 +456,20 @@
                 <mat-card class="filter-card">
                     <mat-card-content>
                         <div class="filter-row">
-                            <mat-form-field appearance="outline">
-                                <mat-label>Tipo</mat-label>
-                                <mat-select [(ngModel)]="filtroCfdiTipo">
-                                    <mat-option value="">Todos</mat-option>
-                                    <mat-option value="emitido">Emitidos</mat-option>
-                                    <mat-option value="recibido">Recibidos</mat-option>
-                                </mat-select>
-                            </mat-form-field>
+                            <!-- Toggle rápido Tipo: Todos / Emitidos / Recibidos -->
+                            <div class="tipo-toggle-group">
+                                <mat-button-toggle-group [ngModel]="filtroCfdiTipo" (ngModelChange)="setTipoFilter($event)" aria-label="Filtro Tipo CFDI">
+                                    <mat-button-toggle value="">
+                                        <mat-icon>list_alt</mat-icon> Todos
+                                    </mat-button-toggle>
+                                    <mat-button-toggle value="emitido" class="toggle-emitido">
+                                        <mat-icon>upload</mat-icon> Emitidos
+                                    </mat-button-toggle>
+                                    <mat-button-toggle value="recibido" class="toggle-recibido">
+                                        <mat-icon>download</mat-icon> Recibidos
+                                    </mat-button-toggle>
+                                </mat-button-toggle-group>
+                            </div>
 
                             <mat-form-field appearance="outline">
                                 <mat-label>Desde</mat-label>
@@ -496,53 +502,6 @@
                         </div>
                     </mat-card-content>
                 </mat-card>
-
-                <!-- Totales desglosados por tipo -->
-                <div *ngIf="cfdis.length > 0" class="totales-section">
-
-                    <!-- Fila de encabezados de columnas -->
-                    <div class="totales-header-row">
-                        <div class="totales-col-label"></div>
-                        <div class="totales-col-header">
-                            <span class="tipo-badge badge-emitido">
-                                <mat-icon>upload</mat-icon> Emitidos ({{ emitidos.length }})
-                            </span>
-                        </div>
-                        <div class="totales-col-header">
-                            <span class="tipo-badge badge-recibido">
-                                <mat-icon>download</mat-icon> Recibidos ({{ recibidos.length }})
-                            </span>
-                        </div>
-                        <div class="totales-col-header totales-col-total">
-                            <span class="tipo-badge badge-total">Total ({{ cfdis.length }})</span>
-                        </div>
-                    </div>
-
-                    <!-- Fila Subtotal -->
-                    <div class="totales-data-row">
-                        <div class="totales-col-label">Subtotal</div>
-                        <div class="totales-col-value emitido-val">{{ formatCurrency(totalSubtotalEmitidos) }}</div>
-                        <div class="totales-col-value recibido-val">{{ formatCurrency(totalSubtotalRecibidos) }}</div>
-                        <div class="totales-col-value total-val">{{ formatCurrency(totalSubtotal) }}</div>
-                    </div>
-
-                    <!-- Fila IVA -->
-                    <div class="totales-data-row totales-row-iva">
-                        <div class="totales-col-label">IVA</div>
-                        <div class="totales-col-value emitido-val">{{ formatCurrency(totalIvaEmitidos) }}</div>
-                        <div class="totales-col-value recibido-val">{{ formatCurrency(totalIvaRecibidos) }}</div>
-                        <div class="totales-col-value total-val">{{ formatCurrency(totalIva) }}</div>
-                    </div>
-
-                    <!-- Fila Total -->
-                    <div class="totales-data-row totales-row-monto">
-                        <div class="totales-col-label">Total</div>
-                        <div class="totales-col-value emitido-val">{{ formatCurrency(totalMontoEmitidos) }}</div>
-                        <div class="totales-col-value recibido-val">{{ formatCurrency(totalMontoRecibidos) }}</div>
-                        <div class="totales-col-value total-val">{{ formatCurrency(totalMonto) }}</div>
-                    </div>
-
-                </div>
 
                 <!-- Tabla de CFDIs -->
                 <mat-card class="cfdis-table-card">
@@ -582,6 +541,9 @@
                                         <td mat-cell *matCellDef="let row" class="uuid-cell">
                                             <span matTooltip="{{ row.uuid }}">{{ row.uuid | slice:0:18 }}...</span>
                                         </td>
+                                        <td mat-footer-cell *matFooterCellDef class="footer-title">
+                                            Totales ({{ cfdis.length }})
+                                        </td>
                                     </ng-container>
 
                                     <ng-container matColumnDef="tipo">
@@ -591,6 +553,7 @@
                                                 {{ row.tipo | titlecase }}
                                             </span>
                                         </td>
+                                        <td mat-footer-cell *matFooterCellDef></td>
                                     </ng-container>
 
                                     <ng-container matColumnDef="rfc_emisor">
@@ -601,26 +564,71 @@
                                                 <small *ngIf="row.nombre_emisor">{{ row.nombre_emisor }}</small>
                                             </div>
                                         </td>
+                                        <td mat-footer-cell *matFooterCellDef></td>
                                     </ng-container>
 
                                     <ng-container matColumnDef="fecha_emision">
                                         <th mat-header-cell *matHeaderCellDef>Fecha</th>
                                         <td mat-cell *matCellDef="let row">{{ row.fecha_emision | date:'dd/MM/yyyy' }}</td>
+                                        <td mat-footer-cell *matFooterCellDef></td>
                                     </ng-container>
 
                                     <ng-container matColumnDef="tipo_cfdi">
                                         <th mat-header-cell *matHeaderCellDef>Comprobante</th>
                                         <td mat-cell *matCellDef="let row">{{ row.tipo_cfdi || '—' }}</td>
+                                        <td mat-footer-cell *matFooterCellDef></td>
                                     </ng-container>
 
                                     <ng-container matColumnDef="subtotal">
                                         <th mat-header-cell *matHeaderCellDef class="num-col">Subtotal</th>
                                         <td mat-cell *matCellDef="let row" class="num-col">{{ formatCurrency(row.subtotal) }}</td>
+                                        <td mat-footer-cell *matFooterCellDef class="num-col font-bold footer-subtotal">
+                                            {{ formatCurrency(totalSubtotal) }}
+                                        </td>
                                     </ng-container>
 
                                     <ng-container matColumnDef="iva">
                                         <th mat-header-cell *matHeaderCellDef class="num-col">IVA</th>
                                         <td mat-cell *matCellDef="let row" class="num-col">{{ formatCurrency(row.iva) }}</td>
+                                        <td mat-footer-cell *matFooterCellDef class="num-col font-bold footer-iva">
+                                            {{ formatCurrency(totalIva) }}
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="ret_iva">
+                                        <th mat-header-cell *matHeaderCellDef class="num-col">Ret. IVA</th>
+                                        <td mat-cell *matCellDef="let row" class="num-col">
+                                            <span [class.has-retencion]="row.ret_iva > 0" [class.no-retencion]="!row.ret_iva || row.ret_iva == 0">
+                                                {{ formatCurrency(row.ret_iva) }}
+                                            </span>
+                                        </td>
+                                        <td mat-footer-cell *matFooterCellDef class="num-col font-bold" [class.text-retencion]="totalRetIva > 0">
+                                            {{ formatCurrency(totalRetIva) }}
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="ret_isr">
+                                        <th mat-header-cell *matHeaderCellDef class="num-col">Ret. ISR</th>
+                                        <td mat-cell *matCellDef="let row" class="num-col">
+                                            <span [class.has-retencion]="row.ret_isr > 0" [class.no-retencion]="!row.ret_isr || row.ret_isr == 0">
+                                                {{ formatCurrency(row.ret_isr) }}
+                                            </span>
+                                        </td>
+                                        <td mat-footer-cell *matFooterCellDef class="num-col font-bold" [class.text-retencion]="totalRetIsr > 0">
+                                            {{ formatCurrency(totalRetIsr) }}
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="ret_cedular">
+                                        <th mat-header-cell *matHeaderCellDef class="num-col">Ret. Cedular</th>
+                                        <td mat-cell *matCellDef="let row" class="num-col">
+                                            <span [class.has-retencion]="row.ret_cedular > 0" [class.no-retencion]="!row.ret_cedular || row.ret_cedular == 0">
+                                                {{ formatCurrency(row.ret_cedular) }}
+                                            </span>
+                                        </td>
+                                        <td mat-footer-cell *matFooterCellDef class="num-col font-bold" [class.text-retencion]="totalRetCedular > 0">
+                                            {{ formatCurrency(totalRetCedular) }}
+                                        </td>
                                     </ng-container>
 
                                     <ng-container matColumnDef="total">
@@ -628,15 +636,20 @@
                                         <td mat-cell *matCellDef="let row" class="num-col">
                                             <strong>{{ formatCurrency(row.total) }}</strong>
                                         </td>
+                                        <td mat-footer-cell *matFooterCellDef class="num-col font-bold footer-total-highlight">
+                                            {{ formatCurrency(totalMonto) }}
+                                        </td>
                                     </ng-container>
 
                                     <ng-container matColumnDef="moneda">
                                         <th mat-header-cell *matHeaderCellDef>Moneda</th>
                                         <td mat-cell *matCellDef="let row">{{ row.moneda || 'MXN' }}</td>
+                                        <td mat-footer-cell *matFooterCellDef></td>
                                     </ng-container>
 
                                     <tr mat-header-row *matHeaderRowDef="cfdisColumns; sticky: true"></tr>
                                     <tr mat-row *matRowDef="let row; columns: cfdisColumns;"></tr>
+                                    <tr mat-footer-row *matFooterRowDef="cfdisColumns; sticky: true" class="table-footer-row"></tr>
                                 </table>
                             </div>
 

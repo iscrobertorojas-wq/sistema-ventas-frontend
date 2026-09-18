@@ -18,6 +18,7 @@ import { UtilityReportComponent } from './components/utility-report/utility-repo
 import { QuotationsComponent } from './components/quotations/quotations.component';
 import { ContpaqiProductsComponent } from './components/contpaqi-products/contpaqi-products.component';
 import { ContpaqiLicensesComponent } from './components/contpaqi-licenses/contpaqi-licenses.component';
+import { TaxCalculationComponent } from './components/tax-calculation/tax-calculation.component';
 import { AuthGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -35,6 +36,7 @@ export const routes: Routes = [
     { path: 'payments-report', component: PaymentsReportComponent, canActivate: [AuthGuard] },
     { path: 'sales-by-client-report', component: SalesByClientReportComponent, canActivate: [AuthGuard] },
     { path: 'payments-by-client-report', component: PaymentsByClientReportComponent, canActivate: [AuthGuard] },
+    { path: 'tax-calculation', component: TaxCalculationComponent, canActivate: [AuthGuard] },
     { path: 'settings', component: SettingsComponent, canActivate: [AuthGuard] },
     { path: 'utility-report', component: UtilityReportComponent, canActivate: [AuthGuard] },
     { path: 'service-policies', component: ServicePoliciesComponent, canActivate: [AuthGuard] },

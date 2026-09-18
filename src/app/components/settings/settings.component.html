@@ -188,4 +188,105 @@
             </mat-card-content>
         </mat-card>
     </div>
+
+    <!-- Sección FIEL (e.firma) -->
+    <div class="settings-grid" style="margin-top: 20px;">
+        <mat-card class="full-width-card fiel-card">
+            <mat-card-header>
+                <mat-card-title>
+                    <mat-icon style="vertical-align: middle; margin-right: 8px;">security</mat-icon>
+                    e.firma (FIEL) — Cálculo de Impuestos
+                </mat-card-title>
+                <mat-card-subtitle>
+                    Necesaria para descargar XML del SAT. Los archivos se encriptan con AES-256 antes de guardarse.
+                </mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="fiel-status-bar">
+                    <div *ngIf="fielLoadingStatus" class="fiel-status-loading">
+                        <mat-spinner diameter="20"></mat-spinner>
+                        <span>Verificando estado de la FIEL...</span>
+                    </div>
+                    <div *ngIf="!fielLoadingStatus && fielStatus?.configurada" class="fiel-status-info">
+                        <div class="fiel-badge" [ngClass]="fielStatus?.vigente ? 'badge-ok' : 'badge-error'">
+                            <mat-icon>{{ fielStatus?.vigente ? 'verified_user' : 'warning' }}</mat-icon>
+                            <span>{{ fielStatus?.vigente ? 'FIEL Vigente' : 'FIEL Inválida / Caducada' }}</span>
+                        </div>
+                        <span *ngIf="fielStatus?.rfc" class="fiel-rfc">RFC: <strong>{{ fielStatus?.rfc }}</strong></span>
+                        <button mat-stroked-button color="warn" (click)="deleteFiel()" class="btn-delete-fiel" matTooltip="Eliminar datos de la FIEL">
+                            <mat-icon>delete_forever</mat-icon>
+                            Eliminar FIEL
+                        </button>
+                    </div>
+                    <div *ngIf="!fielLoadingStatus && !fielStatus?.configurada" class="fiel-no-config">
+                        <mat-icon color="warn">info</mat-icon>
+                        <span>No hay FIEL configurada. Sube tus archivos a continuación.</span>
+                    </div>
+                </div>
+                <mat-divider style="margin: 20px 0;"></mat-divider>
+                <p class="fiel-warning">
+                    <mat-icon>lock</mat-icon>
+                    <strong>Importante:</strong> Los archivos de tu e.firma y contraseña se encriptan con AES-256-GCM
+                    antes de almacenarse. Nunca se transmiten ni se muestran en texto claro.
+                </p>
+                <div class="fiel-form">
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>RFC del Contribuyente</mat-label>
+                        <input matInput [(ngModel)]="fielRfc" placeholder="XAXX010101000" style="text-transform: uppercase;">
+                        <mat-hint>El RFC que corresponde a tu e.firma</mat-hint>
+                    </mat-form-field>
+                    <div class="fiel-file-upload">
+                        <div class="fiel-file-label">
+                            <mat-icon>description</mat-icon>
+                            <div><h4>Certificado (.cer)</h4><p>Archivo de certificado digital de tu e.firma</p></div>
+                        </div>
+                        <div class="fiel-file-actions">
+                            <button mat-stroked-button color="primary" (click)="cerInput.click()">
+                                <mat-icon>upload_file</mat-icon>
+                                Seleccionar .cer
+                            </button>
+                            <span *ngIf="fielCerFileName" class="file-selected">
+                                <mat-icon color="primary">check_circle</mat-icon>
+                                {{ fielCerFileName }}
+                            </span>
+                        </div>
+                        <input type="file" #cerInput accept=".cer" (change)="onFielCerSelected($event)" hidden>
+                    </div>
+                    <div class="fiel-file-upload">
+                        <div class="fiel-file-label">
+                            <mat-icon>vpn_key</mat-icon>
+                            <div><h4>Llave Privada (.key)</h4><p>Archivo de llave privada de tu e.firma</p></div>
+                        </div>
+                        <div class="fiel-file-actions">
+                            <button mat-stroked-button color="primary" (click)="keyInput.click()">
+                                <mat-icon>upload_file</mat-icon>
+                                Seleccionar .key
+                            </button>
+                            <span *ngIf="fielKeyFileName" class="file-selected">
+                                <mat-icon color="primary">check_circle</mat-icon>
+                                {{ fielKeyFileName }}
+                            </span>
+                        </div>
+                        <input type="file" #keyInput accept=".key" (change)="onFielKeySelected($event)" hidden>
+                    </div>
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Contraseña de la e.firma</mat-label>
+                        <input matInput [type]="showFielPassword ? 'text' : 'password'" [(ngModel)]="fielPassword" autocomplete="new-password">
+                        <button mat-icon-button matSuffix (click)="showFielPassword = !showFielPassword" type="button">
+                            <mat-icon>{{ showFielPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                        </button>
+                        <mat-hint>La contraseña con la que protegiste tu e.firma</mat-hint>
+                    </mat-form-field>
+                    <div class="fiel-save-btn">
+                        <button mat-raised-button color="primary" (click)="saveFiel()" [disabled]="fielSaving">
+                            <mat-spinner *ngIf="fielSaving" diameter="18" style="display:inline-block; margin-right:8px;"></mat-spinner>
+                            <mat-icon *ngIf="!fielSaving">save</mat-icon>
+                            {{ fielSaving ? 'Validando y guardando...' : 'Guardar FIEL (encriptada)' }}
+                        </button>
+                    </div>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
 </div>

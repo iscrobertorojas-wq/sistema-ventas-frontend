@@ -10,6 +10,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ThemeService } from '../../services/theme.service';
 
 @Component({
@@ -25,7 +28,10 @@ import { ThemeService } from '../../services/theme.service';
         MatButtonModule,
         MatDividerModule,
         MatSnackBarModule,
-        MatIconModule
+        MatIconModule,
+        MatProgressSpinnerModule,
+        MatChipsModule,
+        MatTooltipModule
     ],
     templateUrl: './settings.component.html',
     styleUrl: './settings.component.css'
@@ -42,6 +48,21 @@ export class SettingsComponent implements OnInit {
     footerText: string = 'Esta orden de servicio se emite para describir los servicios prestados. El pago deberá efectuarse dentro de un plazo de 15 días a partir de la fecha de emisión.';
     companyLogo: string | null = null;
     brandColor: string = '#1a73e8';
+
+    // FIEL (e.firma) — estado
+    fielStatus: { configurada: boolean; vigente: boolean; rfc: string | null } | null = null;
+    fielLoadingStatus: boolean = false;
+    fielSaving: boolean = false;
+
+    // FIEL — archivos cargados en memoria (solo durante la sesión, nunca se muestran)
+    private _fielCerBase64: string | null = null;
+    private _fielKeyBase64: string | null = null;
+    fielCerFileName: string = '';
+    fielKeyFileName: string = '';
+    fielPassword: string = '';
+    fielRfc: string = '';
+    showFielPassword: boolean = false;
+    fielPasswordConfirm: string = '';
 
     // Dashboard Ordering
     statCardsOrder: any[] = [
@@ -70,6 +91,7 @@ export class SettingsComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadSettings();
+        this.loadFielStatus();
     }
 
     loadSettings() {
@@ -250,6 +272,102 @@ export class SettingsComponent implements OnInit {
     private saveSetting(key: string, value: string) {
         this.api.updateSetting(key, value).subscribe({
             error: (err) => console.error(`Error saving ${key}:`, err)
+        });
+    }
+
+    // ─────────── FIEL (e.firma) ───────────
+
+    loadFielStatus() {
+        this.fielLoadingStatus = true;
+        this.api.getFielStatus().subscribe({
+            next: (status) => {
+                this.fielStatus = status;
+                this.fielRfc = status.rfc || '';
+                this.fielLoadingStatus = false;
+            },
+            error: () => { this.fielLoadingStatus = false; }
+        });
+    }
+
+    onFielCerSelected(event: any) {
+        const file: File = event.target.files[0];
+        if (!file) return;
+        this.fielCerFileName = file.name;
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+            const dataUrl = e.target.result as string;
+            this._fielCerBase64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    onFielKeySelected(event: any) {
+        const file: File = event.target.files[0];
+        if (!file) return;
+        this.fielKeyFileName = file.name;
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+            const dataUrl = e.target.result as string;
+            this._fielKeyBase64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    saveFiel() {
+        if (!this._fielCerBase64) {
+            this.snackBar.open('Por favor selecciona el archivo .cer', 'Cerrar', { duration: 4000 });
+            return;
+        }
+        if (!this._fielKeyBase64) {
+            this.snackBar.open('Por favor selecciona el archivo .key', 'Cerrar', { duration: 4000 });
+            return;
+        }
+        if (!this.fielPassword) {
+            this.snackBar.open('Por favor ingresa la contraseña de la FIEL', 'Cerrar', { duration: 4000 });
+            return;
+        }
+
+        this.fielSaving = true;
+        this.api.saveFiel({
+            fiel_cer_base64: this._fielCerBase64,
+            fiel_key_base64: this._fielKeyBase64,
+            fiel_password: this.fielPassword,
+            rfc_contribuyente: this.fielRfc || ''
+        }).subscribe({
+            next: (res) => {
+                this.fielSaving = false;
+                this.fielPassword = '';
+                this.fielPasswordConfirm = '';
+                this._fielCerBase64 = null;
+                this._fielKeyBase64 = null;
+                this.fielCerFileName = '';
+                this.fielKeyFileName = '';
+                const extra = res.razon_social ? ` (${res.razon_social})` : '';
+                this.snackBar.open(`✓ FIEL verificada y guardada correctamente · RFC: ${res.rfc}${extra}`, 'Cerrar', { duration: 5000 });
+                this.loadFielStatus();
+            },
+            error: (err) => {
+                this.fielSaving = false;
+                const msg = err.error?.error || 'Error al validar o guardar los datos de la FIEL';
+                this.snackBar.open(`⚠ ${msg}`, 'Entendido', { duration: 8000 });
+            }
+        });
+    }
+
+    deleteFiel() {
+        if (!confirm('¿Estás seguro de eliminar los datos de la FIEL? Esta acción no se puede deshacer.')) return;
+        this.api.deleteFiel().subscribe({
+            next: () => {
+                this.fielStatus = null;
+                this._fielCerBase64 = null;
+                this._fielKeyBase64 = null;
+                this.fielPassword = '';
+                this.snackBar.open('Datos de la FIEL eliminados', 'Cerrar', { duration: 3000 });
+                this.loadFielStatus();
+            },
+            error: (err) => {
+                this.snackBar.open(err.error?.error || 'Error al eliminar la FIEL', 'Cerrar', { duration: 3000 });
+            }
         });
     }
 }

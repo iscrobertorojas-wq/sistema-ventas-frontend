@@ -274,4 +274,52 @@ export class ApiService {
     formData.append('file', file);
     return this.http.post(`${this.baseUrl}/database/restore`, formData);
   }
+
+  // SAT — FIEL
+  saveFiel(fielData: { fiel_cer_base64: string; fiel_key_base64: string; fiel_password: string; rfc_contribuyente: string }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/sat-download/fiel`, fielData);
+  }
+
+  getFielStatus(): Observable<{ configurada: boolean; vigente: boolean; rfc: string | null }> {
+    return this.http.get<any>(`${this.baseUrl}/sat-download/fiel`);
+  }
+
+  deleteFiel(): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/sat-download/fiel`);
+  }
+
+  // SAT — Descarga de XML
+  satRequestDownload(params: { tipo: 'emitidos' | 'recibidos' | 'ambos'; fecha_inicio: string; fecha_fin: string }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/sat-download/request`, params);
+  }
+
+  satVerifyRequest(id: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/sat-download/verify`, { id });
+  }
+
+  satDownloadPackages(id: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/sat-download/download`, { id });
+  }
+
+  satGetHistory(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sat-download/history`);
+  }
+
+  satGetCfdis(params?: { tipo?: string; fecha_inicio?: string; fecha_fin?: string }): Observable<any[]> {
+    let httpParams = new HttpParams();
+    if (params?.tipo) httpParams = httpParams.set('tipo', params.tipo);
+    if (params?.fecha_inicio) httpParams = httpParams.set('fecha_inicio', params.fecha_inicio);
+    if (params?.fecha_fin) httpParams = httpParams.set('fecha_fin', params.fecha_fin);
+    return this.http.get<any[]>(`${this.baseUrl}/sat-download/cfdi-list`, { params: httpParams });
+  }
+
+  satDeleteRequest(id: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/sat-download/delete`, { body: { id } });
+  }
+
+  satUploadCfdis(formData: FormData): Observable<any> {
+    return this.http.post(`${this.baseUrl}/sat-download/upload`, formData);
+  }
 }
+
+

@@ -19,6 +19,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { RouterModule } from '@angular/router';
 
 @Component({
@@ -45,6 +46,7 @@ import { RouterModule } from '@angular/router';
         MatNativeDateModule,
         MatSlideToggleModule,
         MatPaginatorModule,
+        MatButtonToggleModule,
     ],
     templateUrl: './tax-calculation.component.html',
     styleUrl: './tax-calculation.component.css'
@@ -104,7 +106,20 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     historialColumns = ['tipo', 'periodo', 'total_cfdis', 'estado', 'fecha', 'acciones'];
 
     // Columnas tabla CFDIs
-    cfdisColumns = ['uuid', 'tipo', 'rfc_emisor', 'fecha_emision', 'tipo_cfdi', 'subtotal', 'iva', 'total', 'moneda'];
+    cfdisColumns = [
+        'uuid',
+        'tipo',
+        'rfc_emisor',
+        'fecha_emision',
+        'tipo_cfdi',
+        'subtotal',
+        'iva',
+        'ret_iva',
+        'ret_isr',
+        'ret_cedular',
+        'total',
+        'moneda'
+    ];
 
     constructor(private api: ApiService, private snackBar: MatSnackBar) {
         this.setPeriodoMesActual();
@@ -518,6 +533,11 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         this.pageIndex = event.pageIndex;
     }
 
+    setTipoFilter(tipo: string) {
+        this.filtroCfdiTipo = tipo;
+        this.aplicarFiltrosCfdis();
+    }
+
     minVal(a: number, b: number): number {
         return Math.min(a, b);
     }
@@ -528,10 +548,13 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         return this.cfdis.slice(start, start + this.pageSize);
     }
 
-    // ─── Totales generales ───
-    get totalSubtotal(): number { return this.cfdis.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0); }
-    get totalIva(): number { return this.cfdis.reduce((s, c) => s + parseFloat(c.iva || 0), 0); }
-    get totalMonto(): number { return this.cfdis.reduce((s, c) => s + parseFloat(c.total || 0), 0); }
+    // ─── Totales generales (para pie de tabla) ───
+    get totalSubtotal(): number   { return this.cfdis.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0); }
+    get totalIva(): number        { return this.cfdis.reduce((s, c) => s + parseFloat(c.iva || 0), 0); }
+    get totalRetIva(): number     { return this.cfdis.reduce((s, c) => s + parseFloat(c.ret_iva || 0), 0); }
+    get totalRetIsr(): number     { return this.cfdis.reduce((s, c) => s + parseFloat(c.ret_isr || 0), 0); }
+    get totalRetCedular(): number { return this.cfdis.reduce((s, c) => s + parseFloat(c.ret_cedular || 0), 0); }
+    get totalMonto(): number      { return this.cfdis.reduce((s, c) => s + parseFloat(c.total || 0), 0); }
 
     // ─── Totales por tipo ───
     get emitidos(): any[] { return this.cfdis.filter(c => c.tipo === 'emitido'); }
