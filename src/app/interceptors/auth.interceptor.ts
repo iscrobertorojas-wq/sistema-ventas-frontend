@@ -5,7 +5,7 @@ import { HttpInterceptorFn } from '@angular/common/http';
  * to the 'Authorization' header of every outgoing request.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const token = sessionStorage.getItem('token');
+  const token = localStorage.getItem('token');
   
   if (token) {
     const cloned = req.clone({
