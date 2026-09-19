@@ -63,6 +63,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     tipoDescarga: 'ambos' | 'emitidos' | 'recibidos' = 'ambos';
     fechaInicio: Date | null = null;
     fechaFin: Date | null = null;
+    today: Date = new Date();
     solicitando: boolean = false;
 
     // Carga manual de archivos (Modal & Drag & Drop)
@@ -151,7 +152,8 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     setPeriodoMesActual() {
         const now = new Date();
         this.fechaInicio = new Date(now.getFullYear(), now.getMonth(), 1);
-        this.fechaFin = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const finMes = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        this.fechaFin = finMes > now ? now : finMes;
     }
 
     setPeriodoMesAnterior() {
@@ -163,10 +165,12 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     setPeriodoAnioActual() {
         const now = new Date();
         this.fechaInicio = new Date(now.getFullYear(), 0, 1);
-        this.fechaFin = new Date(now.getFullYear(), 11, 31);
+        const finAnio = new Date(now.getFullYear(), 11, 31);
+        this.fechaFin = finAnio > now ? now : finAnio;
     }
 
     openDownloadModal() {
+        this.today = new Date();
         this.showDownloadModal = true;
     }
 
@@ -203,6 +207,11 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         }
         if (inicio > fin) {
             this.snackBar.open('La fecha de inicio no puede ser mayor a la fecha fin', 'Cerrar', { duration: 3000 });
+            return;
+        }
+        const hoy = this.dateToString(new Date());
+        if (fin > hoy) {
+            this.snackBar.open('La fecha final no puede ser posterior al día de hoy', 'Cerrar', { duration: 4000 });
             return;
         }
         if (!this.fielStatus?.vigente) {

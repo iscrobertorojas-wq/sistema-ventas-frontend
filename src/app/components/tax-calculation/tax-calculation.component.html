@@ -145,14 +145,14 @@
                                 <div class="date-inputs-row">
                                     <mat-form-field appearance="outline" class="modal-date-field">
                                         <mat-label>Fecha Inicio</mat-label>
-                                        <input matInput [matDatepicker]="pickerInicio" [(ngModel)]="fechaInicio" placeholder="dd/mm/aaaa" (click)="pickerInicio.open()">
+                                        <input matInput [matDatepicker]="pickerInicio" [max]="today" [(ngModel)]="fechaInicio" placeholder="dd/mm/aaaa" (click)="pickerInicio.open()">
                                         <mat-datepicker-toggle matIconSuffix [for]="pickerInicio"></mat-datepicker-toggle>
                                         <mat-datepicker #pickerInicio></mat-datepicker>
                                     </mat-form-field>
                                     <span class="date-separator">—</span>
                                     <mat-form-field appearance="outline" class="modal-date-field">
                                         <mat-label>Fecha Fin</mat-label>
-                                        <input matInput [matDatepicker]="pickerFin" [(ngModel)]="fechaFin" placeholder="dd/mm/aaaa" (click)="pickerFin.open()">
+                                        <input matInput [matDatepicker]="pickerFin" [max]="today" [(ngModel)]="fechaFin" placeholder="dd/mm/aaaa" (click)="pickerFin.open()">
                                         <mat-datepicker-toggle matIconSuffix [for]="pickerFin"></mat-datepicker-toggle>
                                         <mat-datepicker #pickerFin></mat-datepicker>
                                     </mat-form-field>
