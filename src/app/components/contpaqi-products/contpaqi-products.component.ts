@@ -9,6 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-contpaqi-products',
@@ -22,7 +24,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatInputModule,
     MatFormFieldModule,
     MatCardModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatDialogModule
   ],
   templateUrl: './contpaqi-products.component.html',
   styleUrl: './contpaqi-products.component.css'
@@ -41,7 +44,8 @@ export class ContpaqiProductsComponent implements OnInit {
 
   constructor(
     private api: ApiService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
@@ -99,7 +103,22 @@ export class ContpaqiProductsComponent implements OnInit {
   }
 
   deleteProduct(product: any) {
-    if (confirm(`¿Estás seguro de que deseas eliminar el producto "${product.description}"?\nSe eliminarán todas las licencias asociadas a este producto.`)) {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '430px',
+      data: {
+        title: 'Eliminar producto CONTPAQi',
+        message: `¿Estás seguro de que deseas eliminar el producto "${product.description}"?`,
+        warning: 'Se eliminarán todas las licencias asociadas a este producto.',
+        icon: 'inventory_2',
+        type: 'warn',
+        confirmText: 'Eliminar',
+        confirmIcon: 'delete'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+
       this.api.deleteContpaqiProduct(product.id).subscribe({
         next: () => {
           this.loadProducts();
@@ -110,6 +129,6 @@ export class ContpaqiProductsComponent implements OnInit {
           this.snackBar.open('Error al eliminar el producto', 'Cerrar', { duration: 3000 });
         }
       });
-    }
+    });
   }
 }

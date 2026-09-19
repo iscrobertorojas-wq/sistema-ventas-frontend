@@ -13,7 +13,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ThemeService } from '../../services/theme.service';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
     selector: 'app-settings',
@@ -31,7 +33,8 @@ import { ThemeService } from '../../services/theme.service';
         MatIconModule,
         MatProgressSpinnerModule,
         MatChipsModule,
-        MatTooltipModule
+        MatTooltipModule,
+        MatDialogModule
     ],
     templateUrl: './settings.component.html',
     styleUrl: './settings.component.css'
@@ -86,7 +89,8 @@ export class SettingsComponent implements OnInit {
     constructor(
         private api: ApiService,
         private snackBar: MatSnackBar,
-        private themeService: ThemeService
+        private themeService: ThemeService,
+        private dialog: MatDialog
     ) { }
 
     ngOnInit(): void {
@@ -355,19 +359,35 @@ export class SettingsComponent implements OnInit {
     }
 
     deleteFiel() {
-        if (!confirm('¿Estás seguro de eliminar los datos de la FIEL? Esta acción no se puede deshacer.')) return;
-        this.api.deleteFiel().subscribe({
-            next: () => {
-                this.fielStatus = null;
-                this._fielCerBase64 = null;
-                this._fielKeyBase64 = null;
-                this.fielPassword = '';
-                this.snackBar.open('Datos de la FIEL eliminados', 'Cerrar', { duration: 3000 });
-                this.loadFielStatus();
-            },
-            error: (err) => {
-                this.snackBar.open(err.error?.error || 'Error al eliminar la FIEL', 'Cerrar', { duration: 3000 });
+        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+            width: '420px',
+            data: {
+                title: 'Eliminar FIEL',
+                message: '¿Estás seguro de eliminar los certificados y contraseña de la FIEL del sistema?',
+                warning: 'Esta acción no se puede deshacer y no podrás realizar descargas masivas del SAT.',
+                icon: 'lock_reset',
+                type: 'warn',
+                confirmText: 'Eliminar',
+                confirmIcon: 'delete'
             }
+        });
+
+        dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+            if (!confirmed) return;
+
+            this.api.deleteFiel().subscribe({
+                next: () => {
+                    this.fielStatus = null;
+                    this._fielCerBase64 = null;
+                    this._fielKeyBase64 = null;
+                    this.fielPassword = '';
+                    this.snackBar.open('Datos de la FIEL eliminados', 'Cerrar', { duration: 3000 });
+                    this.loadFielStatus();
+                },
+                error: (err) => {
+                    this.snackBar.open(err.error?.error || 'Error al eliminar la FIEL', 'Cerrar', { duration: 3000 });
+                }
+            });
         });
     }
 }

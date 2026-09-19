@@ -16,7 +16,9 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import * as XLSX from 'xlsx';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
     selector: 'app-service-policies',
@@ -36,7 +38,8 @@ import * as XLSX from 'xlsx';
         MatNativeDateModule,
         MatChipsModule,
         MatTooltipModule,
-        MatDividerModule
+        MatDividerModule,
+        MatDialogModule
     ],
     templateUrl: './service-policies.component.html',
     styleUrl: './service-policies.component.css'
@@ -93,7 +96,8 @@ export class ServicePoliciesComponent implements OnInit {
     constructor(
         private api: ApiService,
         private pdfService: PdfService,
-        private snackBar: MatSnackBar
+        private snackBar: MatSnackBar,
+        private dialog: MatDialog
     ) { }
 
     ngOnInit(): void {
@@ -190,18 +194,33 @@ export class ServicePoliciesComponent implements OnInit {
 
     deletePolicy(policy: any, event: Event) {
         event.stopPropagation();
-        if (!confirm(`¿Eliminar la póliza ${policy.policy_number}? Se eliminarán todos sus registros.`)) return;
+        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+            width: '430px',
+            data: {
+                title: 'Eliminar póliza',
+                message: `¿Estás seguro de que deseas eliminar la póliza ${policy.policy_number}?`,
+                warning: 'Se eliminarán permanentemente todos sus registros de servicio asociados.',
+                icon: 'verified_user',
+                type: 'warn',
+                confirmText: 'Eliminar',
+                confirmIcon: 'delete'
+            }
+        });
 
-        this.api.deleteServicePolicy(policy.id).subscribe({
-            next: () => {
-                this.snackBar.open('Póliza eliminada', 'Cerrar', { duration: 3000 });
-                this.loadPolicies();
-                if (this.selectedPolicy?.id === policy.id) {
-                    this.currentView = 'list';
-                    this.selectedPolicy = null;
-                }
-            },
-            error: (err) => this.snackBar.open(err.error?.error || 'Error al eliminar póliza', 'Cerrar', { duration: 3000 })
+        dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+            if (!confirmed) return;
+
+            this.api.deleteServicePolicy(policy.id).subscribe({
+                next: () => {
+                    this.snackBar.open('Póliza eliminada', 'Cerrar', { duration: 3000 });
+                    this.loadPolicies();
+                    if (this.selectedPolicy?.id === policy.id) {
+                        this.currentView = 'list';
+                        this.selectedPolicy = null;
+                    }
+                },
+                error: (err) => this.snackBar.open(err.error?.error || 'Error al eliminar póliza', 'Cerrar', { duration: 3000 })
+            });
         });
     }
 
@@ -331,14 +350,29 @@ export class ServicePoliciesComponent implements OnInit {
     }
 
     deleteRecord(record: any) {
-        if (!confirm('¿Eliminar este registro de servicio?')) return;
+        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+            width: '400px',
+            data: {
+                title: 'Eliminar registro',
+                message: '¿Estás seguro de que deseas eliminar este registro de servicio?',
+                warning: 'Esta acción no se puede deshacer.',
+                icon: 'receipt_long',
+                type: 'warn',
+                confirmText: 'Eliminar',
+                confirmIcon: 'delete'
+            }
+        });
 
-        this.api.deletePolicyRecord(record.id).subscribe({
-            next: () => {
-                this.snackBar.open('Registro eliminado', 'Cerrar', { duration: 3000 });
-                this.refreshSelectedPolicy();
-            },
-            error: (err) => this.snackBar.open(err.error?.error || 'Error al eliminar registro', 'Cerrar', { duration: 3000 })
+        dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+            if (!confirmed) return;
+
+            this.api.deletePolicyRecord(record.id).subscribe({
+                next: () => {
+                    this.snackBar.open('Registro eliminado', 'Cerrar', { duration: 3000 });
+                    this.refreshSelectedPolicy();
+                },
+                error: (err) => this.snackBar.open(err.error?.error || 'Error al eliminar registro', 'Cerrar', { duration: 3000 })
+            });
         });
     }
 

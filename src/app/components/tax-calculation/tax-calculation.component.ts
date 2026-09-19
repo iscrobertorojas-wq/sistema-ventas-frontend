@@ -20,8 +20,10 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { RouterModule } from '@angular/router';
 import * as XLSX from 'xlsx-js-style';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
     selector: 'app-tax-calculation',
@@ -48,6 +50,7 @@ import * as XLSX from 'xlsx-js-style';
         MatSlideToggleModule,
         MatPaginatorModule,
         MatButtonToggleModule,
+        MatDialogModule,
     ],
     templateUrl: './tax-calculation.component.html',
     styleUrl: './tax-calculation.component.css'
@@ -120,7 +123,11 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         'moneda'
     ];
 
-    constructor(private api: ApiService, private snackBar: MatSnackBar) {
+    constructor(
+        private api: ApiService,
+        private snackBar: MatSnackBar,
+        private dialog: MatDialog
+    ) {
         this.setPeriodoMesActual();
     }
 
@@ -400,32 +407,49 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
 
     eliminarSolicitud(item: any) {
         const estado = item.estado;
-        const esPendiente = estado === 'pendiente' || estado === 'vacio' || estado === 'error';
         const esDescargado = estado === 'descargado';
         const esListo = estado === 'listo';
 
-        let msg = `¿Eliminar esta solicitud (${item.tipo}, ${item.fecha_inicio} — ${item.fecha_fin})?`;
+        let warning = '';
         if (esDescargado) {
-            msg += '\n\nNota: Los CFDIs ya guardados en la base de datos NO serán eliminados.';
+            warning = 'Los CFDIs ya guardados en la base de datos NO serán eliminados.';
         } else if (esListo) {
-            msg += '\n\nNota: Los paquetes del SAT pendientes de descargar se perderán.';
-        } else if (esPendiente) {
-            msg += '\n\nSe eliminará el registro del historial.';
+            warning = 'Los paquetes del SAT pendientes de descargar se perderán.';
+        } else {
+            warning = 'Se eliminará el registro de la solicitud del historial.';
         }
 
-        if (!confirm(msg)) return;
+        const fInicio = String(item.fecha_inicio).substring(0, 10);
+        const fFin = String(item.fecha_fin).substring(0, 10);
 
-        this.eliminandoIds.add(item.id);
-        this.api.satDeleteRequest(item.id).subscribe({
-            next: () => {
-                this.eliminandoIds.delete(item.id);
-                this.snackBar.open('Solicitud eliminada del historial', 'Cerrar', { duration: 3500 });
-                this.loadHistorial();
-            },
-            error: (err) => {
-                this.eliminandoIds.delete(item.id);
-                this.snackBar.open(err.error?.error || 'Error al eliminar la solicitud', 'Cerrar', { duration: 4000 });
+        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+            width: '430px',
+            data: {
+                title: 'Eliminar solicitud',
+                message: `¿Deseas eliminar la solicitud de comprobantes ${item.tipo} del ${fInicio} al ${fFin}?`,
+                warning: warning,
+                icon: 'delete_sweep',
+                type: 'warn',
+                confirmText: 'Eliminar',
+                confirmIcon: 'delete'
             }
+        });
+
+        dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+            if (!confirmed) return;
+
+            this.eliminandoIds.add(item.id);
+            this.api.satDeleteRequest(item.id).subscribe({
+                next: () => {
+                    this.eliminandoIds.delete(item.id);
+                    this.snackBar.open('Solicitud eliminada del historial', 'Cerrar', { duration: 3500 });
+                    this.loadHistorial();
+                },
+                error: (err) => {
+                    this.eliminandoIds.delete(item.id);
+                    this.snackBar.open(err.error?.error || 'Error al eliminar la solicitud', 'Cerrar', { duration: 4000 });
+                }
+            });
         });
     }
 

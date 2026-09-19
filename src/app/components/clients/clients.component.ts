@@ -12,6 +12,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PendingSalesDialogComponent } from './pending-sales-dialog/pending-sales-dialog.component';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-clients',
@@ -105,7 +106,22 @@ export class ClientsComponent implements OnInit {
   }
 
   deleteClient(client: any) {
-    if (confirm(`¿Estás seguro de que deseas eliminar al cliente "${client.name}"?`)) {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Eliminar cliente',
+        message: `¿Estás seguro de que deseas eliminar al cliente "${client.name}"?`,
+        warning: 'Esta acción no se puede deshacer.',
+        icon: 'person_remove',
+        type: 'warn',
+        confirmText: 'Eliminar',
+        confirmIcon: 'delete'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+
       this.api.deleteClient(client.id).subscribe({
         next: () => {
           this.loadClients();
@@ -117,7 +133,7 @@ export class ClientsComponent implements OnInit {
           this.snackBar.open(message, 'Cerrar', { duration: 5000 });
         }
       });
-    }
+    });
   }
 
   openPendingSalesDialog(client: any) {

@@ -9,6 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-suppliers',
@@ -22,7 +24,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatInputModule,
     MatFormFieldModule,
     MatCardModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatDialogModule
   ],
   templateUrl: './suppliers.component.html',
   styleUrl: './suppliers.component.css'
@@ -41,7 +44,8 @@ export class SuppliersComponent implements OnInit {
 
   constructor(
     private api: ApiService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
@@ -102,7 +106,22 @@ export class SuppliersComponent implements OnInit {
   }
 
   deleteSupplier(supplier: any) {
-    if (confirm(`¿Deseas eliminar al proveedor "${supplier.name}"?`)) {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Eliminar proveedor',
+        message: `¿Estás seguro de que deseas eliminar al proveedor "${supplier.name}"?`,
+        warning: 'Esta acción no se puede deshacer.',
+        icon: 'delete_forever',
+        type: 'warn',
+        confirmText: 'Eliminar',
+        confirmIcon: 'delete'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+
       this.api.deleteSupplier(supplier.id).subscribe({
         next: () => {
           this.loadSuppliers();
@@ -113,6 +132,6 @@ export class SuppliersComponent implements OnInit {
           this.snackBar.open(message, 'Cerrar', { duration: 5000 });
         }
       });
-    }
+    });
   }
 }
