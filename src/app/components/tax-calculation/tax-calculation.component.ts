@@ -83,10 +83,6 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     historial: any[] = [];
     historialLoading: boolean = false;
 
-    // Sincronización automática de solicitudes al SAT
-    private autoSyncTimer: any = null;
-    private autoSyncRunning: boolean = false; // evita ciclos solapados
-
     // Solicitudes en progreso (verificando/descargando/eliminando)
     verificandoIds: Set<number> = new Set();
     descargandoIds: Set<number> = new Set();
@@ -133,11 +129,9 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         this.loadHistorial();
         this.loadCfdis();
         this.loadCalculoImpuestos();
-        this.startAutoSyncTimer();
     }
 
     ngOnDestroy(): void {
-        this.stopAutoSyncTimer();
     }
 
     private formatDate(d: Date): string {
@@ -342,92 +336,38 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
 
     // ─── Historial y Sincronización Automática Cada 5 Minutos ───
 
+    // ─── Historial de Solicitudes ───
+
     loadHistorial() {
         this.historialLoading = true;
         this.api.satGetHistory().subscribe({
             next: (data) => {
                 this.historial = data;
                 this.historialLoading = false;
-                this.revisarPendientesAuto();
             },
             error: () => { this.historialLoading = false; }
         });
     }
 
-    startAutoSyncTimer() {
-        this.stopAutoSyncTimer();
-        // Verificar automáticamente cada 5 minutos (300,000 ms) en segundo plano
-        this.autoSyncTimer = setInterval(() => {
-            const hayPendientes = this.historial.some(h => h.estado === 'pendiente' || h.estado === 'listo');
-            if (hayPendientes) {
-                this.loadHistorial();
-            }
-        }, 5 * 60 * 1000);
-    }
-
-    stopAutoSyncTimer() {
-        if (this.autoSyncTimer) {
-            clearInterval(this.autoSyncTimer);
-            this.autoSyncTimer = null;
-        }
-    }
-
-    private revisarPendientesAuto() {
-        // Procesar en orden secuencial para no saturar el SAT con peticiones paralelas
-        const pendientes = this.historial.filter(
-            (h) => (h.estado === 'pendiente' && !this.isVerificando(h.id)) ||
-                   (h.estado === 'listo' && !this.isDescargando(h.id))
-        );
-
-        if (pendientes.length === 0) return;
-
-        // Encadenar secuencialmente con un delay de 3 s entre cada uno
-        let chain = Promise.resolve();
-        for (const item of pendientes) {
-            chain = chain.then(() => new Promise<void>((res) => {
-                setTimeout(() => {
-                    if (item.estado === 'listo' && !this.isDescargando(item.id)) {
-                        this.descargarPaquetes(item);
-                    } else if (item.estado === 'pendiente' && !this.isVerificando(item.id)) {
-                        this.verificarSolicitud(item, true);
-                    }
-                    res();
-                }, 3000);
-            }));
-        }
-    }
-
-    verificarSolicitud(item: any, isAuto: boolean = false) {
+    verificarSolicitud(item: any) {
         this.verificandoIds.add(item.id);
         this.api.satVerifyRequest(item.id).subscribe({
             next: (res) => {
                 this.verificandoIds.delete(item.id);
                 const estado = res.estado;
-                if (estado === 'listo' && res.paquetes && res.paquetes.length > 0) {
-                    this.snackBar.open(`✓ Solicitud autorizada por el SAT. Descargando ${res.total_cfdis ?? ''} CFDIs automáticamente...`, 'OK', { duration: 5000 });
-                    this.loadHistorial();
-                    // AUTO-DESCARGA INMEDIATA
-                    this.descargarPaquetes(item);
-                } else {
-                    const msg = estado === 'listo'
-                        ? `¡Listo! ${res.total_cfdis ?? '?'} CFDIs disponibles.`
-                        : estado === 'pendiente'
-                        ? 'El SAT aún está procesando la solicitud. Se verificará automáticamente en 5 min.'
-                        : `Estado: ${estado}`;
-                    // En modo automático en segundo plano no interrumpir al usuario con toasts repetitivos
-                    if (!isAuto) {
-                        this.snackBar.open(msg, 'Cerrar', { duration: 4000 });
-                    }
-                    this.loadHistorial();
-                }
+                const msg = estado === 'listo'
+                    ? `¡Listo! ${res.total_cfdis ?? '?'} CFDIs disponibles para descargar.`
+                    : estado === 'pendiente'
+                    ? 'El SAT aún está procesando la solicitud. Intenta verificar nuevamente en unos momentos.'
+                    : estado === 'vacio'
+                    ? 'El SAT no encontró CFDIs para el periodo solicitado.'
+                    : `Estado: ${estado}`;
+                this.snackBar.open(msg, 'Cerrar', { duration: 4000 });
+                this.loadHistorial();
             },
             error: (err) => {
                 this.verificandoIds.delete(item.id);
-                console.warn('[SAT Auto-Sync] Verificación en segundo plano no completada:', err.error?.error || err.message);
-                // Si fue manual, mostrar toast; si fue automático, no interrumpir la pantalla del usuario
-                if (!isAuto) {
-                    this.snackBar.open(err.error?.error || 'Error al verificar con el SAT', 'Cerrar', { duration: 4500 });
-                }
+                this.snackBar.open(err.error?.error || 'Error al verificar con el SAT', 'Cerrar', { duration: 4500 });
             }
         });
     }
