@@ -21,7 +21,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { RouterModule } from '@angular/router';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 @Component({
     selector: 'app-tax-calculation',
@@ -741,7 +741,113 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         return this.impuestoFederalTotal + this.impuestoEstatalAPagar;
     }
 
-    // ─── Exportación a Excel (.xlsx) ───
+    // ─── Exportación a Excel (.xlsx) con estilos de color ───
+    private xlsxStyle(bg: string, fontColor: string = 'FFFFFFFF', bold: boolean = true): any {
+        return {
+            fill: { fgColor: { rgb: bg } },
+            font: { bold, color: { rgb: fontColor }, sz: 11 },
+            alignment: { vertical: 'center', wrapText: false }
+        };
+    }
+
+    private setCellStyle(ws: XLSX.WorkSheet, cellAddr: string, style: any) {
+        if (!ws[cellAddr]) ws[cellAddr] = { t: 's', v: '' };
+        ws[cellAddr].s = style;
+    }
+
+    private styleResumenSheet(ws: XLSX.WorkSheet) {
+        // Fila 1: Título principal — azul marino oscuro
+        const titleStyle = this.xlsxStyle('FF1E3A5F');
+        const titleStyle2 = this.xlsxStyle('FF1E3A5F', 'FFFFFFFF', false);
+        this.setCellStyle(ws, 'A1', { ...titleStyle, font: { bold: true, color: { rgb: 'FFFFFFFF' }, sz: 14 } });
+        this.setCellStyle(ws, 'B1', titleStyle);
+
+        // Filas 2-4: Metadata — azul claro
+        const metaStyle = this.xlsxStyle('FFD6E4F7', 'FF1E3A5F');
+        const metaStyleB = { ...metaStyle, font: { bold: false, color: { rgb: 'FF1E3A5F' } } };
+        ['A2','B2','A3','B3','A4','B4'].forEach(c => this.setCellStyle(ws, c, metaStyleB));
+
+        // Sección ISR (filas 6-14): encabezado sección en azul, sub-header en gris, final en verde oscuro
+        const isrHeaderStyle = this.xlsxStyle('FF2563EB');         // azul vibrante
+        const isrColHeaderStyle = this.xlsxStyle('FFD1D5DB', 'FF111827');  // gris claro
+        const isrFinalStyle = this.xlsxStyle('FF065F46');          // verde oscuro resultado
+        const isrSubtotalStyle = this.xlsxStyle('FFEFF6FF', 'FF1E3A5F');
+        this.setCellStyle(ws, 'A6', isrHeaderStyle);
+        this.setCellStyle(ws, 'B6', isrHeaderStyle);
+        this.setCellStyle(ws, 'A7', isrColHeaderStyle);
+        this.setCellStyle(ws, 'B7', isrColHeaderStyle);
+        // Subtotal ISR (fila 10)
+        this.setCellStyle(ws, 'A10', isrSubtotalStyle);
+        this.setCellStyle(ws, 'B10', isrSubtotalStyle);
+        // Resultado ISR (fila 14)
+        this.setCellStyle(ws, 'A14', isrFinalStyle);
+        this.setCellStyle(ws, 'B14', isrFinalStyle);
+
+        // Sección Cedular (filas 16-24): encabezado en naranja oscuro
+        const cedHeaderStyle = this.xlsxStyle('FFD97706');         // ámbar/naranja
+        const cedColHeaderStyle = this.xlsxStyle('FFFEF3C7', 'FF78350F');
+        const cedFinalStyle = this.xlsxStyle('FF7C2D12');          // café oscuro resultado
+        const cedSubtotalStyle = this.xlsxStyle('FFFEF9EE', 'FF78350F');
+        this.setCellStyle(ws, 'A16', cedHeaderStyle);
+        this.setCellStyle(ws, 'B16', cedHeaderStyle);
+        this.setCellStyle(ws, 'A17', cedColHeaderStyle);
+        this.setCellStyle(ws, 'B17', cedColHeaderStyle);
+        this.setCellStyle(ws, 'A20', cedSubtotalStyle);
+        this.setCellStyle(ws, 'B20', cedSubtotalStyle);
+        this.setCellStyle(ws, 'A24', cedFinalStyle);
+        this.setCellStyle(ws, 'B24', cedFinalStyle);
+
+        // Sección IVA (filas 26-30): encabezado en violeta
+        const ivaHeaderStyle = this.xlsxStyle('FF7C3AED');
+        const ivaColHeaderStyle = this.xlsxStyle('FFEDE9FE', 'FF4C1D95');
+        const ivaFinalStyle = this.xlsxStyle('FF4C1D95');
+        this.setCellStyle(ws, 'A26', ivaHeaderStyle);
+        this.setCellStyle(ws, 'B26', ivaHeaderStyle);
+        this.setCellStyle(ws, 'A27', ivaColHeaderStyle);
+        this.setCellStyle(ws, 'B27', ivaColHeaderStyle);
+        this.setCellStyle(ws, 'A30', ivaFinalStyle);
+        this.setCellStyle(ws, 'B30', ivaFinalStyle);
+
+        // Sección Resumen (filas 32-38): encabezado en gris oscuro, gran total en rojo
+        const resHeaderStyle = this.xlsxStyle('FF374151');
+        const resColHeaderStyle = this.xlsxStyle('FFF3F4F6', 'FF111827');
+        const resFederalStyle = this.xlsxStyle('FF1D4ED8', 'FFFFFFFF');
+        const granTotalStyle = this.xlsxStyle('FF0F172A', 'FFFFF0A0');    // negro con amarillo
+        this.setCellStyle(ws, 'A32', resHeaderStyle);
+        this.setCellStyle(ws, 'B32', resHeaderStyle);
+        this.setCellStyle(ws, 'A33', resColHeaderStyle);
+        this.setCellStyle(ws, 'B33', resColHeaderStyle);
+        // Total federal (fila 36)
+        this.setCellStyle(ws, 'A36', resFederalStyle);
+        this.setCellStyle(ws, 'B36', resFederalStyle);
+        // Gran total (fila 38)
+        this.setCellStyle(ws, 'A38', granTotalStyle);
+        this.setCellStyle(ws, 'B38', granTotalStyle);
+    }
+
+    private styleDataSheet(ws: XLSX.WorkSheet, headerBg: string) {
+        // Obtener el rango de la hoja
+        const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:Z1');
+        const numCols = range.e.c + 1;
+
+        const headerStyle = this.xlsxStyle(headerBg);
+        const altRowStyle = { fill: { fgColor: { rgb: 'FFF8FAFC' } }, font: { sz: 10 } };
+        const normalStyle = { fill: { fgColor: { rgb: 'FFFFFFFF' } }, font: { sz: 10 } };
+
+        for (let C = 0; C < numCols; C++) {
+            const addr = XLSX.utils.encode_cell({ r: 0, c: C });
+            this.setCellStyle(ws, addr, headerStyle);
+        }
+
+        for (let R = 1; R <= range.e.r; R++) {
+            const rowStyle = R % 2 === 0 ? altRowStyle : normalStyle;
+            for (let C = 0; C < numCols; C++) {
+                const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                if (ws[addr]) ws[addr].s = rowStyle;
+            }
+        }
+    }
+
     exportarCalculoExcel() {
         const wb = XLSX.utils.book_new();
 
@@ -754,8 +860,8 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
             [],
             ['1. IMPUESTO SOBRE LA RENTA (ISR FEDERAL - RESICO)'],
             ['Concepto', 'Importe / Detalle'],
-            ['Ingresos cobrados a Personas Físicas (RFC 13 caracteres)', this.ingresosCobradosPF],
-            ['Ingresos cobrados a Personas Morales (RFC 12 caracteres)', this.ingresosCobradosPM],
+            ['Ingresos cobrados a Personas Físicas', this.ingresosCobradosPF],
+            ['Ingresos cobrados a Personas Morales', this.ingresosCobradosPM],
             ['Total Ingresos Cobrados', this.ingresosCobradosTotales],
             ['Tasa Aplicable según escala mensual', this.tasaIsrInfo.porcentaje],
             ['ISR Calculado (Ingresos Totales × Tasa)', this.isrCalculado],
@@ -764,8 +870,8 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
             [],
             ['2. IMPUESTO ESTATAL (CEDULAR)'],
             ['Concepto', 'Importe / Detalle'],
-            ['Ingresos cobrados a Personas Físicas (RFC 13 caracteres)', this.ingresosCobradosPF],
-            ['Ingresos cobrados a Personas Morales (RFC 12 caracteres)', this.ingresosCobradosPM],
+            ['Ingresos cobrados a Personas Físicas', this.ingresosCobradosPF],
+            ['Ingresos cobrados a Personas Morales', this.ingresosCobradosPM],
             ['Total Ingresos Cobrados', this.ingresosCobradosTotales],
             ['Tasa Aplicable Estatal según escala', this.tasaCedularInfo.porcentaje],
             ['Impuesto Cedular Calculado (Ingresos Totales × Tasa)', this.cedularCalculado],
@@ -789,6 +895,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
 
         const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
         wsResumen['!cols'] = [{ wch: 55 }, { wch: 25 }];
+        this.styleResumenSheet(wsResumen);
         XLSX.utils.book_append_sheet(wb, wsResumen, 'Cálculo de Impuestos');
 
         // Hoja 2: CFDIs Emitidos del Mes
@@ -810,6 +917,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
             { wch: 38 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 35 },
             { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 8 }
         ];
+        this.styleDataSheet(wsEmitidos, 'FF1D4ED8'); // azul para Emitidos
         XLSX.utils.book_append_sheet(wb, wsEmitidos, 'CFDIs Emitidos');
 
         // Hoja 3: CFDIs Recibidos del Mes
@@ -828,6 +936,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
             { wch: 38 }, { wch: 14 }, { wch: 16 }, { wch: 35 },
             { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 8 }
         ];
+        this.styleDataSheet(wsRecibidos, 'FF0F766E'); // teal para Recibidos
         XLSX.utils.book_append_sheet(wb, wsRecibidos, 'CFDIs Recibidos');
 
         XLSX.writeFile(wb, `Determinacion_Impuestos_${this.nombreMesSeleccionado}_${this.calcAnio}.xlsx`);
