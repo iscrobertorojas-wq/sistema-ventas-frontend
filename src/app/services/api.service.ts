@@ -327,7 +327,7 @@ export class ApiService {
     return this.http.get<any>(`${this.baseUrl}/sat-download/tax-calculation`, { params });
   }
 
-  satSyncStatus(params?: { fecha_inicio?: string; fecha_fin?: string; tipo?: string }): Observable<any> {
+  satSyncStatus(params?: { fecha_inicio?: string; fecha_fin?: string; tipo?: string; uuid?: string }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/sat-download/sync-status`, params || {});
   }
 }

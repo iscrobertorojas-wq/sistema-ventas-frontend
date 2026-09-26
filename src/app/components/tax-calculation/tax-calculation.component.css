@@ -2037,4 +2037,69 @@ th.num-col {
     font-size: 0.75rem;
 }
 
+/* ─── Estatus SAT y Verificación individual ─── */
+.estado-cell-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.estado-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.estado-icon-mini {
+    font-size: 14px !important;
+    width: 14px !important;
+    height: 14px !important;
+    line-height: 14px !important;
+}
+
+.badge-vigente {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.badge-cancelado {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.btn-verify-single {
+    width: 26px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    line-height: 26px !important;
+    color: #64748b;
+}
+
+.btn-verify-single mat-icon {
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    line-height: 16px !important;
+}
+
+.btn-verify-single:hover {
+    color: #2563eb;
+    background: #eff6ff;
+}
+
+.pulse-icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 

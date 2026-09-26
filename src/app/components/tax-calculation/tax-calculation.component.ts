@@ -507,6 +507,30 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         });
     }
 
+    verificandoUuid: string | null = null;
+
+    sincronizarCfdiIndividual(uuid: string) {
+        if (!uuid || this.verificandoUuid) return;
+        this.verificandoUuid = uuid;
+        this.api.satSyncStatus({ uuid }).subscribe({
+            next: (res) => {
+                this.verificandoUuid = null;
+                const r = res.resultados?.[0];
+                const estado = r?.estado_sat || 'Desconocido';
+                const msg = r?.cambio
+                    ? `✓ UUID ${uuid.substring(0, 8)}... actualizado a: ${estado}`
+                    : `ℹ UUID ${uuid.substring(0, 8)}... confirmado como: ${estado}`;
+                this.snackBar.open(msg, 'Cerrar', { duration: 6000 });
+                this.loadCfdis();
+                this.loadCalculoImpuestos();
+            },
+            error: (err) => {
+                this.verificandoUuid = null;
+                this.snackBar.open(err.error?.error || 'Error al verificar con el SAT', 'Cerrar', { duration: 5000 });
+            }
+        });
+    }
+
     sincronizarEstatusSat() {
         this.sincronizandoEstado = true;
         const fi = this.dateToString(this.filtroCfdiFechaInicio);
