@@ -481,6 +481,15 @@
                                 <mat-datepicker #pickerFiltroFin></mat-datepicker>
                             </mat-form-field>
 
+                            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="select-estado-filter">
+                                <mat-label>Estatus</mat-label>
+                                <mat-select [(ngModel)]="filtroCfdiEstado" (selectionChange)="aplicarFiltrosCfdis()">
+                                    <mat-option value="">Todos los estatus</mat-option>
+                                    <mat-option value="Vigente">Sólo Vigentes</mat-option>
+                                    <mat-option value="Cancelado">Sólo Cancelados</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+
                             <div class="filter-actions">
                                 <button mat-raised-button color="primary" (click)="aplicarFiltrosCfdis()">
                                     <mat-icon>filter_list</mat-icon>
@@ -489,6 +498,10 @@
                                 <button mat-stroked-button (click)="limpiarFiltrosCfdis()">
                                     <mat-icon>clear</mat-icon>
                                     Limpiar
+                                </button>
+                                <button mat-stroked-button color="accent" (click)="sincronizarEstatusSat()" [disabled]="sincronizandoEstado" matTooltip="Verificar estado oficial con el SAT">
+                                    <mat-icon [class.pulse-icon]="sincronizandoEstado">sync</mat-icon>
+                                    {{ sincronizandoEstado ? 'Verificando...' : 'Verificar SAT' }}
                                 </button>
                                 <button mat-raised-button color="accent" (click)="openUploadModal()" class="btn-subir-tab">
                                     <mat-icon>upload_file</mat-icon>
@@ -547,6 +560,17 @@
                                         <td mat-cell *matCellDef="let row">
                                             <span class="tipo-badge" [ngClass]="row.tipo === 'emitido' ? 'badge-emitido' : 'badge-recibido'">
                                                 {{ row.tipo | titlecase }}
+                                            </span>
+                                        </td>
+                                        <td mat-footer-cell *matFooterCellDef></td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="estado_sat">
+                                        <th mat-header-cell *matHeaderCellDef>Estatus</th>
+                                        <td mat-cell *matCellDef="let row">
+                                            <span class="estado-badge" [ngClass]="row.estado_sat === 'Cancelado' ? 'badge-cancelado' : 'badge-vigente'">
+                                                <mat-icon class="estado-icon-mini">{{ row.estado_sat === 'Cancelado' ? 'cancel' : 'check_circle' }}</mat-icon>
+                                                {{ row.estado_sat || 'Vigente' }}
                                             </span>
                                         </td>
                                         <td mat-footer-cell *matFooterCellDef></td>
@@ -655,7 +679,7 @@
                                     </ng-container>
 
                                     <tr mat-header-row *matHeaderRowDef="cfdisColumns; sticky: true"></tr>
-                                    <tr mat-row *matRowDef="let row; columns: cfdisColumns;"></tr>
+                                    <tr mat-row *matRowDef="let row; columns: cfdisColumns;" [class.row-cancelado]="row.estado_sat === 'Cancelado'"></tr>
                                     <tr mat-footer-row *matFooterRowDef="cfdisColumns; sticky: true" class="table-footer-row"></tr>
                                 </table>
                             </div>
@@ -720,7 +744,7 @@
                             <div class="calc-actions-right">
                                 <span class="calc-period-badge">
                                     <mat-icon>event</mat-icon> {{ nombreMesSeleccionado }} {{ calcAnio }}
-                                    <small>({{ calcCfdis.length }} CFDIs)</small>
+                                    <small *ngIf="conteoInfo">({{ conteoInfo.total_emitidos_considerados }} Cobrados | {{ conteoInfo.recibidos_considerados }} Recibidos)</small>
                                 </span>
 
                                 <button mat-raised-button color="primary" class="btn-export-excel" (click)="exportarCalculoExcel()" [disabled]="calcLoading">
@@ -739,6 +763,80 @@
                 </div>
 
                 <div *ngIf="!calcLoading">
+                    <!-- Banner de Reglas Fiscales (PPD y Cancelados) -->
+                    <div class="calc-rules-banner" *ngIf="conteoInfo">
+                        <div class="rules-summary-chips">
+                            <span class="rule-chip chip-ppd" matTooltip="Las facturas emitidas PPD se acumulan hasta su cobro mediante Complemento de Pago">
+                                <mat-icon>schedule</mat-icon>
+                                Facturas PPD diferidas: <strong>{{ conteoInfo.ppd_excluidos }}</strong>
+                            </span>
+                            <span class="rule-chip chip-pagos" matTooltip="Complementos de Pago PPD con fecha de pago en este mes">
+                                <mat-icon>payments</mat-icon>
+                                Pagos PPD cobrados: <strong>{{ conteoInfo.emitidos_pagos_ppd }}</strong>
+                            </span>
+                            <span class="rule-chip chip-cancelados" matTooltip="CFDIs cancelados ante el SAT excluidos del cálculo">
+                                <mat-icon>block</mat-icon>
+                                Cancelados excluidos: <strong>{{ conteoInfo.cancelados_excluidos }}</strong>
+                            </span>
+                        </div>
+
+                        <button mat-stroked-button class="btn-toggle-detalle" (click)="verDetalleEmitidos = !verDetalleEmitidos">
+                            <mat-icon>{{ verDetalleEmitidos ? 'expand_less' : 'expand_more' }}</mat-icon>
+                            {{ verDetalleEmitidos ? 'Ocultar comprobantes considerados' : 'Ver comprobantes considerados (' + calcEmitidos.length + ')' }}
+                        </button>
+                    </div>
+
+                    <!-- Tabla colapsable con desglose de comprobantes considerados -->
+                    <mat-card class="calc-detalle-card" *ngIf="verDetalleEmitidos && calcEmitidos.length > 0">
+                        <mat-card-header>
+                            <mat-card-title style="font-size: 1rem; font-weight: 600;">
+                                Comprobantes de Ingreso Considerados en {{ nombreMesSeleccionado }} {{ calcAnio }}
+                            </mat-card-title>
+                            <mat-card-subtitle>Facturas PUE emitidas y Pagos de facturas PPD cobrados en este mes</mat-card-subtitle>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <div class="table-scroll-container">
+                                <table class="detalle-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Origen</th>
+                                            <th>Folio Fiscal (UUID)</th>
+                                            <th>Factura PPD Relacionada</th>
+                                            <th>Fecha Efectiva</th>
+                                            <th>Receptor</th>
+                                            <th class="num-col">Subtotal</th>
+                                            <th class="num-col">IVA</th>
+                                            <th class="num-col">Ret. ISR</th>
+                                            <th class="num-col">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let c of calcEmitidos">
+                                            <td>
+                                                <span class="origen-badge" [ngClass]="c.origen === 'PPD_PAGO' ? 'badge-pago-ppd' : 'badge-pue-directo'">
+                                                    {{ c.origen === 'PPD_PAGO' ? 'Pago PPD' : 'Factura PUE' }}
+                                                </span>
+                                            </td>
+                                            <td class="uuid-cell" [matTooltip]="c.uuid">{{ c.uuid | slice:0:15 }}...</td>
+                                            <td class="uuid-cell" [matTooltip]="c.uuid_relacionado || '—'">
+                                                {{ c.uuid_relacionado ? (c.uuid_relacionado | slice:0:15) + '...' : '—' }}
+                                            </td>
+                                            <td>{{ (c.origen === 'PPD_PAGO' ? c.fecha_pago : c.fecha_emision) | date:'dd/MM/yyyy' }}</td>
+                                            <td>
+                                                <strong>{{ c.rfc_receptor }}</strong>
+                                                <small class="tipo-rec-label">({{ c.tipo_receptor }})</small>
+                                            </td>
+                                            <td class="num-col font-bold">{{ formatCurrency(c.subtotal) }}</td>
+                                            <td class="num-col">{{ formatCurrency(c.iva) }}</td>
+                                            <td class="num-col" [class.text-retencion]="c.ret_isr > 0">{{ formatCurrency(c.ret_isr) }}</td>
+                                            <td class="num-col font-bold">{{ formatCurrency(c.total) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+
                     <!-- Tarjetas KPI de Resumen -->
                     <div class="calc-kpi-grid">
                         <!-- KPI 1: ISR Federal -->

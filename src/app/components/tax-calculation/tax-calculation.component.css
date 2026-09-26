@@ -1867,3 +1867,174 @@ th.num-col {
     font-variant-numeric: tabular-nums;
 }
 
+/* ─── Estatus SAT Badges ─── */
+.select-estado-filter {
+    min-width: 170px;
+}
+
+.estado-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.estado-icon-mini {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.badge-vigente {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.badge-cancelado {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.row-cancelado {
+    background-color: #fef2f2 !important;
+    opacity: 0.72;
+}
+
+.row-cancelado td {
+    color: #94a3b8;
+}
+
+.row-cancelado .uuid-cell,
+.row-cancelado strong {
+    text-decoration: line-through;
+    color: #94a3b8 !important;
+}
+
+/* ─── Banner de Reglas Fiscales (PPD y Cancelados) ─── */
+.calc-rules-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+}
+
+.rules-summary-chips {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.rule-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.rule-chip mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.chip-ppd {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #dbeafe;
+}
+
+.chip-pagos {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #dcfce7;
+}
+
+.chip-cancelados {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fee2e2;
+}
+
+.btn-toggle-detalle {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+/* ─── Tabla Desglose de Comprobantes Considerados ─── */
+.calc-detalle-card {
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.detalle-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.detalle-table th {
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 600;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.detalle-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+}
+
+.detalle-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.origen-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.badge-pue-directo {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.badge-pago-ppd {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.tipo-rec-label {
+    margin-left: 6px;
+    color: #64748b;
+    font-size: 0.75rem;
+}
+
+

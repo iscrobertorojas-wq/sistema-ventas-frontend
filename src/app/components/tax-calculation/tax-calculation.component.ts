@@ -103,6 +103,10 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     pageSizeOptions: number[] = [50, 100, 1000];
     pageIndex: number = 0;
 
+    // Filtro estado SAT
+    filtroCfdiEstado: string = '';
+    sincronizandoEstado: boolean = false;
+
     // Columnas tabla historial
     historialColumns = ['tipo', 'periodo', 'total_cfdis', 'estado', 'fecha', 'acciones'];
 
@@ -110,6 +114,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     cfdisColumns = [
         'uuid',
         'tipo',
+        'estado_sat',
         'rfc_emisor',
         'rfc_receptor',
         'fecha_emision',
@@ -386,13 +391,21 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
                 this.descargandoIds.delete(item.id);
                 const nuevos = res.cfdis_nuevos ?? 0;
                 const duplicados = res.cfdis_duplicados ?? 0;
-                let msg = `✓ Descarga completa: ${nuevos} CFDIs nuevos guardados.`;
-                if (duplicados > 0) {
+                const canceladosActualizados = res.cfdis_cancelados_actualizados ?? 0;
+                const canceladosNuevos = res.cfdis_cancelados_nuevos ?? 0;
+                let msg = `✓ Descarga completa: ${nuevos} CFDIs guardados`;
+                if (canceladosNuevos > 0) {
+                    msg += ` (${canceladosNuevos} cancelados)`;
+                }
+                if (canceladosActualizados > 0) {
+                    msg += `. ${canceladosActualizados} CFDIs actualizados a Cancelado en BD.`;
+                } else if (duplicados > 0) {
                     msg += ` (${duplicados} omitidos por ya existir previamente).`;
                 }
                 this.snackBar.open(msg, 'Cerrar', { duration: 6000 });
                 this.loadHistorial();
                 this.loadCfdis();
+                this.loadCalculoImpuestos();
             },
             error: (err) => {
                 this.descargandoIds.delete(item.id);
@@ -482,6 +495,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         this.pageIndex = 0; // reset al filtrar
         const params: any = {};
         if (this.filtroCfdiTipo) params.tipo = this.filtroCfdiTipo;
+        if (this.filtroCfdiEstado) params.estado_sat = this.filtroCfdiEstado;
         const fi = this.dateToString(this.filtroCfdiFechaInicio);
         const ff = this.dateToString(this.filtroCfdiFechaFin);
         if (fi) params.fecha_inicio = fi;
@@ -493,12 +507,36 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         });
     }
 
+    sincronizarEstatusSat() {
+        this.sincronizandoEstado = true;
+        const fi = this.dateToString(this.filtroCfdiFechaInicio);
+        const ff = this.dateToString(this.filtroCfdiFechaFin);
+        const params: any = {};
+        if (fi) params.fecha_inicio = fi;
+        if (ff) params.fecha_fin = ff;
+        if (this.filtroCfdiTipo) params.tipo = this.filtroCfdiTipo;
+
+        this.api.satSyncStatus(params).subscribe({
+            next: (res) => {
+                this.sincronizandoEstado = false;
+                this.snackBar.open(`✓ ${res.message}`, 'Cerrar', { duration: 6000 });
+                this.loadCfdis();
+                this.loadCalculoImpuestos();
+            },
+            error: (err) => {
+                this.sincronizandoEstado = false;
+                this.snackBar.open(err.error?.error || 'Error al sincronizar estatus con el SAT', 'Cerrar', { duration: 5000 });
+            }
+        });
+    }
+
     aplicarFiltrosCfdis() {
         this.loadCfdis();
     }
 
     limpiarFiltrosCfdis() {
         this.filtroCfdiTipo = '';
+        this.filtroCfdiEstado = '';
         this.filtroCfdiFechaInicio = null;
         this.filtroCfdiFechaFin = null;
         this.loadCfdis();
@@ -572,22 +610,33 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
 
     anios: number[] = [2024, 2025, 2026, 2027, 2028];
 
+    calculoData: any = null;
+    resumenCalculo: any = null;
+    calcEmitidos: any[] = [];
+    calcRecibidos: any[] = [];
+    ppdExcluidos: any[] = [];
+    canceladosExcluidos: any[] = [];
+    conteoInfo: any = null;
+    verDetalleEmitidos: boolean = false;
+
     loadCalculoImpuestos() {
         this.calcLoading = true;
-        const mesStr = String(this.calcMes).padStart(2, '0');
-        const lastDay = new Date(this.calcAnio, this.calcMes, 0).getDate();
-        const fecha_inicio = `${this.calcAnio}-${mesStr}-01`;
-        const fecha_fin = `${this.calcAnio}-${mesStr}-${String(lastDay).padStart(2, '0')}`;
-
-        this.api.satGetCfdis({ fecha_inicio, fecha_fin }).subscribe({
+        this.api.satGetCalculoImpuestos(this.calcAnio, this.calcMes).subscribe({
             next: (data) => {
-                this.calcCfdis = data || [];
+                this.calculoData = data;
+                this.resumenCalculo = data.resumen;
+                this.calcEmitidos = data.emitidos || [];
+                this.calcRecibidos = data.recibidos || [];
+                this.ppdExcluidos = data.ppd_excluidos || [];
+                this.canceladosExcluidos = data.cancelados_excluidos || [];
+                this.conteoInfo = data.conteo;
+                this.calcCfdis = [...this.calcEmitidos, ...this.calcRecibidos];
                 this.calcLoading = false;
             },
             error: (err) => {
-                console.error('[Cálculo Impuestos] Error cargando CFDIs del mes:', err);
+                console.error('[Cálculo Impuestos] Error cargando determinación:', err);
                 this.calcLoading = false;
-                this.snackBar.open('Error al cargar CFDIs para el cálculo mensual', 'Cerrar', { duration: 4000 });
+                this.snackBar.open('Error al cargar datos para el cálculo mensual', 'Cerrar', { duration: 4000 });
             }
         });
     }
@@ -617,39 +666,31 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         return m ? m.nombre : '';
     }
 
-    // CFDIs del mes
-    get calcEmitidos(): any[] {
-        return this.calcCfdis.filter(c => c.tipo === 'emitido');
-    }
-
-    get calcRecibidos(): any[] {
-        return this.calcCfdis.filter(c => c.tipo === 'recibido');
-    }
-
     // Separación de emitidos por tipo de receptor (Física = 13 caracteres, Moral = 12 caracteres)
     get calcEmitidosPF(): any[] {
-        return this.calcEmitidos.filter(c => ((c.rfc_receptor || '').trim().length === 13));
+        return this.calcEmitidos.filter(c => c.es_persona_fisica || (!c.es_persona_moral && (c.rfc_receptor || '').trim().length === 13));
     }
 
     get calcEmitidosPM(): any[] {
-        return this.calcEmitidos.filter(c => ((c.rfc_receptor || '').trim().length === 12));
+        return this.calcEmitidos.filter(c => c.es_persona_moral || (c.rfc_receptor || '').trim().length === 12);
     }
 
     // Subtotales cobrados
     get ingresosCobradosPF(): number {
-        return this.calcEmitidosPF.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0);
+        return this.resumenCalculo ? this.resumenCalculo.ingresosCobradosPF : this.calcEmitidosPF.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0);
     }
 
     get ingresosCobradosPM(): number {
-        return this.calcEmitidosPM.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0);
+        return this.resumenCalculo ? this.resumenCalculo.ingresosCobradosPM : this.calcEmitidosPM.reduce((s, c) => s + parseFloat(c.subtotal || 0), 0);
     }
 
     get ingresosCobradosTotales(): number {
-        return this.ingresosCobradosPF + this.ingresosCobradosPM;
+        return this.resumenCalculo ? this.resumenCalculo.ingresosCobradosTotales : (this.ingresosCobradosPF + this.ingresosCobradosPM);
     }
 
     // ─── 1. ISR Federal (RESICO) ───
     get tasaIsrInfo(): { tasa: number; porcentaje: string; tope: number } {
+        if (this.resumenCalculo?.tasaIsrInfo) return this.resumenCalculo.tasaIsrInfo;
         const ing = this.ingresosCobradosTotales;
         if (ing <= 25000) return { tasa: 0.01, porcentaje: '1.00%', tope: 25000 };
         if (ing <= 50000) return { tasa: 0.011, porcentaje: '1.10%', tope: 50000 };
@@ -659,19 +700,20 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     }
 
     get isrCalculado(): number {
-        return Math.round(this.ingresosCobradosTotales * this.tasaIsrInfo.tasa * 100) / 100;
+        return this.resumenCalculo ? this.resumenCalculo.isrCalculado : Math.round(this.ingresosCobradosTotales * this.tasaIsrInfo.tasa * 100) / 100;
     }
 
     get isrRetenido(): number {
-        return Math.round(this.ingresosCobradosPM * 0.0125 * 100) / 100;
+        return this.resumenCalculo ? this.resumenCalculo.isrRetenido : Math.round(this.ingresosCobradosPM * 0.0125 * 100) / 100;
     }
 
     get isrFederalAPagar(): number {
-        return Math.max(0, Math.round((this.isrCalculado - this.isrRetenido) * 100) / 100);
+        return this.resumenCalculo ? this.resumenCalculo.isrFederalAPagar : Math.max(0, Math.round((this.isrCalculado - this.isrRetenido) * 100) / 100);
     }
 
     // ─── 2. Impuesto Estatal (Cedular) ───
     get tasaCedularInfo(): { tasa: number; porcentaje: string; tope: number } {
+        if (this.resumenCalculo?.tasaCedularInfo) return this.resumenCalculo.tasaCedularInfo;
         const ing = this.ingresosCobradosTotales;
         if (ing <= 25000) return { tasa: 0.02, porcentaje: '2.00%', tope: 25000 };
         if (ing <= 50000) return { tasa: 0.021, porcentaje: '2.10%', tope: 50000 };
@@ -681,37 +723,37 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     }
 
     get cedularCalculado(): number {
-        return Math.round(this.ingresosCobradosTotales * this.tasaCedularInfo.tasa * 100) / 100;
+        return this.resumenCalculo ? this.resumenCalculo.cedularCalculado : Math.round(this.ingresosCobradosTotales * this.tasaCedularInfo.tasa * 100) / 100;
     }
 
     get cedularRetenido(): number {
-        return this.calcEmitidos.reduce((s, c) => s + parseFloat(c.ret_cedular || 0), 0);
+        return this.resumenCalculo ? this.resumenCalculo.cedularRetenido : this.calcEmitidos.reduce((s, c) => s + parseFloat(c.ret_cedular || 0), 0);
     }
 
     get impuestoEstatalAPagar(): number {
-        return Math.max(0, Math.round((this.cedularCalculado - this.cedularRetenido) * 100) / 100);
+        return this.resumenCalculo ? this.resumenCalculo.impuestoEstatalAPagar : Math.max(0, Math.round((this.cedularCalculado - this.cedularRetenido) * 100) / 100);
     }
 
     // ─── 3. IVA ───
     get ivaEmitidos(): number {
-        return this.calcEmitidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0);
+        return this.resumenCalculo ? this.resumenCalculo.ivaEmitidos : this.calcEmitidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0);
     }
 
     get ivaRecibidos(): number {
-        return this.calcRecibidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0);
+        return this.resumenCalculo ? this.resumenCalculo.ivaRecibidos : this.calcRecibidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0);
     }
 
     get ivaAPagar(): number {
-        return Math.round((this.ivaEmitidos - this.ivaRecibidos) * 100) / 100;
+        return this.resumenCalculo ? this.resumenCalculo.ivaAPagar : Math.round((this.ivaEmitidos - this.ivaRecibidos) * 100) / 100;
     }
 
     // ─── 4. Totales Generales ───
     get impuestoFederalTotal(): number {
-        return Math.max(0, this.ivaAPagar) + this.isrFederalAPagar;
+        return this.resumenCalculo ? this.resumenCalculo.impuestoFederalTotal : Math.max(0, this.ivaAPagar) + this.isrFederalAPagar;
     }
 
     get granTotalImpuestos(): number {
-        return this.impuestoFederalTotal + this.impuestoEstatalAPagar;
+        return this.resumenCalculo ? this.resumenCalculo.granTotalImpuestos : this.impuestoFederalTotal + this.impuestoEstatalAPagar;
     }
 
     // ─── Exportación a Excel (.xlsx) con estilos de color ───
@@ -731,7 +773,6 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     private styleResumenSheet(ws: XLSX.WorkSheet) {
         // Fila 1: Título principal — azul marino oscuro
         const titleStyle = this.xlsxStyle('FF1E3A5F');
-        const titleStyle2 = this.xlsxStyle('FF1E3A5F', 'FFFFFFFF', false);
         this.setCellStyle(ws, 'A1', { ...titleStyle, font: { bold: true, color: { rgb: 'FFFFFFFF' }, sz: 14 } });
         this.setCellStyle(ws, 'B1', titleStyle);
 
@@ -741,25 +782,23 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         ['A2','B2','A3','B3','A4','B4'].forEach(c => this.setCellStyle(ws, c, metaStyleB));
 
         // Sección ISR (filas 6-14): encabezado sección en azul, sub-header en gris, final en verde oscuro
-        const isrHeaderStyle = this.xlsxStyle('FF2563EB');         // azul vibrante
-        const isrColHeaderStyle = this.xlsxStyle('FFD1D5DB', 'FF111827');  // gris claro
-        const isrFinalStyle = this.xlsxStyle('FF065F46');          // verde oscuro resultado
+        const isrHeaderStyle = this.xlsxStyle('FF2563EB');
+        const isrColHeaderStyle = this.xlsxStyle('FFD1D5DB', 'FF111827');
+        const isrFinalStyle = this.xlsxStyle('FF065F46');
         const isrSubtotalStyle = this.xlsxStyle('FFEFF6FF', 'FF1E3A5F');
         this.setCellStyle(ws, 'A6', isrHeaderStyle);
         this.setCellStyle(ws, 'B6', isrHeaderStyle);
         this.setCellStyle(ws, 'A7', isrColHeaderStyle);
         this.setCellStyle(ws, 'B7', isrColHeaderStyle);
-        // Subtotal ISR (fila 10)
         this.setCellStyle(ws, 'A10', isrSubtotalStyle);
         this.setCellStyle(ws, 'B10', isrSubtotalStyle);
-        // Resultado ISR (fila 14)
         this.setCellStyle(ws, 'A14', isrFinalStyle);
         this.setCellStyle(ws, 'B14', isrFinalStyle);
 
         // Sección Cedular (filas 16-24): encabezado en naranja oscuro
-        const cedHeaderStyle = this.xlsxStyle('FFD97706');         // ámbar/naranja
+        const cedHeaderStyle = this.xlsxStyle('FFD97706');
         const cedColHeaderStyle = this.xlsxStyle('FFFEF3C7', 'FF78350F');
-        const cedFinalStyle = this.xlsxStyle('FF7C2D12');          // café oscuro resultado
+        const cedFinalStyle = this.xlsxStyle('FF7C2D12');
         const cedSubtotalStyle = this.xlsxStyle('FFFEF9EE', 'FF78350F');
         this.setCellStyle(ws, 'A16', cedHeaderStyle);
         this.setCellStyle(ws, 'B16', cedHeaderStyle);
@@ -781,25 +820,22 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         this.setCellStyle(ws, 'A30', ivaFinalStyle);
         this.setCellStyle(ws, 'B30', ivaFinalStyle);
 
-        // Sección Resumen (filas 32-38): encabezado en gris oscuro, gran total en rojo
+        // Sección Resumen (filas 32-38): encabezado en gris oscuro, gran total en azul profundo
         const resHeaderStyle = this.xlsxStyle('FF374151');
         const resColHeaderStyle = this.xlsxStyle('FFF3F4F6', 'FF111827');
         const resFederalStyle = this.xlsxStyle('FF1D4ED8', 'FFFFFFFF');
-        const granTotalStyle = this.xlsxStyle('FF0F172A', 'FFFFF0A0');    // negro con amarillo
+        const granTotalStyle = this.xlsxStyle('FF0F172A', 'FFFFF0A0');
         this.setCellStyle(ws, 'A32', resHeaderStyle);
         this.setCellStyle(ws, 'B32', resHeaderStyle);
         this.setCellStyle(ws, 'A33', resColHeaderStyle);
         this.setCellStyle(ws, 'B33', resColHeaderStyle);
-        // Total federal (fila 36)
         this.setCellStyle(ws, 'A36', resFederalStyle);
         this.setCellStyle(ws, 'B36', resFederalStyle);
-        // Gran total (fila 38)
         this.setCellStyle(ws, 'A38', granTotalStyle);
         this.setCellStyle(ws, 'B38', granTotalStyle);
     }
 
     private styleDataSheet(ws: XLSX.WorkSheet, headerBg: string) {
-        // Obtener el rango de la hoja
         const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:Z1');
         const numCols = range.e.c + 1;
 
@@ -826,15 +862,15 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
 
         // Hoja 1: Resumen de Determinación de Impuestos
         const resumenData = [
-            ['DETERMINACIÓN MENSUAL DE IMPUESTOS'],
+            ['DETERMINACIÓN MENSUAL DE IMPUESTOS (FLUJO DE EFECTIVO)'],
             ['Periodo:', `${this.nombreMesSeleccionado} ${this.calcAnio}`],
             ['Fecha de Cálculo:', new Date().toLocaleDateString('es-MX')],
             ['Contribuyente (RFC):', this.fielStatus?.rfc || '—'],
             [],
             ['1. IMPUESTO SOBRE LA RENTA (ISR FEDERAL - RESICO)'],
             ['Concepto', 'Importe / Detalle'],
-            ['Ingresos cobrados a Personas Físicas', this.ingresosCobradosPF],
-            ['Ingresos cobrados a Personas Morales', this.ingresosCobradosPM],
+            ['Ingresos cobrados a Personas Físicas (PUE + Pagos PPD)', this.ingresosCobradosPF],
+            ['Ingresos cobrados a Personas Morales (PUE + Pagos PPD)', this.ingresosCobradosPM],
             ['Total Ingresos Cobrados', this.ingresosCobradosTotales],
             ['Tasa Aplicable según escala mensual', this.tasaIsrInfo.porcentaje],
             ['ISR Calculado (Ingresos Totales × Tasa)', this.isrCalculado],
@@ -853,8 +889,8 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
             [],
             ['3. IMPUESTO AL VALOR AGREGADO (IVA)'],
             ['Concepto', 'Importe / Detalle'],
-            ['IVA Trasladado (Facturas Emitidas)', this.ivaEmitidos],
-            ['(-) IVA Acreditable (Facturas Recibidas / Gastos)', this.ivaRecibidos],
+            ['IVA Trasladado (Facturas PUE + Pagos PPD cobrados)', this.ivaEmitidos],
+            ['(-) IVA Acreditable (Facturas Recibidas Vigentes / Gastos)', this.ivaRecibidos],
             ['(=) IVA A PAGAR (o a Favor)', this.ivaAPagar],
             [],
             ['4. RESUMEN GENERAL DE OBLIGACIONES FISCALES'],
@@ -871,11 +907,15 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         this.styleResumenSheet(wsResumen);
         XLSX.utils.book_append_sheet(wb, wsResumen, 'Cálculo de Impuestos');
 
-        // Hoja 2: CFDIs Emitidos del Mes
+        // Hoja 2: CFDIs Emitidos y Complementos de Pago del Mes
         const emitidosData = this.calcEmitidos.map(c => ({
             'Folio Fiscal (UUID)': c.uuid,
-            'Fecha Emisión': c.fecha_emision ? c.fecha_emision.substring(0, 10) : '',
-            'Tipo Receptor': (c.rfc_receptor || '').trim().length === 13 ? 'Persona Física' : ((c.rfc_receptor || '').trim().length === 12 ? 'Persona Moral' : 'Otro'),
+            'Origen / Tipo': c.origen === 'PPD_PAGO' ? 'Complemento de Pago (PPD)' : 'Factura PUE',
+            'UUID Factura Relacionada': c.uuid_relacionado || '—',
+            'Fecha Efectiva': c.origen === 'PPD_PAGO'
+                ? (c.fecha_pago ? c.fecha_pago.substring(0, 10) : '')
+                : (c.fecha_emision ? c.fecha_emision.substring(0, 10) : ''),
+            'Tipo Receptor': c.tipo_receptor || ((c.rfc_receptor || '').trim().length === 13 ? 'Persona Física' : 'Persona Moral'),
             'RFC Receptor': c.rfc_receptor || '',
             'Nombre Receptor': c.nombre_receptor || '',
             'Subtotal': parseFloat(c.subtotal || 0),
@@ -887,13 +927,13 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         }));
         const wsEmitidos = XLSX.utils.json_to_sheet(emitidosData);
         wsEmitidos['!cols'] = [
-            { wch: 38 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 35 },
+            { wch: 38 }, { wch: 25 }, { wch: 38 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 35 },
             { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 8 }
         ];
         this.styleDataSheet(wsEmitidos, 'FF1D4ED8'); // azul para Emitidos
-        XLSX.utils.book_append_sheet(wb, wsEmitidos, 'CFDIs Emitidos');
+        XLSX.utils.book_append_sheet(wb, wsEmitidos, 'Emitidos y Pagos');
 
-        // Hoja 3: CFDIs Recibidos del Mes
+        // Hoja 3: CFDIs Recibidos del Mes (Vigentes)
         const recibidosData = this.calcRecibidos.map(c => ({
             'Folio Fiscal (UUID)': c.uuid,
             'Fecha Emisión': c.fecha_emision ? c.fecha_emision.substring(0, 10) : '',
@@ -910,7 +950,39 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
             { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 8 }
         ];
         this.styleDataSheet(wsRecibidos, 'FF0F766E'); // teal para Recibidos
-        XLSX.utils.book_append_sheet(wb, wsRecibidos, 'CFDIs Recibidos');
+        XLSX.utils.book_append_sheet(wb, wsRecibidos, 'Recibidos (Gastos)');
+
+        // Hoja 4: CFDIs Excluidos del Cálculo (PPD no cobrados y Cancelados)
+        if (this.ppdExcluidos.length > 0 || this.canceladosExcluidos.length > 0) {
+            const excluidosData = [
+                ...this.ppdExcluidos.map(c => ({
+                    'Folio Fiscal (UUID)': c.uuid,
+                    'Motivo de Exclusión': 'Factura PPD diferida (se acumula hasta su pago)',
+                    'Fecha Emisión': c.fecha_emision ? c.fecha_emision.substring(0, 10) : '',
+                    'RFC Receptor': c.rfc_receptor || '',
+                    'Nombre Receptor': c.nombre_receptor || '',
+                    'Subtotal': parseFloat(c.subtotal || 0),
+                    'IVA': parseFloat(c.iva || 0),
+                    'Total': parseFloat(c.total || 0)
+                })),
+                ...this.canceladosExcluidos.map(c => ({
+                    'Folio Fiscal (UUID)': c.uuid,
+                    'Motivo de Exclusión': 'Comprobante Cancelado ante el SAT',
+                    'Fecha Emisión': c.fecha_emision ? c.fecha_emision.substring(0, 10) : '',
+                    'RFC Receptor': c.rfc_receptor || c.rfc_emisor || '',
+                    'Nombre Receptor': c.nombre_receptor || '',
+                    'Subtotal': parseFloat(c.subtotal || 0),
+                    'IVA': parseFloat(c.iva || 0),
+                    'Total': parseFloat(c.total || 0)
+                }))
+            ];
+            const wsExcluidos = XLSX.utils.json_to_sheet(excluidosData);
+            wsExcluidos['!cols'] = [
+                { wch: 38 }, { wch: 45 }, { wch: 14 }, { wch: 16 }, { wch: 35 }, { wch: 14 }, { wch: 14 }, { wch: 14 }
+            ];
+            this.styleDataSheet(wsExcluidos, 'FF6B7280'); // gris para Excluidos
+            XLSX.utils.book_append_sheet(wb, wsExcluidos, 'CFDIs Excluidos');
+        }
 
         XLSX.writeFile(wb, `Determinacion_Impuestos_${this.nombreMesSeleccionado}_${this.calcAnio}.xlsx`);
         this.snackBar.open(`✓ Hoja de cálculo descargada: Determinacion_Impuestos_${this.nombreMesSeleccionado}_${this.calcAnio}.xlsx`, 'OK', { duration: 4000 });

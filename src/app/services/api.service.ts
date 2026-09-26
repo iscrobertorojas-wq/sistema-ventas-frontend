@@ -305,11 +305,12 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/sat-download/history`);
   }
 
-  satGetCfdis(params?: { tipo?: string; fecha_inicio?: string; fecha_fin?: string }): Observable<any[]> {
+  satGetCfdis(params?: { tipo?: string; fecha_inicio?: string; fecha_fin?: string; estado_sat?: string }): Observable<any[]> {
     let httpParams = new HttpParams();
     if (params?.tipo) httpParams = httpParams.set('tipo', params.tipo);
     if (params?.fecha_inicio) httpParams = httpParams.set('fecha_inicio', params.fecha_inicio);
     if (params?.fecha_fin) httpParams = httpParams.set('fecha_fin', params.fecha_fin);
+    if (params?.estado_sat) httpParams = httpParams.set('estado_sat', params.estado_sat);
     return this.http.get<any[]>(`${this.baseUrl}/sat-download/cfdi-list`, { params: httpParams });
   }
 
@@ -319,6 +320,15 @@ export class ApiService {
 
   satUploadCfdis(formData: FormData): Observable<any> {
     return this.http.post(`${this.baseUrl}/sat-download/upload`, formData);
+  }
+
+  satGetCalculoImpuestos(anio: number, mes: number): Observable<any> {
+    const params = new HttpParams().set('anio', String(anio)).set('mes', String(mes));
+    return this.http.get<any>(`${this.baseUrl}/sat-download/tax-calculation`, { params });
+  }
+
+  satSyncStatus(params?: { fecha_inicio?: string; fecha_fin?: string; tipo?: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sat-download/sync-status`, params || {});
   }
 }
 
