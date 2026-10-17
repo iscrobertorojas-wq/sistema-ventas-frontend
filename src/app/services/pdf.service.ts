@@ -1035,22 +1035,60 @@ export class PdfService {
         const emisorEl = findFirst(xmlDoc, 'Emisor');
         const receptorEl = findFirst(xmlDoc, 'Receptor');
         const timbreEl = findFirst(xmlDoc, 'TimbreFiscalDigital');
-        const impuestosEl = findFirst(xmlDoc, 'Impuestos');
 
-        // Conceptos
+        // El elemento global <cfdi:Impuestos> es hijo directo de <cfdi:Comprobante>
+        let globalImpuestosEl: Element | null = null;
+        if (comprobanteEl) {
+            for (let i = 0; i < comprobanteEl.children.length; i++) {
+                const child = comprobanteEl.children[i];
+                if (child.localName === 'Impuestos') {
+                    globalImpuestosEl = child;
+                    break;
+                }
+            }
+        }
+        if (!globalImpuestosEl) {
+            const allImpuestos = findAll(xmlDoc, 'Impuestos');
+            globalImpuestosEl = allImpuestos.find(el => 
+                el.hasAttribute('TotalImpuestosTrasladados') || 
+                el.hasAttribute('TotalImpuestosRetenidos') ||
+                el.parentElement?.localName === 'Comprobante'
+            ) || null;
+        }
+
+        // Conceptos y acumulación de impuestos por concepto
+        const conceptTrasladosList: any[] = [];
+        const conceptRetencionesList: any[] = [];
+
         const conceptosList = findAll(xmlDoc, 'Concepto');
-        const conceptos = conceptosList.map(c => {
-            const traslados = findAll(c, 'Traslado').map(t => {
+        const conceptos = conceptosList.map((c: any) => {
+            const traslados = findAll(c, 'Traslado').map((t: any) => {
                 const imp = getAttr(t, 'Impuesto');
-                const impName = imp === '002' ? 'IVA' : (imp === '001' ? 'ISR' : imp);
-                const monto = parseFloat(getAttr(t, 'Importe') || '0').toFixed(2);
-                return `${imp} ${impName} ${monto}`;
+                const impName = imp === '002' ? 'IVA' : (imp === '001' ? 'ISR' : (imp === '003' ? 'IEPS' : imp));
+                const importe = parseFloat(getAttr(t, 'Importe') || '0');
+                const tasa = getAttr(t, 'TasaOCuota') || '';
+                const tipoFactor = getAttr(t, 'TipoFactor') || 'Tasa';
+                conceptTrasladosList.push({
+                    impuesto: imp,
+                    tipoFactor,
+                    tasaOCuota: tasa,
+                    importe
+                });
+                return `${imp} ${impName} ${importe.toFixed(2)}`;
             });
-            const retenciones = findAll(c, 'Retencion').map(r => {
+            const retenciones = findAll(c, 'Retencion').map((r: any) => {
                 const imp = getAttr(r, 'Impuesto');
                 const impName = imp === '002' ? 'Ret. IVA' : (imp === '001' ? 'Ret. ISR' : imp);
-                const monto = parseFloat(getAttr(r, 'Importe') || '0').toFixed(2);
-                return `${imp} ${impName} ${monto}`;
+                const importe = parseFloat(getAttr(r, 'Importe') || '0');
+                const tasa = getAttr(r, 'TasaOCuota') || '';
+                const tipoFactor = getAttr(r, 'TipoFactor') || 'Tasa';
+                conceptRetencionesList.push({
+                    impuesto: imp,
+                    tipoFactor,
+                    tasaOCuota: tasa,
+                    importe
+                });
+                return `${imp} ${impName} ${importe.toFixed(2)}`;
             });
 
             const objetoImp = getAttr(c, 'ObjetoImp');
@@ -1074,14 +1112,52 @@ export class PdfService {
             };
         });
 
-        // Detalle de impuestos globales
+        // Totales de impuestos
+        let totalTraslados = 0;
+        let totalRetencionesFederales = 0;
+
+        if (globalImpuestosEl) {
+            totalTraslados = parseFloat(getAttr(globalImpuestosEl, 'TotalImpuestosTrasladados') || '0');
+            totalRetencionesFederales = parseFloat(getAttr(globalImpuestosEl, 'TotalImpuestosRetenidos') || '0');
+        }
+
+        if (totalTraslados === 0 && conceptTrasladosList.length > 0) {
+            totalTraslados = conceptTrasladosList.reduce((acc, t) => acc + t.importe, 0);
+        }
+        if (totalRetencionesFederales === 0 && conceptRetencionesList.length > 0) {
+            totalRetencionesFederales = conceptRetencionesList.reduce((acc, r) => acc + r.importe, 0);
+        }
+
+        // Impuestos Locales (ej. Impuesto Estatal Cedular)
+        let totalRetencionesLocales = 0;
+        const retencionesLocalesRows: any[] = [];
+        const retencionesLocalesEls = findAll(xmlDoc, 'RetencionesLocales');
+        retencionesLocalesEls.forEach(rl => {
+            const impName = getAttr(rl, 'ImpLocRetenido') || 'Cedular';
+            const tasa = parseFloat(getAttr(rl, 'TasadeRetencion') || '0');
+            const tasaNorm = tasa > 1 ? (tasa / 100).toFixed(6) : tasa.toFixed(6);
+            const importe = parseFloat(getAttr(rl, 'Importe') || '0');
+            totalRetencionesLocales += importe;
+            retencionesLocalesRows.push({
+                clave: 'cedular',
+                impuesto: `Impuesto Estatal ${impName.charAt(0).toUpperCase() + impName.slice(1)}`,
+                tipo: 'Retención',
+                factor: 'Tasa',
+                tasaOCuota: tasaNorm,
+                importe
+            });
+        });
+
+        const totalRetenciones = Math.round((totalRetencionesFederales + totalRetencionesLocales) * 100) / 100;
+        totalTraslados = Math.round(totalTraslados * 100) / 100;
+
+        // Detalle de impuestos para la tabla
         const trasladosGlobales: any[] = [];
         const retencionesGlobales: any[] = [];
 
-        if (impuestosEl) {
-            // Find direct or descendant traslados/retenciones
-            const trasladosEls = findAll(impuestosEl, 'Traslado');
-            trasladosEls.forEach(t => {
+        // 1. Traslados
+        if (globalImpuestosEl && findAll(globalImpuestosEl, 'Traslado').length > 0) {
+            findAll(globalImpuestosEl, 'Traslado').forEach((t: any) => {
                 const imp = getAttr(t, 'Impuesto');
                 const impName = imp === '002' ? 'IVA' : (imp === '001' ? 'ISR' : (imp === '003' ? 'IEPS' : imp));
                 trasladosGlobales.push({
@@ -1093,38 +1169,59 @@ export class PdfService {
                     importe: parseFloat(getAttr(t, 'Importe') || '0')
                 });
             });
+        } else if (conceptTrasladosList.length > 0) {
+            const mapT: { [k: string]: any } = {};
+            conceptTrasladosList.forEach(t => {
+                const k = `${t.impuesto}_${t.tipoFactor}_${t.tasaOCuota}`;
+                if (!mapT[k]) {
+                    const impName = t.impuesto === '002' ? 'IVA' : (t.impuesto === '001' ? 'ISR' : (t.impuesto === '003' ? 'IEPS' : t.impuesto));
+                    mapT[k] = { clave: t.impuesto, impuesto: impName, tipo: 'Traslado', factor: t.tipoFactor, tasaOCuota: t.tasaOCuota, importe: 0 };
+                }
+                mapT[k].importe += t.importe;
+            });
+            Object.values(mapT).forEach(t => {
+                t.importe = Math.round(t.importe * 100) / 100;
+                trasladosGlobales.push(t);
+            });
+        }
 
-            const retencionesEls = findAll(impuestosEl, 'Retencion');
-            retencionesEls.forEach(r => {
+        // 2. Retenciones Federales
+        if (globalImpuestosEl && findAll(globalImpuestosEl, 'Retencion').length > 0) {
+            findAll(globalImpuestosEl, 'Retencion').forEach((r: any) => {
                 const imp = getAttr(r, 'Impuesto');
                 const impName = imp === '002' ? 'IVA' : (imp === '001' ? 'ISR' : (imp === '003' ? 'IEPS' : imp));
+                let tasa = getAttr(r, 'TasaOCuota');
+                if (!tasa) {
+                    const matchConcept = conceptRetencionesList.find(cr => cr.impuesto === imp && cr.tasaOCuota);
+                    if (matchConcept) tasa = matchConcept.tasaOCuota;
+                }
                 retencionesGlobales.push({
                     clave: imp,
                     impuesto: impName,
                     tipo: 'Retención',
                     factor: getAttr(r, 'TipoFactor') || 'Tasa',
-                    tasaOCuota: getAttr(r, 'TasaOCuota') || '',
+                    tasaOCuota: tasa || '',
                     importe: parseFloat(getAttr(r, 'Importe') || '0')
                 });
             });
+        } else if (conceptRetencionesList.length > 0) {
+            const mapR: { [k: string]: any } = {};
+            conceptRetencionesList.forEach(r => {
+                const k = `${r.impuesto}_${r.tipoFactor}_${r.tasaOCuota}`;
+                if (!mapR[k]) {
+                    const impName = r.impuesto === '002' ? 'IVA' : (r.impuesto === '001' ? 'ISR' : (r.impuesto === '003' ? 'IEPS' : r.impuesto));
+                    mapR[k] = { clave: r.impuesto, impuesto: impName, tipo: 'Retención', factor: r.tipoFactor, tasaOCuota: r.tasaOCuota, importe: 0 };
+                }
+                mapR[k].importe += r.importe;
+            });
+            Object.values(mapR).forEach(r => {
+                r.importe = Math.round(r.importe * 100) / 100;
+                retencionesGlobales.push(r);
+            });
         }
 
-        // Impuestos Locales (Cedular)
-        const retencionesLocalesEls = findAll(xmlDoc, 'RetencionesLocales');
-        retencionesLocalesEls.forEach(rl => {
-            const impName = getAttr(rl, 'ImpLocRetenido') || 'Cedular';
-            const tasa = getAttr(rl, 'TasadeRetencion') || '';
-            const tasaNum = parseFloat(tasa) || 0;
-            const tasaNorm = tasaNum > 1 ? (tasaNum / 100).toFixed(6) : tasaNum.toFixed(6);
-            retencionesGlobales.push({
-                clave: 'cedular',
-                impuesto: `Impuesto Estatal ${impName.charAt(0).toUpperCase() + impName.slice(1)}`,
-                tipo: 'Retención',
-                factor: 'Tasa',
-                tasaOCuota: tasaNorm,
-                importe: parseFloat(getAttr(rl, 'Importe') || '0')
-            });
-        });
+        // 3. Agregar retenciones locales
+        retencionesLocalesRows.forEach(rl => retencionesGlobales.push(rl));
 
         // Complemento de Pagos (Doctos Relacionados)
         const pagosDoctos: any[] = [];
@@ -1177,8 +1274,8 @@ export class PdfService {
             },
             conceptos,
             impuestos: {
-                totalRetenciones: parseFloat(getAttr(impuestosEl, 'TotalImpuestosRetenidos') || '0'),
-                totalTraslados: parseFloat(getAttr(impuestosEl, 'TotalImpuestosTrasladados') || '0'),
+                totalRetenciones,
+                totalTraslados,
                 traslados: trasladosGlobales,
                 retenciones: retencionesGlobales
             },
