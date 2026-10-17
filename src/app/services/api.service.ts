@@ -330,6 +330,10 @@ export class ApiService {
   satSyncStatus(params?: { fecha_inicio?: string; fecha_fin?: string; tipo?: string; uuid?: string }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/sat-download/sync-status`, params || {});
   }
+
+  satGetCfdiXml(uuid: string): Observable<{ uuid: string; xml: string }> {
+    return this.http.get<{ uuid: string; xml: string }>(`${this.baseUrl}/sat-download/xml/${uuid}`);
+  }
 }
 
 

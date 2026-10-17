@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { PdfService } from '../../services/pdf.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -125,11 +126,15 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         'ret_isr',
         'ret_cedular',
         'total',
-        'moneda'
+        'moneda',
+        'acciones'
     ];
+
+    settings: any = null;
 
     constructor(
         private api: ApiService,
+        private pdfService: PdfService,
         private snackBar: MatSnackBar,
         private dialog: MatDialog
     ) {
@@ -137,6 +142,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        this.loadSettings();
         this.loadFielStatus();
         this.loadHistorial();
         this.loadCfdis();
@@ -558,6 +564,90 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         this.loadCfdis();
     }
 
+    loadSettings() {
+        this.api.getSettings().subscribe({
+            next: (s) => this.settings = s,
+            error: (err) => console.warn('No se pudieron cargar settings:', err)
+        });
+    }
+
+    generarCfdiXml(cfdi: any): void {
+        if (!cfdi || !cfdi.uuid) return;
+        const targetWindow = window.open('', '_blank');
+        if (targetWindow) {
+            targetWindow.document.write('<html><head><title>Cargando XML...</title></head><body style="font-family:sans-serif;padding:2rem;color:#334155;background:#f8fafc;">Cargando comprobante XML...</body></html>');
+        }
+
+        this.api.satGetCfdiXml(cfdi.uuid).subscribe({
+            next: (res) => {
+                if (!res || !res.xml) {
+                    if (targetWindow && !targetWindow.closed) targetWindow.close();
+                    this.snackBar.open('El CFDI no contiene XML disponible', 'Cerrar', { duration: 4000 });
+                    return;
+                }
+                const blob = new Blob([res.xml], { type: 'application/xml;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                if (targetWindow && !targetWindow.closed) {
+                    targetWindow.location.href = url;
+                } else {
+                    window.open(url, '_blank');
+                }
+            },
+            error: (err) => {
+                if (targetWindow && !targetWindow.closed) targetWindow.close();
+                console.error('Error al obtener XML:', err);
+                this.snackBar.open('Error al obtener el archivo XML del comprobante', 'Cerrar', { duration: 4000 });
+            }
+        });
+    }
+
+    generarCfdiPdf(cfdi: any): void {
+        if (!cfdi || !cfdi.uuid) return;
+        const targetWindow = window.open('', '_blank');
+        if (targetWindow) {
+            targetWindow.document.write('<html><head><title>Generando PDF...</title></head><body style="font-family:sans-serif;padding:2rem;color:#334155;background:#f8fafc;">Generando representación impresa del CFDI...</body></html>');
+        }
+
+        const executePdf = (xml: string) => {
+            this.pdfService.generateCfdiPdf(xml, this.settings, targetWindow)
+                .catch(err => {
+                    if (targetWindow && !targetWindow.closed) targetWindow.close();
+                    console.error('Error al generar PDF del CFDI:', err);
+                    this.snackBar.open('Error al generar la representación impresa del CFDI', 'Cerrar', { duration: 4000 });
+                });
+        };
+
+        const proceedWithXml = (xml: string) => {
+            if (!this.settings) {
+                this.api.getSettings().subscribe({
+                    next: (s) => {
+                        this.settings = s;
+                        executePdf(xml);
+                    },
+                    error: () => executePdf(xml)
+                });
+            } else {
+                executePdf(xml);
+            }
+        };
+
+        this.api.satGetCfdiXml(cfdi.uuid).subscribe({
+            next: (res) => {
+                if (!res || !res.xml) {
+                    if (targetWindow && !targetWindow.closed) targetWindow.close();
+                    this.snackBar.open('El CFDI no contiene XML para generar el PDF', 'Cerrar', { duration: 4000 });
+                    return;
+                }
+                proceedWithXml(res.xml);
+            },
+            error: (err) => {
+                if (targetWindow && !targetWindow.closed) targetWindow.close();
+                console.error('Error al obtener XML para PDF:', err);
+                this.snackBar.open('Error al obtener datos del comprobante para el PDF', 'Cerrar', { duration: 4000 });
+            }
+        });
+    }
+
     limpiarFiltrosCfdis() {
         this.filtroCfdiTipo = '';
         this.filtroCfdiEstado = '';
@@ -763,12 +853,16 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         return this.resumenCalculo ? this.resumenCalculo.ivaEmitidos : this.calcEmitidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0);
     }
 
+    get retIvaEmitidos(): number {
+        return this.resumenCalculo ? (this.resumenCalculo.retIvaEmitidos || 0) : this.calcEmitidos.reduce((s, c) => s + parseFloat(c.ret_iva || 0), 0);
+    }
+
     get ivaRecibidos(): number {
         return this.resumenCalculo ? this.resumenCalculo.ivaRecibidos : this.calcRecibidos.reduce((s, c) => s + parseFloat(c.iva || 0), 0);
     }
 
     get ivaAPagar(): number {
-        return this.resumenCalculo ? this.resumenCalculo.ivaAPagar : Math.round((this.ivaEmitidos - this.ivaRecibidos) * 100) / 100;
+        return this.resumenCalculo ? this.resumenCalculo.ivaAPagar : Math.round((this.ivaEmitidos - this.retIvaEmitidos - this.ivaRecibidos) * 100) / 100;
     }
 
     // ─── 4. Totales Generales ───
@@ -914,6 +1008,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
             ['3. IMPUESTO AL VALOR AGREGADO (IVA)'],
             ['Concepto', 'Importe / Detalle'],
             ['IVA Trasladado (Facturas PUE + Pagos PPD cobrados)', this.ivaEmitidos],
+            ['(-) IVA Retenido por Clientes en XMLs', this.retIvaEmitidos],
             ['(-) IVA Acreditable (Facturas Recibidas Vigentes / Gastos)', this.ivaRecibidos],
             ['(=) IVA A PAGAR (o a Favor)', this.ivaAPagar],
             [],
@@ -944,6 +1039,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
             'Nombre Receptor': c.nombre_receptor || '',
             'Subtotal': parseFloat(c.subtotal || 0),
             'IVA': parseFloat(c.iva || 0),
+            'Ret. IVA': parseFloat(c.ret_iva || 0),
             'Ret. ISR': parseFloat(c.ret_isr || 0),
             'Ret. Cedular': parseFloat(c.ret_cedular || 0),
             'Total': parseFloat(c.total || 0),
@@ -952,7 +1048,7 @@ export class TaxCalculationComponent implements OnInit, OnDestroy {
         const wsEmitidos = XLSX.utils.json_to_sheet(emitidosData);
         wsEmitidos['!cols'] = [
             { wch: 38 }, { wch: 25 }, { wch: 38 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 35 },
-            { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 8 }
+            { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 8 }
         ];
         this.styleDataSheet(wsEmitidos, 'FF1D4ED8'); // azul para Emitidos
         XLSX.utils.book_append_sheet(wb, wsEmitidos, 'Emitidos y Pagos');

@@ -2102,4 +2102,68 @@ th.num-col {
     to { transform: rotate(360deg); }
 }
 
+/* ─── Botones de Acciones en Tabla CFDIs (PDF y XML) ─── */
+.row-cfdi-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-cfdi-pdf {
+    color: #e11d48 !important; /* Rojo característico de PDF */
+    background: #ffe4e6 !important;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    line-height: 32px !important;
+    border-radius: 8px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-cfdi-pdf:hover {
+    background: #e11d48 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px) scale(1.08);
+    box-shadow: 0 4px 6px -1px rgba(225, 29, 72, 0.25);
+}
+
+.btn-cfdi-pdf mat-icon {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+}
+
+.btn-cfdi-xml {
+    color: #0284c7 !important; /* Azul código para XML */
+    background: #e0f2fe !important;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    line-height: 32px !important;
+    border-radius: 8px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-cfdi-xml:hover {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px) scale(1.08);
+    box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.25);
+}
+
+.btn-cfdi-xml mat-icon {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+}
+
+.actions-header {
+    text-align: center !important;
+    min-width: 90px;
+}
+
+
 
