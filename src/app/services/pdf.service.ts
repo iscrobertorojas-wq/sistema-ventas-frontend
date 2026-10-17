@@ -12,8 +12,8 @@ export class PdfService {
 
     // Custom number to text converter for Spanish
     private numeroALetras(num: number, currency: string = 'MXN'): string {
-        const currencyName = currency === 'USD' ? 'DÓLARES' : 'PESOS';
-        const currencySuffix = currency === 'USD' ? 'USD' : 'M.N.';
+        const currencyName = currency === 'USD' ? 'DÓLARES' : 'PESO MEXICANO';
+        const currencySuffix = currency === 'USD' ? 'USD' : 'MXN';
 
         const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
         const decenas = ['', '', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
@@ -1223,21 +1223,129 @@ export class PdfService {
         // 3. Agregar retenciones locales
         retencionesLocalesRows.forEach(rl => retencionesGlobales.push(rl));
 
-        // Complemento de Pagos (Doctos Relacionados)
+        // Complemento de Pagos 2.0 / 1.0
+        const pagosList: any[] = [];
         const pagosDoctos: any[] = [];
-        const doctosRelEls = findAll(xmlDoc, 'DoctoRelacionado');
-        doctosRelEls.forEach(dr => {
-            pagosDoctos.push({
-                uuid: getAttr(dr, 'IdDocumento'),
-                serie: getAttr(dr, 'Serie'),
-                folio: getAttr(dr, 'Folio'),
-                moneda: getAttr(dr, 'MonedaDR') || 'MXN',
-                numParcialidad: getAttr(dr, 'NumParcialidad') || '1',
-                saldoAnterior: parseFloat(getAttr(dr, 'ImpSaldoAnt') || '0'),
-                montoPagado: parseFloat(getAttr(dr, 'ImpPagado') || '0'),
-                saldoInsoluto: parseFloat(getAttr(dr, 'ImpSaldoInsoluto') || '0')
+        const pagosImpuestos: any[] = [];
+
+        const totalesEl = findFirst(xmlDoc, 'Totales');
+        let pagoTotalMonto = 0;
+        let pagoSubtotal = 0;
+        let pagoTotalTraslados = 0;
+        let pagoTotalRetenciones = 0;
+
+        if (totalesEl) {
+            pagoTotalMonto = parseFloat(getAttr(totalesEl, 'MontoTotalPagos') || '0');
+            pagoSubtotal = parseFloat(getAttr(totalesEl, 'TotalTrasladosBaseIVA16') || '0') +
+                           parseFloat(getAttr(totalesEl, 'TotalTrasladosBaseIVA8') || '0') +
+                           parseFloat(getAttr(totalesEl, 'TotalTrasladosBaseIVA0') || '0') +
+                           parseFloat(getAttr(totalesEl, 'TotalTrasladosBaseIVAExento') || '0');
+            pagoTotalTraslados = parseFloat(getAttr(totalesEl, 'TotalTrasladosImpuestoIVA16') || '0') +
+                                 parseFloat(getAttr(totalesEl, 'TotalTrasladosImpuestoIVA8') || '0') +
+                                 parseFloat(getAttr(totalesEl, 'TotalTrasladosImpuestoIVA0') || '0');
+            pagoTotalRetenciones = parseFloat(getAttr(totalesEl, 'TotalRetencionesIVA') || '0') +
+                                   parseFloat(getAttr(totalesEl, 'TotalRetencionesISR') || '0') +
+                                   parseFloat(getAttr(totalesEl, 'TotalRetencionesIEPS') || '0');
+        }
+
+        const pagoEls = findAll(xmlDoc, 'Pago');
+        pagoEls.forEach(pEl => {
+            const monto = parseFloat(getAttr(pEl, 'Monto') || '0');
+            if (!pagoTotalMonto) pagoTotalMonto += monto;
+
+            const doctoEls = findAll(pEl, 'DoctoRelacionado');
+            const doctos: any[] = [];
+            doctoEls.forEach(dr => {
+                const item = {
+                    uuid: getAttr(dr, 'IdDocumento'),
+                    serie: getAttr(dr, 'Serie'),
+                    folio: getAttr(dr, 'Folio'),
+                    moneda: getAttr(dr, 'MonedaDR') || 'MXN',
+                    equivalencia: getAttr(dr, 'EquivalenciaDR') || '1',
+                    numParcialidad: getAttr(dr, 'NumParcialidad') || '1',
+                    saldoAnterior: parseFloat(getAttr(dr, 'ImpSaldoAnt') || '0'),
+                    montoPagado: parseFloat(getAttr(dr, 'ImpPagado') || '0'),
+                    saldoInsoluto: parseFloat(getAttr(dr, 'ImpSaldoInsoluto') || '0'),
+                    objetoImp: getAttr(dr, 'ObjetoImpDR')
+                };
+                doctos.push(item);
+                pagosDoctos.push(item);
+            });
+
+            // TrasladosP
+            const trasladosPEls = findAll(pEl, 'TrasladoP');
+            trasladosPEls.forEach(t => {
+                const imp = getAttr(t, 'ImpuestoP') || getAttr(t, 'Impuesto');
+                const impName = imp === '002' ? 'IVA' : (imp === '001' ? 'ISR' : (imp === '003' ? 'IEPS' : imp));
+                const importe = parseFloat(getAttr(t, 'ImporteP') || getAttr(t, 'Importe') || '0');
+                const base = parseFloat(getAttr(t, 'BaseP') || getAttr(t, 'Base') || '0');
+                if (!pagoSubtotal) pagoSubtotal += base;
+                if (!totalesEl) pagoTotalTraslados += importe;
+                pagosImpuestos.push({
+                    clave: imp,
+                    impuesto: impName,
+                    tipo: 'Traslado',
+                    factor: getAttr(t, 'TipoFactorP') || getAttr(t, 'TipoFactor') || 'Tasa',
+                    tasaOCuota: getAttr(t, 'TasaOCuotaP') || getAttr(t, 'TasaOCuota') || '',
+                    base,
+                    importe
+                });
+            });
+
+            // RetencionesP
+            const retencionesPEls = findAll(pEl, 'RetencionP');
+            retencionesPEls.forEach(r => {
+                const imp = getAttr(r, 'ImpuestoP') || getAttr(r, 'Impuesto');
+                const impName = imp === '002' ? 'IVA' : (imp === '001' ? 'ISR' : (imp === '003' ? 'IEPS' : imp));
+                const importe = parseFloat(getAttr(r, 'ImporteP') || getAttr(r, 'Importe') || '0');
+                if (!totalesEl) pagoTotalRetenciones += importe;
+                pagosImpuestos.push({
+                    clave: imp,
+                    impuesto: impName,
+                    tipo: 'Retención',
+                    factor: getAttr(r, 'TipoFactorP') || 'Tasa',
+                    tasaOCuota: getAttr(r, 'TasaOCuotaP') || '',
+                    importe
+                });
+            });
+
+            pagosList.push({
+                fechaPago: getAttr(pEl, 'FechaPago'),
+                formaPago: getAttr(pEl, 'FormaDePagoP') || getAttr(pEl, 'FormaPagoP'),
+                moneda: getAttr(pEl, 'MonedaP') || 'MXN',
+                tipoCambio: getAttr(pEl, 'TipoCambioP') || '1',
+                monto,
+                numOperacion: getAttr(pEl, 'NumOperacion'),
+                doctosRelacionados: doctos
             });
         });
+
+        const tipoDeComprobante = getAttr(comprobanteEl, 'TipoDeComprobante') || 'I';
+        if (tipoDeComprobante === 'P') {
+            if (pagoSubtotal === 0 && pagoTotalMonto > 0) {
+                pagoSubtotal = Math.round((pagoTotalMonto - pagoTotalTraslados + pagoTotalRetenciones) * 100) / 100;
+            }
+        }
+
+        // Extracción de Domicilio Receptor (CFDI 3.3, 4.0 o addenda)
+        let domicilioReceptor = '';
+        const domEl = findFirst(receptorEl || xmlDoc, 'DomicilioFiscal') || findFirst(receptorEl || xmlDoc, 'Domicilio');
+        if (domEl) {
+            const parts = [
+                getAttr(domEl, 'Calle'),
+                getAttr(domEl, 'NoExterior'),
+                getAttr(domEl, 'NoInterior') ? `Int. ${getAttr(domEl, 'NoInterior')}` : '',
+                getAttr(domEl, 'Colonia'),
+                getAttr(domEl, 'Municipio'),
+                getAttr(domEl, 'Estado')
+            ].filter(Boolean);
+            if (parts.length > 0) {
+                domicilioReceptor = parts.join(', ');
+            }
+        }
+        if (!domicilioReceptor && receptorEl) {
+            domicilioReceptor = getAttr(receptorEl, 'Domicilio') || '';
+        }
 
         return {
             comprobante: {
@@ -1247,16 +1355,16 @@ export class PdfService {
                 fecha: getAttr(comprobanteEl, 'Fecha'),
                 noCertificado: getAttr(comprobanteEl, 'NoCertificado'),
                 lugarExpedicion: getAttr(comprobanteEl, 'LugarExpedicion'),
-                tipoDeComprobante: getAttr(comprobanteEl, 'TipoDeComprobante') || 'I',
+                tipoDeComprobante,
                 formaPago: getAttr(comprobanteEl, 'FormaPago'),
                 metodoPago: getAttr(comprobanteEl, 'MetodoPago'),
-                moneda: getAttr(comprobanteEl, 'Moneda') || 'MXN',
-                tipoCambio: getAttr(comprobanteEl, 'TipoCambio'),
+                moneda: tipoDeComprobante === 'P' ? (pagosList[0]?.moneda || 'MXN') : (getAttr(comprobanteEl, 'Moneda') || 'MXN'),
+                tipoCambio: tipoDeComprobante === 'P' ? (pagosList[0]?.tipoCambio || '1') : getAttr(comprobanteEl, 'TipoCambio'),
                 condicionesDePago: getAttr(comprobanteEl, 'CondicionesDePago'),
                 exportacion: getAttr(comprobanteEl, 'Exportacion') || '01',
-                subTotal: parseFloat(getAttr(comprobanteEl, 'SubTotal') || '0'),
+                subTotal: tipoDeComprobante === 'P' ? pagoSubtotal : parseFloat(getAttr(comprobanteEl, 'SubTotal') || '0'),
                 descuento: parseFloat(getAttr(comprobanteEl, 'Descuento') || '0'),
-                total: parseFloat(getAttr(comprobanteEl, 'Total') || '0'),
+                total: tipoDeComprobante === 'P' ? pagoTotalMonto : parseFloat(getAttr(comprobanteEl, 'Total') || '0'),
                 sello: getAttr(comprobanteEl, 'Sello')
             },
             emisor: {
@@ -1270,14 +1378,14 @@ export class PdfService {
                 domicilioFiscalReceptor: getAttr(receptorEl, 'DomicilioFiscalReceptor'),
                 regimenFiscalReceptor: getAttr(receptorEl, 'RegimenFiscalReceptor'),
                 usoCFDI: getAttr(receptorEl, 'UsoCFDI'),
-                domicilio: receptorEl ? getAttr(findFirst(receptorEl, 'Domicilio'), 'Calle') : ''
+                domicilio: domicilioReceptor
             },
             conceptos,
             impuestos: {
-                totalRetenciones,
-                totalTraslados,
-                traslados: trasladosGlobales,
-                retenciones: retencionesGlobales
+                totalRetenciones: tipoDeComprobante === 'P' ? pagoTotalRetenciones : totalRetenciones,
+                totalTraslados: tipoDeComprobante === 'P' ? pagoTotalTraslados : totalTraslados,
+                traslados: tipoDeComprobante === 'P' ? pagosImpuestos.filter(i => i.tipo === 'Traslado') : trasladosGlobales,
+                retenciones: tipoDeComprobante === 'P' ? pagosImpuestos.filter(i => i.tipo === 'Retención') : retencionesGlobales
             },
             timbre: {
                 version: getAttr(timbreEl, 'Version') || '1.1',
@@ -1288,18 +1396,513 @@ export class PdfService {
                 noCertificadoSAT: getAttr(timbreEl, 'NoCertificadoSAT'),
                 selloSAT: getAttr(timbreEl, 'SelloSAT')
             },
-            pagosDoctos
+            pagosList,
+            pagosDoctos,
+            pagosImpuestos,
+            pagoTotales: {
+                subtotal: pagoSubtotal,
+                totalTraslados: pagoTotalTraslados,
+                totalRetenciones: pagoTotalRetenciones,
+                total: pagoTotalMonto
+            }
         };
     }
 
     async generateCfdiPdf(xmlContent: string, settings: any, targetWindow?: Window | null): Promise<jsPDF> {
         const parsed = this.parseCfdiXml(xmlContent);
-        const { comprobante, emisor, receptor, conceptos, impuestos, timbre, pagosDoctos } = parsed;
+        const { comprobante, timbre } = parsed;
 
         const doc = new jsPDF({ format: 'letter', unit: 'mm' });
         const primaryColor = [19, 80, 143]; // #13508f azul corporativo del PDF
         const textColor = [33, 37, 41];
         const subTextColor = [71, 85, 105];
+
+        if (comprobante.tipoDeComprobante === 'P') {
+            await this.generateCfdiPagoLayout(doc, parsed, settings, primaryColor, textColor, subTextColor);
+        } else {
+            await this.generateCfdiStandardLayout(doc, parsed, settings, primaryColor, textColor, subTextColor);
+        }
+
+        // --- 9. PIE DE PÁGINA EN TODAS LAS PÁGINAS ---
+        const totalPages = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+
+            // Barra azul inferior
+            doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+            doc.rect(10, 268, 196, 4.5, 'F');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(6.8);
+            doc.setTextColor(255, 255, 255);
+            doc.text('Este documento es una representación impresa de un CFDI', 108, 271, { align: 'center' });
+
+            // Número de página
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6.8);
+            doc.setTextColor(subTextColor[0], subTextColor[1], subTextColor[2]);
+            doc.text(`Página ${i} de ${totalPages}`, 206, 275.5, { align: 'right' });
+        }
+
+        const fileName = `CFDI_${comprobante.serie || ''}${comprobante.folio || ''}_${(timbre.uuid || 'cfdi').substring(0, 8)}.pdf`;
+        doc.setProperties({ title: fileName });
+
+        const pdfBlob = doc.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+        if (targetWindow && !targetWindow.closed) {
+            targetWindow.location.href = pdfUrl;
+        } else {
+            window.open(pdfUrl, '_blank');
+        }
+
+        return doc;
+    }
+
+    private async generateCfdiPagoLayout(
+        doc: jsPDF,
+        parsed: any,
+        settings: any,
+        primaryColor: number[],
+        textColor: number[],
+        subTextColor: number[]
+    ): Promise<void> {
+        const { comprobante, emisor, receptor, impuestos, timbre, pagosList, pagosDoctos } = parsed;
+
+        const companyLogo = settings?.company_logo;
+        const folioCompleto = [comprobante.serie, comprobante.folio].filter(Boolean).join(' ') || comprobante.folio || 'S/N';
+        const tipoComprobanteLabel = this.getTipoComprobanteLabel(comprobante.tipoDeComprobante);
+        const regimenEmisorLabel = this.getRegimenFiscalLabel(emisor.regimenFiscal);
+        const regimenReceptorLabel = this.getRegimenFiscalLabel(receptor.regimenFiscalReceptor);
+        const exportacionLabel = comprobante.exportacion === '01' ? '01 - No aplica' : comprobante.exportacion;
+
+        // --- 1. CABECERA: LOGO + DATOS EMISOR (IZQ) Y CAJA AZUL + DATOS TIMBRADO (DER) ---
+        if (companyLogo) {
+            try {
+                const format = companyLogo.includes('image/png') ? 'PNG' : 'JPEG';
+                doc.addImage(companyLogo, format, 10, 10, 24, 24, undefined, 'FAST');
+            } catch (e) {
+                console.warn('Error cargando logo en CFDI Pago PDF:', e);
+            }
+        }
+
+        // Datos del Emisor (debajo del logo)
+        let emisorY = 38;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text(emisor.nombre || settings?.company_name || 'EMISOR', 10, emisorY);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+
+        emisorY += 4;
+        doc.text(`Nombre: ${emisor.nombre || settings?.company_name || ''}`, 10, emisorY);
+        emisorY += 4;
+        doc.text(`RFC: ${emisor.rfc || ''}`, 10, emisorY);
+        emisorY += 4;
+        const splitRegEmisor = doc.splitTextToSize(`Régimen fiscal: ${regimenEmisorLabel}`, 95);
+        doc.text(splitRegEmisor, 10, emisorY);
+        emisorY += splitRegEmisor.length * 3.6;
+
+        doc.text(`Domicilio fiscal: ${comprobante.lugarExpedicion || ''}`, 10, emisorY);
+        emisorY += 4;
+        doc.text(`Teléfono: ${settings?.phone || '476-135-7354'}`, 10, emisorY);
+        emisorY += 4;
+        doc.text(`Email: ${settings?.email || 'iscroberto.rojas@gmail.com'}`, 10, emisorY);
+        emisorY += 4;
+
+        // Caja Azul Superior Derecha (Folio Interno, Tipo, UUID, Expedido en)
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(108, 10, 98, 24, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.text(`FOLIO INTERNO No. ${folioCompleto}`, 112, 15.5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.text(`Tipo de comprobante: ${tipoComprobanteLabel}`, 112, 20.5);
+        doc.text(`Folio fiscal: ${timbre.uuid || '—'}`, 112, 25.5);
+        doc.text(`Expedido en (C.P.): ${comprobante.lugarExpedicion || '—'}`, 112, 30.5);
+
+        // Datos Timbrado (debajo de la caja azul)
+        let timbradoY = 38;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+
+        doc.text(`Fecha de emisión: ${this.formatSatDate(comprobante.fecha)}`, 112, timbradoY);
+        timbradoY += 4;
+        doc.text(`Fecha de timbrado: ${this.formatSatDate(timbre.fechaTimbrado)}`, 112, timbradoY);
+        timbradoY += 4;
+        doc.text(`CSD del emisor: ${comprobante.noCertificado || '—'}`, 112, timbradoY);
+        timbradoY += 4;
+        doc.text(`CSD del SAT: ${timbre.noCertificadoSAT || '—'}`, 112, timbradoY);
+        timbradoY += 4;
+
+        // Línea divisoria
+        const headerDividerY = Math.max(emisorY, timbradoY) + 2;
+        doc.setDrawColor(203, 213, 225);
+        doc.setLineWidth(0.3);
+        doc.line(10, headerDividerY, 206, headerDividerY);
+
+        // --- 2. SECCIÓN RECEPTOR ---
+        let recLeftY = headerDividerY + 5;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text(`Receptor: ${receptor.nombre || '—'}`, 10, recLeftY);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+
+        recLeftY += 4;
+        doc.text(`RFC: ${receptor.rfc || '—'}`, 10, recLeftY);
+        recLeftY += 4;
+        const splitRegRec = doc.splitTextToSize(`Régimen fiscal: ${regimenReceptorLabel}`, 95);
+        doc.text(splitRegRec, 10, recLeftY);
+        recLeftY += splitRegRec.length * 3.6;
+
+        doc.text(`Exportación: ${exportacionLabel}`, 10, recLeftY);
+        recLeftY += 4;
+
+        // Columna Derecha Receptor (Solo C.P. y Domicilio)
+        let recRightY = headerDividerY + 9;
+        doc.text(`C.P.: ${receptor.domicilioFiscalReceptor || '—'}`, 112, recRightY);
+        recRightY += 4;
+
+        if (receptor.domicilio) {
+            const splitDom = doc.splitTextToSize(`Domicilio: ${receptor.domicilio}`, 90);
+            doc.text(splitDom, 112, recRightY);
+            recRightY += splitDom.length * 3.6;
+        }
+
+        // --- 3. BARRA TITULAR "Complemento de pago" ---
+        const bannerY = Math.max(recLeftY, recRightY) + 3;
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(10, bannerY, 196, 5.5, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(255, 255, 255);
+        doc.text('Complemento de pago', 108, bannerY + 4, { align: 'center' });
+
+        // --- 4. INFORMACIÓN DEL PAGO ---
+        const pago = (pagosList && pagosList[0]) || {};
+        let infoY = bannerY + 9;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.text('Información del pago', 10, infoY);
+        infoY += 4.5;
+
+        // Izquierda
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.text('Fecha de pago: ', 10, infoY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(this.formatSatDate(pago.fechaPago), 33, infoY);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('Monto: ', 10, infoY + 4);
+        doc.setFont('helvetica', 'normal');
+        doc.text(pago.monto != null ? Number(pago.monto).toFixed(2) : '0.00', 22, infoY + 4);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('Forma de pago: ', 10, infoY + 8);
+        doc.setFont('helvetica', 'normal');
+        doc.text(pago.formaPago || '—', 33, infoY + 8);
+
+        // Derecha
+        doc.setFont('helvetica', 'bold');
+        doc.text('Moneda: ', 112, infoY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(pago.moneda || 'MXN', 126, infoY);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('Tipo de cambio: ', 112, infoY + 4);
+        doc.setFont('helvetica', 'normal');
+        doc.text(String(pago.tipoCambio || '1'), 134, infoY + 4);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('No. de operación: ', 112, infoY + 8);
+        doc.setFont('helvetica', 'normal');
+        doc.text(pago.numOperacion || '', 138, infoY + 8);
+
+        const tableStartY = infoY + 12;
+
+        // --- 5. TABLA DE DOCUMENTOS RELACIONADOS ---
+        const doctoColumns = [
+            "UUID",
+            "Serie",
+            "Folio",
+            "Moneda",
+            "Equivalencia",
+            "Parcialidad",
+            "Saldo anterior",
+            "Importe pagado",
+            "Saldo insoluto"
+        ];
+
+        const doctoRows = (pagosDoctos || []).map((d: any) => [
+            d.uuid || '',
+            d.serie || '—',
+            d.folio || '—',
+            d.moneda || 'MXN',
+            String(d.equivalencia || '1'),
+            String(d.numParcialidad || '1'),
+            Number(d.saldoAnterior || 0).toFixed(2),
+            Number(d.montoPagado || 0).toFixed(2),
+            Number(d.saldoInsoluto || 0).toFixed(2)
+        ]);
+
+        autoTable(doc, {
+            head: [doctoColumns],
+            body: doctoRows,
+            startY: tableStartY,
+            margin: { left: 10, right: 10 },
+            theme: 'grid',
+            headStyles: {
+                fillColor: [248, 250, 252],
+                textColor: [15, 23, 42],
+                fontStyle: 'bold',
+                fontSize: 6.2,
+                halign: 'center',
+                valign: 'middle',
+                lineWidth: 0.15,
+                lineColor: [203, 213, 225]
+            },
+            styles: {
+                fontSize: 6.2,
+                cellPadding: 2,
+                textColor: [30, 41, 59],
+                lineWidth: 0.15,
+                lineColor: [226, 232, 240]
+            },
+            columnStyles: {
+                0: { cellWidth: 58, halign: 'left' },
+                1: { cellWidth: 12, halign: 'center' },
+                2: { cellWidth: 14, halign: 'center' },
+                3: { cellWidth: 14, halign: 'center' },
+                4: { cellWidth: 18, halign: 'center' },
+                5: { cellWidth: 16, halign: 'center' },
+                6: { cellWidth: 22, halign: 'right' },
+                7: { cellWidth: 22, halign: 'right' },
+                8: { cellWidth: 20, halign: 'right' }
+            }
+        });
+
+        let currentY = (doc as any).lastAutoTable.finalY + 4;
+
+        if (currentY > 220) {
+            doc.addPage();
+            currentY = 15;
+        }
+
+        // --- 6. TOTALES Y TOTAL CON LETRA ---
+        const totalLetras = this.numeroALetras(comprobante.total, comprobante.moneda);
+        const lowerLetras = totalLetras.toLowerCase();
+        const formattedLetras = lowerLetras.charAt(0).toUpperCase() + lowerLetras.slice(1).replace('m.n.', 'MXN');
+
+        // Lado Izquierdo: Total con Letra y Comentarios
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.text('Total con letra:', 10, currentY + 3);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        const splitLetras = doc.splitTextToSize(formattedLetras, 110);
+        doc.text(splitLetras, 10, currentY + 7);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.text('Comentarios:', 10, currentY + 7 + splitLetras.length * 3.5 + 2);
+
+        // Lado Derecho: Desglose de Totales (Prefijo MXN)
+        const fmtMxn = (n: number) => `MXN ${n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const totalsX = 125;
+        const totalsValX = 206;
+        let totY = currentY + 3;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.text('Subtotal', totalsX, totY);
+        doc.text(fmtMxn(comprobante.subTotal), totalsValX, totY, { align: 'right' });
+        totY += 4;
+
+        doc.text('Total de Impuestos Trasladados', totalsX, totY);
+        doc.text(fmtMxn(impuestos.totalTraslados), totalsValX, totY, { align: 'right' });
+        totY += 4;
+
+        doc.text('Total de Impuestos Retenidos', totalsX, totY);
+        doc.text(fmtMxn(impuestos.totalRetenciones), totalsValX, totY, { align: 'right' });
+        totY += 4;
+
+        doc.setDrawColor(203, 213, 225);
+        doc.setLineWidth(0.2);
+        doc.line(totalsX, totY, totalsValX, totY);
+        totY += 4.5;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text('Total', totalsX, totY);
+        doc.text(fmtMxn(comprobante.total), totalsValX, totY, { align: 'right' });
+
+        currentY = Math.max(currentY + 22, totY + 5);
+
+        // --- 7. DETALLE DE IMPUESTOS ---
+        const allTaxRows: any[] = [];
+        (impuestos.traslados || []).forEach((t: any) => {
+            allTaxRows.push([
+                t.clave || '002',
+                t.impuesto || 'IVA',
+                t.tipo || 'Traslado',
+                t.factor || 'Tasa',
+                t.tasaOCuota || '—',
+                t.importe != null ? Number(t.importe).toFixed(6) : '0.000000'
+            ]);
+        });
+        (impuestos.retenciones || []).forEach((r: any) => {
+            allTaxRows.push([
+                r.clave || '',
+                r.impuesto || '',
+                r.tipo || 'Retención',
+                r.factor || 'Tasa',
+                r.tasaOCuota || '—',
+                r.importe != null ? Number(r.importe).toFixed(6) : '0.000000'
+            ]);
+        });
+
+        if (allTaxRows.length > 0) {
+            if (currentY > 215) {
+                doc.addPage();
+                currentY = 15;
+            }
+
+            doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+            doc.rect(10, currentY, 196, 5, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(255, 255, 255);
+            doc.text('Detalle de impuestos', 108, currentY + 3.6, { align: 'center' });
+
+            autoTable(doc, {
+                head: [["Clave", "Impuesto", "Tipo", "Factor", "Tasa o Cuota", "Importe"]],
+                body: allTaxRows,
+                startY: currentY + 5.5,
+                margin: { left: 10, right: 10 },
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [248, 250, 252],
+                    textColor: [15, 23, 42],
+                    fontStyle: 'bold',
+                    fontSize: 6.5,
+                    halign: 'center',
+                    lineWidth: 0.15,
+                    lineColor: [203, 213, 225]
+                },
+                styles: {
+                    fontSize: 6.5,
+                    cellPadding: 1.8,
+                    textColor: [30, 41, 59],
+                    lineWidth: 0.15,
+                    lineColor: [226, 232, 240]
+                },
+                columnStyles: {
+                    0: { halign: 'center' },
+                    1: { halign: 'center' },
+                    2: { halign: 'center' },
+                    3: { halign: 'center' },
+                    4: { halign: 'center' },
+                    5: { halign: 'right' }
+                }
+            });
+
+            currentY = (doc as any).lastAutoTable.finalY + 4;
+        }
+
+        // --- 8. QR SAT Y SELLOS DIGITALES ---
+        if (currentY > 210) {
+            doc.addPage();
+            currentY = 15;
+        }
+
+        // QR Code SAT para Pago: tt=0
+        const sello8 = (timbre.selloCFD || comprobante.sello || '').slice(-8);
+        const satQrUrl = `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${timbre.uuid || ''}&re=${emisor.rfc || ''}&rr=${receptor.rfc || ''}&tt=0&fe=${sello8}`;
+
+        try {
+            const qrDataUrl = await QRCode.toDataURL(satQrUrl, { margin: 1, width: 140 });
+            doc.addImage(qrDataUrl, 'PNG', 10, currentY, 34, 34);
+        } catch (qrErr) {
+            console.warn('Error generando QR SAT:', qrErr);
+            doc.setDrawColor(203, 213, 225);
+            doc.rect(10, currentY, 34, 34);
+        }
+
+        // Sellos a la derecha del QR
+        const stampsX = 48;
+        const stampsWidth = 158;
+        let stampsY = currentY + 1;
+
+        // Cadena Original
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.5);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text('Cadena Original del complemento de certificación digital del SAT', stampsX, stampsY);
+        stampsY += 3;
+
+        const cadenaOriginal = `||${timbre.version}|${timbre.uuid}|${timbre.fechaTimbrado}|${timbre.rfcProvCertif}|${timbre.selloCFD}|${timbre.noCertificadoSAT}||`;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(5);
+        doc.setTextColor(subTextColor[0], subTextColor[1], subTextColor[2]);
+        const splitCadena = doc.splitTextToSize(cadenaOriginal, stampsWidth);
+        doc.text(splitCadena, stampsX, stampsY);
+        stampsY += splitCadena.length * 2.2 + 1.5;
+
+        // Sello Emisor
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.5);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text('Sello digital del emisor', stampsX, stampsY);
+        stampsY += 3;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(5);
+        doc.setTextColor(subTextColor[0], subTextColor[1], subTextColor[2]);
+        const splitSelloEmisor = doc.splitTextToSize(timbre.selloCFD || comprobante.sello || '—', stampsWidth);
+        doc.text(splitSelloEmisor, stampsX, stampsY);
+        stampsY += splitSelloEmisor.length * 2.2 + 1.5;
+
+        // Sello SAT
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.5);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text('Sello digital del SAT', stampsX, stampsY);
+        stampsY += 3;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(5);
+        doc.setTextColor(subTextColor[0], subTextColor[1], subTextColor[2]);
+        const splitSelloSat = doc.splitTextToSize(timbre.selloSAT || '—', stampsWidth);
+        doc.text(splitSelloSat, stampsX, stampsY);
+    }
+
+    private async generateCfdiStandardLayout(
+        doc: jsPDF,
+        parsed: any,
+        settings: any,
+        primaryColor: number[],
+        textColor: number[],
+        subTextColor: number[]
+    ): Promise<void> {
+        const { comprobante, emisor, receptor, conceptos, impuestos, timbre, pagosDoctos } = parsed;
 
         const companyLogo = settings?.company_logo;
         const folioCompleto = [comprobante.serie, comprobante.folio].filter(Boolean).join(' ') || comprobante.folio || 'S/N';
@@ -1438,7 +2041,7 @@ export class PdfService {
             recRightY += splitCond.length * 3.6;
         }
 
-        // --- 3. BARRA TITULAR "Factura" O "Complemento de Pagos" ---
+        // --- 3. BARRA TITULAR "Factura" O "Nota de Crédito" ---
         const bannerY = Math.max(recLeftY, recRightY) + 3;
         doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
         doc.rect(10, bannerY, 196, 5.5, 'F');
@@ -1446,8 +2049,7 @@ export class PdfService {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(255, 255, 255);
-        const bannerTitle = comprobante.tipoDeComprobante === 'P' ? 'Complemento de Recepción de Pagos' :
-                            (comprobante.tipoDeComprobante === 'E' ? 'Nota de Crédito' : 'Factura');
+        const bannerTitle = comprobante.tipoDeComprobante === 'E' ? 'Nota de Crédito' : 'Factura';
         doc.text(bannerTitle, 108, bannerY + 4, { align: 'center' });
 
         // --- 4. TABLA DE CONCEPTOS ---
@@ -1633,8 +2235,8 @@ export class PdfService {
             currentY = (doc as any).lastAutoTable.finalY + 4;
         }
 
-        // --- 7. DETALLE DE RECEPCIÓN DE PAGOS (SI APLICA) ---
-        if (pagosDoctos.length > 0) {
+        // --- 7. DETALLE DE RECEPCIÓN DE PAGOS (SI APLICA EN FACTURAS ESTÁNDAR) ---
+        if (pagosDoctos && pagosDoctos.length > 0) {
             if (currentY > 215) {
                 doc.addPage();
                 currentY = 15;
@@ -1759,41 +2361,7 @@ export class PdfService {
         doc.setTextColor(subTextColor[0], subTextColor[1], subTextColor[2]);
         const splitSelloSat = doc.splitTextToSize(timbre.selloSAT || '—', stampsWidth);
         doc.text(splitSelloSat, stampsX, stampsY);
-
-        // --- 9. PIE DE PÁGINA EN TODAS LAS PÁGINAS ---
-        const totalPages = (doc as any).internal.getNumberOfPages();
-        for (let i = 1; i <= totalPages; i++) {
-            doc.setPage(i);
-
-            // Barra azul inferior
-            doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-            doc.rect(10, 268, 196, 4.5, 'F');
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(6.8);
-            doc.setTextColor(255, 255, 255);
-            doc.text('Este documento es una representación impresa de un CFDI', 108, 271, { align: 'center' });
-
-            // Número de página
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(6.8);
-            doc.setTextColor(subTextColor[0], subTextColor[1], subTextColor[2]);
-            doc.text(`Página ${i} de ${totalPages}`, 206, 275.5, { align: 'right' });
-        }
-
-        const fileName = `CFDI_${comprobante.serie || ''}${comprobante.folio || ''}_${(timbre.uuid || 'cfdi').substring(0, 8)}.pdf`;
-        doc.setProperties({ title: fileName });
-
-        const pdfBlob = doc.output('blob');
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-
-        if (targetWindow && !targetWindow.closed) {
-            targetWindow.location.href = pdfUrl;
-        } else {
-            window.open(pdfUrl, '_blank');
-        }
-
-        return doc;
     }
 }
+
 
