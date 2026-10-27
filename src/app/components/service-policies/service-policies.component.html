@@ -371,7 +371,14 @@
                     <table mat-table [dataSource]="selectedPolicy.records" class="records-table">
 
                         <ng-container matColumnDef="service_date">
-                            <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                            <th mat-header-cell *matHeaderCellDef>
+                                <button type="button" id="sort-records-date" class="sort-header-btn"
+                                    [class.active]="recordSortDirection" (click)="toggleRecordSort()"
+                                    [matTooltip]="recordSortDirection === 'asc' ? 'Ordenar: más reciente primero' : 'Ordenar: más antiguo primero'">
+                                    Fecha
+                                    <mat-icon>{{ recordSortDirection === 'asc' ? 'arrow_upward' : recordSortDirection === 'desc' ? 'arrow_downward' : 'unfold_more' }}</mat-icon>
+                                </button>
+                            </th>
                             <td mat-cell *matCellDef="let r">{{ formatDisplayDate(r.service_date) }}</td>
                         </ng-container>
 

@@ -90,6 +90,9 @@ export class ServicePoliciesComponent implements OnInit {
 
     recordColumns: string[] = ['service_date', 'description', 'start_time', 'end_time', 'duration', 'service_type', 'requested_by', 'actions'];
 
+    // Records sort by date (null = order returned by API)
+    recordSortDirection: 'asc' | 'desc' | null = null;
+
     hours: number[] = Array.from({ length: 24 }, (_, i) => i);
     minutes: number[] = Array.from({ length: 60 }, (_, i) => i);
 
@@ -235,7 +238,7 @@ export class ServicePoliciesComponent implements OnInit {
                 const usedMinutes = records.reduce((sum: number, r: any) => sum + (r.duration_minutes || 0), 0);
                 this.selectedPolicy = {
                     ...policy,
-                    records,
+                    records: this.sortRecords(records),
                     used_minutes: usedMinutes,
                     remaining_minutes: policy.total_hours * 60 - usedMinutes
                 };
@@ -263,6 +266,28 @@ export class ServicePoliciesComponent implements OnInit {
     isCompleted(): boolean {
         if (!this.selectedPolicy) return false;
         return parseFloat(this.selectedPolicy.remaining_minutes) <= 0;
+    }
+
+    // ─── Records Sorting ───────────────────────────────────────────
+
+    toggleRecordSort() {
+        this.recordSortDirection = this.recordSortDirection === 'asc' ? 'desc' : 'asc';
+        if (this.selectedPolicy?.records) {
+            // New array reference so mat-table re-renders
+            this.selectedPolicy.records = this.sortRecords(this.selectedPolicy.records);
+        }
+    }
+
+    private sortRecords(records: any[]): any[] {
+        if (!records || !this.recordSortDirection) return records;
+        const factor = this.recordSortDirection === 'asc' ? 1 : -1;
+        const key = (r: any) => {
+            const date = typeof r.service_date === 'string'
+                ? r.service_date.split('T')[0]
+                : this.formatDate(new Date(r.service_date));
+            return `${date} ${r.start_time || ''}`;
+        };
+        return [...records].sort((a, b) => key(a).localeCompare(key(b)) * factor);
     }
 
     // ─── Record CRUD ───────────────────────────────────────────────

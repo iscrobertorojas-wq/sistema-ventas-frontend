@@ -400,6 +400,39 @@
     font-weight: 600;
 }
 
+.sort-header-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px;
+    margin-left: -6px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sort-header-btn mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    opacity: 0.6;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.sort-header-btn:hover {
+    background-color: rgba(30, 78, 140, 0.08);
+}
+
+.sort-header-btn:hover mat-icon,
+.sort-header-btn.active mat-icon {
+    opacity: 1;
+}
+
 .desc-cell {
     max-width: 300px;
     white-space: pre-wrap;
