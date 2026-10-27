@@ -10,6 +10,25 @@ export class PdfService {
 
     constructor() { }
 
+    /**
+     * Formats a date as dd/mm/yyyy without timezone shifts.
+     * Date-only strings (YYYY-MM-DD or ISO at UTC midnight) are parsed textually,
+     * because `new Date('YYYY-MM-DD')` is interpreted as UTC and shows the previous day in UTC-6.
+     * Real timestamps (DATETIME with a time component) are converted to local time.
+     */
+    private formatDateSafe(value: any): string {
+        if (!value) return new Date().toLocaleDateString('es-MX');
+        if (typeof value === 'string') {
+            const match = value.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ]00:00(?::00(?:\.0+)?)?(?:Z|[+-]00:?00)?)?$/);
+            if (match) {
+                return `${match[3].padStart(2, '0')}/${match[2].padStart(2, '0')}/${match[1]}`;
+            }
+        }
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return '';
+        return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+    }
+
     // Custom number to text converter for Spanish
     private numeroALetras(num: number, currency: string = 'MXN'): string {
         const currencyName = currency === 'USD' ? 'DÓLARES' : 'PESO MEXICANO';
@@ -147,7 +166,7 @@ export class PdfService {
         doc.setFont('helvetica', 'normal');
         doc.text(String(sale.folio || sale.id || 'S/N'), 38, 46);
 
-        const dateStr = sale.date ? new Date(sale.date).toLocaleDateString('es-MX') : new Date().toLocaleDateString('es-MX');
+        const dateStr = this.formatDateSafe(sale.date);
         doc.setFont('helvetica', 'bold');
         doc.text('Fecha:', 160, 46);
         doc.setFont('helvetica', 'normal');
@@ -313,7 +332,7 @@ export class PdfService {
             doc.text(String(policy.invoice_number).trim(), invoiceX + 24, 46);
         }
 
-        const dateStr = policy.date ? new Date(policy.date).toLocaleDateString('es-MX') : new Date().toLocaleDateString('es-MX');
+        const dateStr = this.formatDateSafe(policy.date);
         doc.setFont('helvetica', 'bold');
         doc.text('Fecha:', 160, 46);
         doc.setFont('helvetica', 'normal');
@@ -360,7 +379,7 @@ export class PdfService {
 
         const tableColumn = ["Fecha", "Descripción", "Inicio", "Fin", "Duración", "Tipo", "Solicitado por"];
         const tableRows = records.map(r => [
-            new Date(r.service_date).toLocaleDateString('es-MX'),
+            this.formatDateSafe(r.service_date),
             r.description,
             r.start_time.substring(0, 5),
             r.end_time.substring(0, 5),
@@ -506,9 +525,7 @@ export class PdfService {
         doc.text(durationStr, 115, 46);
 
         // Date (same position as sales PDF)
-        const dateStr = record.service_date
-            ? new Date(record.service_date).toLocaleDateString('es-MX')
-            : new Date().toLocaleDateString('es-MX');
+        const dateStr = this.formatDateSafe(record.service_date);
         doc.setFont('helvetica', 'bold');
         doc.text('Fecha:', 160, 46);
         doc.setFont('helvetica', 'normal');
@@ -623,7 +640,7 @@ export class PdfService {
         doc.text('Cotización No.:', 15, 46);
         doc.setFont('helvetica', 'normal');
         doc.text(String(quotation.folio || 'S/N'), 43, 46);
-        const dateStr = quotation.date ? new Date(quotation.date).toLocaleDateString('es-MX') : new Date().toLocaleDateString('es-MX');
+        const dateStr = this.formatDateSafe(quotation.date);
         doc.setFont('helvetica', 'bold');
         doc.text('Fecha:', 160, 46);
         doc.setFont('helvetica', 'normal');
