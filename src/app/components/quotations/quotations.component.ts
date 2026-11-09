@@ -18,6 +18,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 
@@ -40,7 +41,8 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
         MatAutocompleteModule,
         MatRadioModule,
         MatTabsModule,
-        MatDialogModule
+        MatDialogModule,
+        MatTooltipModule
     ],
     templateUrl: './quotations.component.html',
     styleUrl: './quotations.component.css'
@@ -50,8 +52,13 @@ export class QuotationsComponent implements OnInit {
     selectedClient: any = null;
     quotationItems: any[] = [];
     allQuotations: any[] = [];
+    filteredQuotations: any[] = [];
     isLoadingList: boolean = false;
     selectedTab: number = 0;
+
+    // Filtro del listado
+    filterType: 'all' | 'client' | 'items' = 'all';
+    filterTerm: string = '';
 
     // Autocomplete
     clientSearchTerm: string = '';
@@ -77,7 +84,7 @@ export class QuotationsComponent implements OnInit {
     settings: any = null;
 
     displayedColumns: string[] = ['description', 'unitPrice', 'quantity', 'discount', 'amount', 'actions'];
-    quotationsColumns: string[] = ['folio', 'date', 'client', 'total', 'actions'];
+    quotationsColumns: string[] = ['folio', 'date', 'client', 'items', 'total', 'actions'];
 
     constructor(
         private api: ApiService,
@@ -174,6 +181,7 @@ export class QuotationsComponent implements OnInit {
         this.api.getQuotations().subscribe({
             next: (data) => {
                 this.allQuotations = data;
+                this.applyFilter();
                 this.isLoadingList = false;
             },
             error: (err) => {
@@ -181,6 +189,36 @@ export class QuotationsComponent implements OnInit {
                 this.isLoadingList = false;
             }
         });
+    }
+
+    private normalize(value: any): string {
+        return String(value ?? '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    applyFilter() {
+        const term = this.normalize(this.filterTerm).trim();
+        if (!term) {
+            this.filteredQuotations = [...this.allQuotations];
+            return;
+        }
+        this.filteredQuotations = this.allQuotations.filter(q => {
+            const client = this.normalize(q.client_name);
+            const items = this.normalize(q.items_summary);
+            const folio = this.normalize(q.folio);
+            switch (this.filterType) {
+                case 'client': return client.includes(term);
+                case 'items': return items.includes(term);
+                default: return client.includes(term) || items.includes(term) || folio.includes(term);
+            }
+        });
+    }
+
+    clearFilter() {
+        this.filterTerm = '';
+        this.applyFilter();
     }
 
     onClientSearch() {

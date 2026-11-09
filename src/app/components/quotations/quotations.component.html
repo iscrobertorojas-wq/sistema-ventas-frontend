@@ -208,7 +208,34 @@
         <div class="container mt-20">
             <mat-card>
                 <mat-card-content>
-                    <table mat-table [dataSource]="allQuotations" class="mat-elevation-z0 full-width-table">
+                    <!-- Filtros -->
+                    <div class="filter-row">
+                        <mat-form-field appearance="outline" class="filter-type">
+                            <mat-label>Buscar por</mat-label>
+                            <mat-select [(ngModel)]="filterType" (selectionChange)="applyFilter()">
+                                <mat-option value="all">Todos</mat-option>
+                                <mat-option value="client">Cliente</mat-option>
+                                <mat-option value="items">Producto cotizado</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="filter-search">
+                            <mat-label>Buscar</mat-label>
+                            <input matInput [(ngModel)]="filterTerm" (ngModelChange)="applyFilter()"
+                                [placeholder]="filterType === 'client' ? 'Nombre del cliente' : (filterType === 'items' ? 'Producto o servicio cotizado' : 'Cliente, producto o folio')">
+                            <mat-icon matSuffix *ngIf="!filterTerm" class="search-suffix-icon">search</mat-icon>
+                            <button mat-icon-button matSuffix *ngIf="filterTerm" (click)="clearFilter()" matTooltip="Limpiar">
+                                <mat-icon>close</mat-icon>
+                            </button>
+                        </mat-form-field>
+
+                        <div class="filter-summary">
+                            {{ filteredQuotations.length }} de {{ allQuotations.length }} cotizaciones
+                        </div>
+                    </div>
+
+                    <div class="list-scroll">
+                    <table mat-table [dataSource]="filteredQuotations" class="mat-elevation-z0 full-width-table">
                         <!-- Folio Column -->
                         <ng-container matColumnDef="folio">
                             <th mat-header-cell *matHeaderCellDef> Folio </th>
@@ -225,6 +252,12 @@
                         <ng-container matColumnDef="client">
                             <th mat-header-cell *matHeaderCellDef> Cliente </th>
                             <td mat-cell *matCellDef="let q"> {{q.client_name}} </td>
+                        </ng-container>
+
+                        <!-- Items Column -->
+                        <ng-container matColumnDef="items">
+                            <th mat-header-cell *matHeaderCellDef> Productos / Servicios </th>
+                            <td mat-cell *matCellDef="let q" class="items-cell"> {{q.items_summary || '—'}} </td>
                         </ng-container>
 
                         <!-- Total Column -->
@@ -249,7 +282,7 @@
                             </td>
                         </ng-container>
 
-                        <tr mat-header-row *matHeaderRowDef="quotationsColumns"></tr>
+                        <tr mat-header-row *matHeaderRowDef="quotationsColumns; sticky: true"></tr>
                         <tr mat-row *matRowDef="let row; columns: quotationsColumns;"></tr>
                     </table>
 
@@ -257,8 +290,13 @@
                         No hay cotizaciones registradas.
                     </div>
 
+                    <div class="empty-message" *ngIf="allQuotations.length > 0 && filteredQuotations.length === 0 && !isLoadingList">
+                        No se encontraron cotizaciones con ese criterio.
+                    </div>
+
                     <div class="loading-spinner" *ngIf="isLoadingList">
                         Cargando cotizaciones...
+                    </div>
                     </div>
                 </mat-card-content>
             </mat-card>

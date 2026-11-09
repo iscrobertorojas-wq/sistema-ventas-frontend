@@ -143,6 +143,51 @@ table {
     font-weight: 500;
 }
 
+.filter-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.filter-type {
+    width: 220px;
+}
+
+.filter-search {
+    flex: 1;
+    min-width: 250px;
+}
+
+.filter-summary {
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding-bottom: 20px;
+}
+
+.items-cell {
+    max-width: 380px;
+    color: var(--text-muted);
+}
+
+.search-suffix-icon {
+    margin-right: 12px;
+    color: var(--text-muted);
+}
+
+/* Scroll del listado ajustado a la altura de la ventana */
+.list-scroll {
+    max-height: calc(100vh - 330px);
+    min-height: 300px;
+    overflow: auto;
+}
+
+.list-scroll th {
+    background: var(--bg-card);
+    z-index: 100;
+}
+
 @media (max-width: 900px) {
     .sales-layout {
         grid-template-columns: 1fr;
@@ -176,6 +221,15 @@ table {
 
     .table-card {
         overflow-x: auto;
+    }
+
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-type {
+        width: 100%;
     }
 
     .totals-card {

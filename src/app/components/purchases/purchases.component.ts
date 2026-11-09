@@ -16,6 +16,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatTabsModule } from '@angular/material/tabs';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
@@ -37,7 +38,8 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
     MatDividerModule,
     MatSnackBarModule,
     MatTooltipModule,
-    MatDialogModule
+    MatDialogModule,
+    MatTabsModule
   ],
   templateUrl: './purchases.component.html',
   styleUrl: './purchases.component.css'
@@ -47,6 +49,12 @@ export class PurchasesComponent implements OnInit {
   filteredSuppliers: any[] = [];
   supplierSearchTerm: string = '';
   purchases: any[] = [];
+  filteredPurchases: any[] = [];
+  selectedTab: number = 0;
+
+  // Filtro del listado
+  filterType: 'all' | 'supplier' | 'items' = 'all';
+  filterTerm: string = '';
 
   displayedColumns: string[] = ['date', 'supplier_name', 'items_description', 'total', 'actions'];
 
@@ -106,13 +114,49 @@ export class PurchasesComponent implements OnInit {
 
   loadPurchases() {
     this.api.getPurchases().subscribe({
-      next: (data) => this.purchases = data.map((p: any) => ({
-        ...p,
-        // Añadir T00:00:00 para que el date pipe de Angular lo interprete en hora local (no UTC)
-        date: p.date ? String(p.date).split('T')[0] + 'T00:00:00' : p.date
-      })),
+      next: (data) => {
+        this.purchases = data.map((p: any) => ({
+          ...p,
+          // Añadir T00:00:00 para que el date pipe de Angular lo interprete en hora local (no UTC)
+          date: p.date ? String(p.date).split('T')[0] + 'T00:00:00' : p.date
+        }));
+        this.applyFilter();
+      },
       error: (err) => console.error('Error loading purchases', err)
     });
+  }
+
+  private normalize(value: any): string {
+    return String(value ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  applyFilter() {
+    const term = this.normalize(this.filterTerm).trim();
+    if (!term) {
+      this.filteredPurchases = [...this.purchases];
+      return;
+    }
+    this.filteredPurchases = this.purchases.filter(p => {
+      const supplier = this.normalize(p.supplier_name);
+      const items = this.normalize(p.items_description);
+      switch (this.filterType) {
+        case 'supplier': return supplier.includes(term);
+        case 'items': return items.includes(term);
+        default: return supplier.includes(term) || items.includes(term);
+      }
+    });
+  }
+
+  clearFilter() {
+    this.filterTerm = '';
+    this.applyFilter();
+  }
+
+  get filteredTotal(): number {
+    return this.filteredPurchases.reduce((sum: number, p: any) => sum + (parseFloat(p.total) || 0), 0);
   }
 
   loadPurchaseForEdit(id: number) {
@@ -146,7 +190,8 @@ export class PurchasesComponent implements OnInit {
           description: item.description,
           cost: item.cost
         }));
-        // Scroll to top to see the form
+        // Cambiar a la pestaña del formulario y subir para verlo
+        this.selectedTab = 0;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
       error: (err) => {
@@ -211,13 +256,15 @@ export class PurchasesComponent implements OnInit {
       items: this.purchaseItems
     };
 
+    const wasEditing = this.isEditing;
     const request = this.isEditing ? this.api.updatePurchase(payload) : this.api.createPurchase(payload);
 
     request.subscribe({
       next: () => {
         this.loadPurchases();
         this.resetForm();
-        this.snackBar.open(`Compra ${this.isEditing ? 'actualizada' : 'registrada'} correctamente`, 'Cerrar', { duration: 3000 });
+        this.snackBar.open(`Compra ${wasEditing ? 'actualizada' : 'registrada'} correctamente`, 'Cerrar', { duration: 3000 });
+        if (wasEditing) this.selectedTab = 1;
       },
       error: (err) => {
         const message = err.error?.error || 'Error al procesar la compra';

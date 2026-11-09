@@ -104,6 +104,103 @@ table {
     font-style: italic;
 }
 
+.mt-10 {
+    margin-top: 10px;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+/* ===== Listado de ventas ===== */
+.filter-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.filter-type {
+    width: 220px;
+}
+
+.filter-search {
+    flex: 1;
+    min-width: 250px;
+}
+
+.filter-summary {
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding-bottom: 20px;
+}
+
+.filter-summary strong {
+    color: var(--brand-color);
+}
+
+.search-suffix-icon {
+    margin-right: 12px;
+    color: var(--text-muted);
+}
+
+/* Scroll del listado ajustado a la altura de la ventana */
+.list-scroll {
+    max-height: calc(100vh - 330px);
+    min-height: 300px;
+    overflow: auto;
+}
+
+.list-scroll th {
+    background: var(--bg-card);
+    z-index: 100;
+}
+
+.full-width-table {
+    width: 100%;
+}
+
+.items-cell {
+    max-width: 380px;
+    color: var(--text-muted);
+}
+
+.total-cell {
+    font-weight: 600;
+    color: var(--brand-color);
+}
+
+.status-badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-pagado {
+    background: rgba(46, 125, 50, 0.15);
+    color: #2e7d32;
+}
+
+.status-parcial {
+    background: rgba(239, 108, 0, 0.15);
+    color: #ef6c00;
+}
+
+.status-pendiente {
+    background: rgba(198, 40, 40, 0.15);
+    color: #c62828;
+}
+
+.loading-spinner {
+    padding: 30px;
+    text-align: center;
+    color: var(--brand-color);
+    font-weight: 500;
+}
+
 @media (max-width: 900px) {
     .sales-layout {
         grid-template-columns: 1fr;
@@ -140,5 +237,14 @@ table {
 
     .total-row.large {
         font-size: 1.5rem;
+    }
+
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-type {
+        width: 100%;
     }
 }
