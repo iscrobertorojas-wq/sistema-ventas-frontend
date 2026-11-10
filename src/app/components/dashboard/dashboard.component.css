@@ -232,6 +232,21 @@ body.dark-theme .summary-item .label {
     /* Amber/Orange */
 }
 
+.summary-item.total-annual {
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-color);
+}
+
+.summary-item.total-annual .label {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.summary-item.total-annual .value {
+    font-size: 22px;
+}
+
 @media (max-width: 768px) {
     .dashboard-container {
         padding: 12px;

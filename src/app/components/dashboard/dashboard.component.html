@@ -78,9 +78,25 @@
                 </div>
 
                 <!-- Profit History Chart -->
-                <div *ngIf="chart.id === 'profit_history'" class="chart-container main-chart">
-                    <canvas *ngIf="chartsReady" baseChart [data]="profitChartData" [options]="profitChartOptions" [type]="profitChartType">
-                    </canvas>
+                <div *ngIf="chart.id === 'profit_history'">
+                    <div class="chart-container main-chart">
+                        <canvas *ngIf="chartsReady" baseChart [data]="profitChartData" [options]="profitChartOptions" [type]="profitChartType">
+                        </canvas>
+                    </div>
+                    <div class="numerical-summary">
+                        <div class="summary-item">
+                            <span class="label">Ingresos cobrados {{currentYear}}:</span>
+                            <span class="value paid">{{annualIncome | currency}}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Compras {{currentYear}}:</span>
+                            <span class="value pending">{{annualPurchases | currency}}</span>
+                        </div>
+                        <div class="summary-item total-annual">
+                            <span class="label">Utilidad total {{currentYear}}:</span>
+                            <span class="value" [class.paid]="annualProfit >= 0" [class.negative-value]="annualProfit < 0">{{annualProfit | currency}}</span>
+                        </div>
+                    </div>
                 </div>
             </mat-card-content>
         </mat-card>

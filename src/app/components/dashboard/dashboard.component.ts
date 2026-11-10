@@ -33,6 +33,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
     chartsReady = false;
 
+    // Año en curso y totales anuales de utilidad
+    readonly currentYear = new Date().getFullYear();
+    annualIncome = 0;
+    annualPurchases = 0;
+    annualProfit = 0;
+
     // Persistable Layout
     statCards: any[] = [];
     chartCards: any[] = [];
@@ -256,7 +262,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             case 'week': return `${this.stats.week?.count || 0} ventas`;
             case 'month': return `${this.stats.month?.count || 0} ventas`;
             case 'pending': return `${this.stats.pending?.count || 0} ventas`;
-            case 'year': return `${this.stats.year?.count || 0} ventas en 2024`;
+            case 'year': return `${this.stats.year?.count || 0} ventas en ${this.currentYear}`;
             case 'purchases': return `${this.stats.monthPurchases?.count || 0} compras registradas`;
             default: return '';
         }
@@ -358,6 +364,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
                     const purchasesTotal = purchasesMap[s.month] || 0;
                     return incomeTotal - purchasesTotal;
                 });
+
+                // Totales anuales del año en curso (Ingresos cobrados − Compras).
+                // Se suman todos los meses del año, aunque no tengan ventas registradas.
+                const yearPrefix = `${this.currentYear}-`;
+                this.annualIncome = Object.keys(paymentsMap)
+                    .filter(m => m.startsWith(yearPrefix))
+                    .reduce((sum, m) => sum + paymentsMap[m], 0);
+                this.annualPurchases = Object.keys(purchasesMap)
+                    .filter(m => m.startsWith(yearPrefix))
+                    .reduce((sum, m) => sum + purchasesMap[m], 0);
+                this.annualProfit = this.annualIncome - this.annualPurchases;
 
                 // Re-trigger charts after data is set and DOM updates
                 setTimeout(() => {
